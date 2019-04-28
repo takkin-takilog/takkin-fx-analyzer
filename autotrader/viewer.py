@@ -1,5 +1,5 @@
 from bokeh.io import show
-from bokeh.layouts import gridplot
+from bokeh.layouts import gridplot, row, column, widgetbox
 from bokeh.models.widgets import Select
 from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
@@ -205,12 +205,19 @@ class Viewer(object):
             print("----- ExceptionError: {}".format(err))
 
     def get_layout(self):
+        w1 = self.__widsel_inst
+        w2 = self.__widsel_gran
+
+        wbox1 = row(children=[w1, w2])
+        wbox2 = self.__widcs.get_widget()
+
         layout = gridplot(
             [
-                [self.__widsel_inst, self.__widsel_gran],
-                [self.__widcs.get_widget(), None],
+                [wbox1],
+                [wbox2],
             ],
             merge_tools=False)
+
         return(layout)
 
     def view(self):
