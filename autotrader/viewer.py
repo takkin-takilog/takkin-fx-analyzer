@@ -1,6 +1,8 @@
 from bokeh.io import show
 from bokeh.layouts import gridplot, row, column, widgetbox
+from bokeh.models import CustomJS, Div
 from bokeh.models.widgets import Select
+from bokeh import events
 from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
 import autotrader.oanda_common as oc
@@ -204,17 +206,48 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
+    def __callback_disp(self, div, attributes=[],
+                        style='float:left;clear:left;font_size=10pt'):
+        return CustomJS(args=dict(div=div), code="""
+        var attrs = %s; var args = [];
+        for (var i = 0; i<attrs.length; i++) {
+            if (attrs[i] == "x") {
+                var date = new Date(cb_obj[attrs[i]])
+                args.push(attrs[i] + '=' + date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate());
+            }else{
+                args.push(attrs[i] + '=' + Number(cb_obj[attrs[i]]).toFixed(2));
+            }
+        }
+        var line = "<span style=%r><b>" + cb_obj.event_name + "</b>(" + args.join(", ") + ")</span>\\n";
+        var text = div.text.concat(line);
+        var lines = text.split("\\n")
+        if (lines.length > 20)
+            lines.shift();
+        div.text = lines.join("\\n");
+    """ % (attributes, style))
+
     def get_layout(self):
         w1 = self.__widsel_inst
         w2 = self.__widsel_gran
 
         wbox1 = row(children=[w1, w2])
-        wbox2 = self.__widcs.get_widget()
+        fig = self.__widcs.get_widget()
+
+        point_events = [
+            events.Tap, events.DoubleTap, events.Press,
+            events.MouseMove, events.MouseEnter, events.MouseLeave
+        ]
+        point_attributes = ['x', 'y', 'sx', 'sy']  # Point events
+        div = Div(width=400, height=fig.plot_height, height_policy="fixed")
+
+        for event in point_events:
+            fig.js_on_event(event, self.__callback_disp(
+                div, attributes=point_attributes))
 
         layout = gridplot(
             [
                 [wbox1],
-                [wbox2],
+                [fig, div],
             ],
             merge_tools=False)
 
