@@ -39,7 +39,11 @@ class CandleStick(object):
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
 
-        self.__src = ColumnDataSource(
+        self.__incsrc = ColumnDataSource(
+            dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[]))
+        self.__decsrc = ColumnDataSource(
+            dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[]))
+        self.__equsrc = ColumnDataSource(
             dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[]))
 
         self.__api = API(access_token=oa.ACCESS_TOKEN,
@@ -80,6 +84,16 @@ class CandleStick(object):
         # date型を整形する
         df.index = pd.to_datetime(df.index)
 
+        inc_df = df[self.__CLOSE] > df[self.__OPEN]
+        dec_df = df[self.__OPEN] > df[self.__CLOSE]
+        equ_df = df[self.__CLOSE] == df[self.__OPEN]
+
+        self.__incsrc.data = self.__df2datsrc(df[inc_df])
+        self.__decsrc.data = self.__df2datsrc(df[dec_df])
+        self.__equsrc.data = self.__df2datsrc(df[equ_df])
+        #self.__src.stream(new_)
+
+    def __df2datsrc(self, df):
         new_ = dict(
             xdt=df.index.tolist(),
             ylo=df[self.__LOW].astype(float).values.tolist(),
@@ -87,8 +101,7 @@ class CandleStick(object):
             yop=df[self.__OPEN].astype(float).values.tolist(),
             ycl=df[self.__CLOSE].astype(float).values.tolist(),
         )
-        self.__src.data = new_
-        #self.__src.stream(new_)
+        return new_
 
     def get_widget(self, fig_width=1000):
 
@@ -106,16 +119,23 @@ class CandleStick(object):
             background_fill_color=self.__BG_COLOR,
             title="Candlestick example"
         )
-        glyph = Segment(x0="xdt", y0="ylo", x1="xdt", y1="yhi",
-                        line_color=self.__CND_INC_COLOR, line_width=1)
-        plt_main.add_glyph(self.__src, glyph)
-        glyph = VBar(x="xdt", top="yop", bottom="ycl",
-                     width=self.__WIDE, fill_color=self.__CND_INC_COLOR,
-                     line_width=0, line_color=self.__CND_INC_COLOR)
-        plt_main.add_glyph(self.__src, glyph)
+
+        self.__add_candle(plt_main, self.__incsrc, self.__CND_INC_COLOR)
+        self.__add_candle(plt_main, self.__decsrc, self.__CND_DEC_COLOR)
+        self.__add_candle(plt_main, self.__equsrc, self.__CND_EQU_COLOR)
+
         plt_main.xaxis.major_label_orientation = pi / 4
         plt_main.grid.grid_line_alpha = 0.3
         return plt_main
+
+    def __add_candle(self, plt, src, color):
+        glyph = Segment(x0="xdt", y0="ylo", x1="xdt", y1="yhi",
+                        line_color=color, line_width=1)
+        plt.add_glyph(src, glyph)
+        glyph = VBar(x="xdt", top="yop", bottom="ycl",
+                     width=self.__WIDE, fill_color=color,
+                     line_width=0, line_color=color)
+        plt.add_glyph(src, glyph)
 
     def __change_dt_fmt(self, granularity, dt):
         """"日付フォーマットの変換メソッド
