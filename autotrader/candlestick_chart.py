@@ -120,7 +120,7 @@ class CandleStick(object):
     def fetch(self, gran_, inst_, dt_from, dt_to):
 
         params_ = {
-            "alignmentTimezone": "Japan",
+            # "alignmentTimezone": "Japan",
             "from": dt_from.strftime(self.__DT_FMT),
             "to": dt_to.strftime(self.__DT_FMT),
             "granularity": gran_
@@ -128,7 +128,6 @@ class CandleStick(object):
 
         # APIへ過去データをリクエスト
         ic = inst.InstrumentsCandles(instrument=inst_, params=params_)
-
         try:
             self.__api.request(ic)
         except Exception as err:
@@ -136,7 +135,10 @@ class CandleStick(object):
 
         data = []
         for raw in ic.response[oc.OandaRsp.CNDL]:
-            data.append([self.__change_dt_fmt(gran_, raw[oc.OandaRsp.TIME]),
+            dt_ = oc.OandaGrn.convert_dtfmt(gran_, raw[oc.OandaRsp.TIME],
+                                            dt_ofs=datetime.timedelta(hours=9),
+                                            fmt=self.__DT_FMT)
+            data.append([dt_,
                          raw[oc.OandaRsp.VLM],
                          raw[oc.OandaRsp.MID][oc.OandaRsp.OPN],
                          raw[oc.OandaRsp.MID][oc.OandaRsp.HIG],

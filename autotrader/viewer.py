@@ -1,13 +1,13 @@
 from bokeh.io import show
 from bokeh.layouts import gridplot, row, column, widgetbox
 from bokeh.models import CustomJS, Div
-from bokeh.models.widgets import Select
+from bokeh.models.widgets import Select, TextInput
 from bokeh import events
 from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
 import autotrader.oanda_common as oc
 from oandapyV20.exceptions import V20Error
-
+from bokeh.models import PointDrawTool
 
 class Viewer(object):
     """ Viewer
@@ -102,6 +102,8 @@ class Viewer(object):
                                     value=gran_def,
                                     options=GRAN_OPS)
         self.__widsel_gran.on_change("value", self.__sel_gran_callback)
+
+        self.__text_input = TextInput(value="default", title="Label:")
 
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
@@ -213,7 +215,7 @@ class Viewer(object):
         for (var i = 0; i<attrs.length; i++) {
             if (attrs[i] == "x") {
                 var date = new Date(cb_obj[attrs[i]])
-                args.push(attrs[i] + '=' + date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate());
+                args.push(attrs[i] + '=' + date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes());
             }else{
                 args.push(attrs[i] + '=' + Number(cb_obj[attrs[i]]).toFixed(2));
             }
@@ -225,6 +227,18 @@ class Viewer(object):
             lines.shift();
         div.text = lines.join("\\n");
     """ % (attributes, style))
+
+    def __callback_tap(self, event):
+        # NOTE: read timestamp is Not mutches disp one.
+        date = datetime.fromtimestamp(int(event.x) / 1000)
+        str_ = str(date) + ":" + str(event.y)
+        self.__text_input.value = "Tap: " + str_
+
+    def __callback_press(self, event):
+        import autotrader.bokeh_common as bc
+        date = datetime.fromtimestamp(int(event.x) / 1000)
+        str_ = str(date) + ":" + str(event.y)
+        self.__text_input.value = "Press: " + str_
 
     def get_layout(self):
         w1 = self.__widsel_inst
@@ -244,10 +258,14 @@ class Viewer(object):
             fig.js_on_event(event, self.__callback_disp(
                 div, attributes=point_attributes))
 
+        fig.on_event(events.Tap, self.__callback_tap)
+        fig.on_event(events.Press, self.__callback_press)
+
         layout = gridplot(
             [
                 [wbox1],
                 [fig, div],
+                [self.__text_input]
             ],
             merge_tools=False)
 
