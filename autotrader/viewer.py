@@ -1,7 +1,7 @@
 from bokeh.io import show
 from bokeh.layouts import gridplot
 from bokeh.models.widgets import Select, TextInput
-import datetime
+from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
 import autotrader.oanda_common as oc
 
@@ -44,11 +44,7 @@ class Viewer(object):
         Args:
             None
         """
-
-        self.__dt_from = datetime.datetime(
-            year=2019, month=1, day=1, hour=0, minute=0, second=0)
-        self.__dt_to = datetime.datetime(
-            year=2019, month=3, day=20, hour=12, minute=0, second=0)
+        self.__DISP_NUM = 30
 
         # 辞書登録：通貨ペア
         self.__INST_DICT = {
@@ -96,13 +92,14 @@ class Viewer(object):
 
         # Widgetセレクト（期間）
         GRAN_OPS = [
-            self.GRAN_S5, self.GRAN_S10, self.GRAN_S15, self.GRAN_S30,
-            self.GRAN_M1, self.GRAN_M2, self.GRAN_M3, self.GRAN_M4,
-            self.GRAN_M5, self.GRAN_M10, self.GRAN_M15, self.GRAN_M30,
-            self.GRAN_H1, self.GRAN_H2, self.GRAN_H3, self.GRAN_H4,
-            self.GRAN_H6, self.GRAN_H8, self.GRAN_H12, self.GRAN_D,
-            self.GRAN_W
+            self.GRAN_W, self.GRAN_D, self.GRAN_H12, self.GRAN_H8,
+            self.GRAN_H6, self.GRAN_H4, self.GRAN_H3, self.GRAN_H2,
+            self.GRAN_H1, self.GRAN_M30, self.GRAN_M15, self.GRAN_M10,
+            self.GRAN_M5, self.GRAN_M4, self.GRAN_M3, self.GRAN_M2,
+            self.GRAN_M1, self.GRAN_S30, self.GRAN_S15, self.GRAN_S10,
+            self.GRAN_S5
         ]
+
         self.__widsel_gran = Select(title="期間:",
                                     value=gran_def,
                                     options=GRAN_OPS)
@@ -111,8 +108,73 @@ class Viewer(object):
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
+        to_, from_ = self.__get_gran(self.__gran, self.__DISP_NUM)
+        self.__dt_to = to_
+        self.__dt_from = from_
+
         self.__widcs = cdl.CandleStick()
-        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from, self.__dt_to)
+        self.__widcs.fetch(self.__gran, self.__inst,
+                           self.__dt_from, self.__dt_to)
+
+    def __get_gran(self, gran, num):
+
+        now_ = datetime.now()
+        if gran is oc.OandaGrn.D:
+            print("---1D---")
+            to_ = datetime(now_.year, now_.month, now_.day - 1,
+                           now_.hour, now_.minute, now_.second)
+            from_ = to_ - timedelta(days=num)
+        elif gran is oc.OandaGrn.H12:
+            print("---12H---")
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(hours=num * 12)
+        elif gran is oc.OandaGrn.H8:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(hours=num * 8)
+        elif gran is oc.OandaGrn.H6:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(hours=num * 6)
+        elif gran is oc.OandaGrn.H4:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(hours=num * 4)
+        elif gran is oc.OandaGrn.H3:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(hours=num * 3)
+        elif gran is oc.OandaGrn.H2:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(hours=num * 2)
+        elif gran is oc.OandaGrn.H1:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(hours=num)
+        elif gran is oc.OandaGrn.M30:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(minutes=num * 30)
+        elif gran is oc.OandaGrn.M15:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(minutes=num * 15)
+        elif gran is oc.OandaGrn.M10:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(minutes=num * 10)
+        elif gran is oc.OandaGrn.M5:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(minutes=num * 5)
+        elif gran is oc.OandaGrn.M1:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour - 12, now_.minute, now_.second)
+            from_ = to_ - timedelta(minutes=num)
+
+        return to_, from_
 
     def __sel_inst_callback(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
@@ -125,7 +187,8 @@ class Viewer(object):
         """
         self.__debug_text_inst.value = new
         self.__inst = self.__INST_DICT[new]
-        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from, self.__dt_to)
+        self.__widcs.fetch(self.__gran, self.__inst,
+                           self.__dt_from, self.__dt_to)
 
     def __sel_gran_callback(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
@@ -138,7 +201,11 @@ class Viewer(object):
         """
         self.__debug_text_gran.value = new
         self.__gran = self.__GRAN_DICT[new]
-        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from, self.__dt_to)
+        to_, from_ = self.__get_gran(self.__gran, self.__DISP_NUM)
+        self.__dt_to = to_
+        self.__dt_from = from_
+        self.__widcs.fetch(self.__gran, self.__inst,
+                           self.__dt_from, self.__dt_to)
 
     def get_layout(self):
         """

@@ -20,7 +20,7 @@ class CandleStick(object):
     def __init__(self):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            granularity (str): 時間足[Candle stick granularity]
+            None
         """
         # Pandas data label
         self.__TIME = "time"
@@ -50,7 +50,6 @@ class CandleStick(object):
                          environment=oc.OandaEnv.PRACTICE)
 
     def fetch(self, gran_, inst_, dt_from, dt_to):
-        print("===== called fetch =====")
 
         params_ = {
             "alignmentTimezone": "Japan",
@@ -84,13 +83,13 @@ class CandleStick(object):
         # date型を整形する
         df.index = pd.to_datetime(df.index)
 
-        inc_df = df[self.__CLOSE] > df[self.__OPEN]
-        dec_df = df[self.__OPEN] > df[self.__CLOSE]
-        equ_df = df[self.__CLOSE] == df[self.__OPEN]
+        incflg = df[self.__CLOSE] > df[self.__OPEN]
+        decflg = df[self.__OPEN] > df[self.__CLOSE]
+        equflg = df[self.__CLOSE] == df[self.__OPEN]
 
-        self.__incsrc.data = self.__df2datsrc(df[inc_df])
-        self.__decsrc.data = self.__df2datsrc(df[dec_df])
-        self.__equsrc.data = self.__df2datsrc(df[equ_df])
+        self.__incsrc.data = self.__df2datsrc(df[incflg])
+        self.__decsrc.data = self.__df2datsrc(df[decflg])
+        self.__equsrc.data = self.__df2datsrc(df[equflg])
         #self.__src.stream(new_)
 
     def __df2datsrc(self, df):
@@ -139,13 +138,47 @@ class CandleStick(object):
 
     def __change_dt_fmt(self, granularity, dt):
         """"日付フォーマットの変換メソッド
-        引数:
+        引数[Args]:
+            granularity (str): 時間足[Candle stick granularity]
             dt (str): DT_FMT形式でフォーマットされた日付
-        戻り値:
+        戻り値[Returns]:
             tf_dt (str): 変換後の日付
         """
+        hour_ = 0
+        minute_ = 0
+        tdt = datetime.datetime.strptime(dt, self.__DT_FMT)
         if granularity is oc.OandaGrn.D:
-            tdt = datetime.datetime.strptime(dt, self.__DT_FMT)
-            tf_dt = datetime.date(tdt.year, tdt.month, tdt.day)
+            pass
+        elif granularity is oc.OandaGrn.H12:
+            hour_ = 12 * (tdt.hour // 12)
+        elif granularity is oc.OandaGrn.H8:
+            hour_ = 8 * (tdt.hour // 8)
+        elif granularity is oc.OandaGrn.H6:
+            hour_ = 6 * (tdt.hour // 6)
+        elif granularity is oc.OandaGrn.H4:
+            hour_ = 4 * (tdt.hour // 4)
+        elif granularity is oc.OandaGrn.H3:
+            hour_ = 3 * (tdt.hour // 3)
+        elif granularity is oc.OandaGrn.H2:
+            hour_ = 2 * (tdt.hour // 2)
+        elif granularity is oc.OandaGrn.H1:
+            hour_ = 1 * (tdt.hour // 1)
+        elif granularity is oc.OandaGrn.M30:
+            hour_ = tdt.hour
+            minute_ = 30 * (tdt.minute // 30)
+        elif granularity is oc.OandaGrn.M15:
+            hour_ = tdt.hour
+            minute_ = 15 * (tdt.minute // 15)
+        elif granularity is oc.OandaGrn.M10:
+            hour_ = tdt.hour
+            minute_ = 10 * (tdt.minute // 10)
+        elif granularity is oc.OandaGrn.M5:
+            hour_ = tdt.hour
+            minute_ = 5 * (tdt.minute // 5)
+        elif granularity is oc.OandaGrn.M1:
+            hour_ = tdt.hour
+            minute_ = 1 * (tdt.minute // 1)
+
+        tf_dt = datetime.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
 
         return tf_dt
