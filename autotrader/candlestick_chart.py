@@ -87,7 +87,6 @@ class CandleStick(object):
             yop=df[self.__OPEN].astype(float).values.tolist(),
             ycl=df[self.__CLOSE].astype(float).values.tolist(),
         )
-
         self.__src.stream(new_)
 
     def get_widget(self, fig_width=1000):

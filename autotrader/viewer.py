@@ -108,10 +108,10 @@ class Viewer(object):
                                     options=GRAN_OPS)
         self.__widsel_gran.on_change("value", self.__sel_gran_callback)
 
-        self.__widcs = cdl.CandleStick()
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
+        self.__widcs = cdl.CandleStick()
         self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from, self.__dt_to)
 
     def __sel_inst_callback(self, attr, old, new):
