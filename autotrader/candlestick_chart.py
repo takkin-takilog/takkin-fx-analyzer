@@ -4,7 +4,6 @@ from bokeh.models import RangeTool, ColumnDataSource
 from bokeh.plotting import figure, output_file
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
-from oandapyV20.exceptions import V20Error
 from retrying import retry
 import datetime
 import oandapyV20.endpoints.instruments as inst
@@ -12,6 +11,86 @@ import pandas as pd
 import autotrader.bokeh_common as bc
 import autotrader.oanda_common as oc
 import autotrader.oanda_account as oa
+
+
+# Pandas data label
+_TIME = "time"
+_VOLUME = "volume"
+_OPEN = "open"
+_HIGH = "high"
+_LOW = "low"
+_CLOSE = "close"
+
+
+class CandleGlyph(object):
+
+    def __init__(self, color_):
+        self.__WIDE_SCALE = 0.5
+        self.__COLOR = color_
+        self.__src = ColumnDataSource(
+            dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[])
+        )
+        self.__glyseg = Segment(x0="xdt", y0="ylo", x1="xdt", y1="yhi",
+                                line_color=self.__COLOR,
+                                line_width=1)
+        self.__glvbar = VBar(x="xdt", top="yop", bottom="ycl",
+                             fill_color=self.__COLOR,
+                             line_width=0,
+                             line_color=self.__COLOR)
+
+    def set_data(self, df, gran_):
+
+        self.__src.data = dict(
+            xdt=df.index.tolist(),
+            ylo=df[_LOW].astype(float).values.tolist(),
+            yhi=df[_HIGH].astype(float).values.tolist(),
+            yop=df[_OPEN].astype(float).values.tolist(),
+            ycl=df[_CLOSE].astype(float).values.tolist(),
+        )
+        self.__glvbar.width = self.__get_width(gran_)
+
+    def add_plot(self, plt):
+        plt.add_glyph(self.__src, self.__glyseg)
+        plt.add_glyph(self.__src, self.__glvbar)
+
+    def __get_width(self, gran_):
+
+        _width = 1
+        if gran_ is oc.OandaGrn.D:
+            _width = 24 * 60 * 60 * 1000  # half day in ms
+        elif gran_ is oc.OandaGrn.H12:
+            _width = 12 * 60 * 60 * 1000
+        elif gran_ is oc.OandaGrn.H8:
+            _width = 8 * 60 * 60 * 1000
+        elif gran_ is oc.OandaGrn.H6:
+            _width = 6 * 60 * 60 * 1000
+        elif gran_ is oc.OandaGrn.H4:
+            _width = 4 * 60 * 60 * 1000
+        elif gran_ is oc.OandaGrn.H3:
+            _width = 3 * 60 * 60 * 1000
+        elif gran_ is oc.OandaGrn.H2:
+            _width = 2 * 60 * 60 * 1000
+        elif gran_ is oc.OandaGrn.H1:
+            _width = 1 * 60 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M30:
+            _width = 30 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M15:
+            _width = 15 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M10:
+            _width = 10 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M5:
+            _width = 5 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M4:
+            _width = 4 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M3:
+            _width = 3 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M2:
+            _width = 2 * 60 * 1000
+        elif gran_ is oc.OandaGrn.M1:
+            _width = 1 * 60 * 1000
+
+        _width = _width * self.__WIDE_SCALE
+        return _width
 
 
 class CandleStick(object):
@@ -24,29 +103,15 @@ class CandleStick(object):
         引数[Args]:
             None
         """
-        # Pandas data label
-        self.__TIME = "time"
-        self.__VOLUME = "volume"
-        self.__OPEN = "open"
-        self.__HIGH = "high"
-        self.__LOW = "low"
-        self.__CLOSE = "close"
-
-        self.__WIDE = 12 * 60 * 60 * 1000  # half day in ms
-        self.__WIDE_SCALE = 0.2
-
         self.__CND_INC_COLOR = "#E73B3A"
         self.__CND_DEC_COLOR = "#03C103"
         self.__CND_EQU_COLOR = "#FFFF00"
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
 
-        self.__incsrc = ColumnDataSource(
-            dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[]))
-        self.__decsrc = ColumnDataSource(
-            dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[]))
-        self.__equsrc = ColumnDataSource(
-            dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[]))
+        self.__glyinc = CandleGlyph(self.__CND_INC_COLOR)
+        self.__glydec = CandleGlyph(self.__CND_DEC_COLOR)
+        self.__glyequ = CandleGlyph(self.__CND_EQU_COLOR)
 
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=oc.OandaEnv.PRACTICE)
@@ -80,34 +145,23 @@ class CandleStick(object):
 
         # convert List to pandas data frame
         df = pd.DataFrame(data)
-        df.columns = [self.__TIME,
-                      self.__VOLUME,
-                      self.__OPEN,
-                      self.__HIGH,
-                      self.__LOW,
-                      self.__CLOSE]
-        df = df.set_index(self.__TIME)
+        df.columns = [_TIME,
+                      _VOLUME,
+                      _OPEN,
+                      _HIGH,
+                      _LOW,
+                      _CLOSE]
+        df = df.set_index(_TIME)
         # date型を整形する
         df.index = pd.to_datetime(df.index)
 
-        incflg = df[self.__CLOSE] > df[self.__OPEN]
-        decflg = df[self.__OPEN] > df[self.__CLOSE]
-        equflg = df[self.__CLOSE] == df[self.__OPEN]
+        incflg = df[_CLOSE] > df[_OPEN]
+        decflg = df[_OPEN] > df[_CLOSE]
+        equflg = df[_CLOSE] == df[_OPEN]
 
-        self.__incsrc.data = self.__df2datsrc(df[incflg])
-        self.__decsrc.data = self.__df2datsrc(df[decflg])
-        self.__equsrc.data = self.__df2datsrc(df[equflg])
-        #self.__src.stream(new_)
-
-    def __df2datsrc(self, df):
-        new_ = dict(
-            xdt=df.index.tolist(),
-            ylo=df[self.__LOW].astype(float).values.tolist(),
-            yhi=df[self.__HIGH].astype(float).values.tolist(),
-            yop=df[self.__OPEN].astype(float).values.tolist(),
-            ycl=df[self.__CLOSE].astype(float).values.tolist(),
-        )
-        return new_
+        self.__glyinc.set_data(df[incflg], gran_)
+        self.__glydec.set_data(df[decflg], gran_)
+        self.__glyequ.set_data(df[equflg], gran_)
 
     def get_widget(self, fig_width=1000):
 
@@ -126,22 +180,13 @@ class CandleStick(object):
             title="Candlestick example"
         )
 
-        self.__add_candle(plt_main, self.__incsrc, self.__CND_INC_COLOR)
-        self.__add_candle(plt_main, self.__decsrc, self.__CND_DEC_COLOR)
-        self.__add_candle(plt_main, self.__equsrc, self.__CND_EQU_COLOR)
+        self.__glyinc.add_plot(plt_main)
+        self.__glydec.add_plot(plt_main)
+        self.__glyequ.add_plot(plt_main)
 
         plt_main.xaxis.major_label_orientation = pi / 4
         plt_main.grid.grid_line_alpha = 0.3
         return plt_main
-
-    def __add_candle(self, plt, src, color):
-        glyph = Segment(x0="xdt", y0="ylo", x1="xdt", y1="yhi",
-                        line_color=color, line_width=1)
-        plt.add_glyph(src, glyph)
-        glyph = VBar(x="xdt", top="yop", bottom="ycl",
-                     width=self.__WIDE, fill_color=color,
-                     line_width=0, line_color=color)
-        plt.add_glyph(src, glyph)
 
     def __change_dt_fmt(self, granularity, dt):
         """"日付フォーマットの変換メソッド

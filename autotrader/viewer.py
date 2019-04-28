@@ -5,9 +5,6 @@ from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
 import autotrader.oanda_common as oc
 from oandapyV20.exceptions import V20Error
-import logging
-
-logging.basicConfig(filename='logfile/logger.log', level=logging.DEBUG)
 
 
 class Viewer(object):
