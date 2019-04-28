@@ -1,6 +1,6 @@
 from math import pi
-from bokeh.layouts import column
-from bokeh.models import RangeTool, ColumnDataSource
+from bokeh.layouts import Column, column
+from bokeh.models import Range1d, RangeTool, ColumnDataSource
 from bokeh.plotting import figure, output_file
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
@@ -108,6 +108,7 @@ class CandleStick(object):
         self.__CND_EQU_COLOR = "#FFFF00"
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
+        self.__WIDE_SCALE = 0.2
 
         self.__glyinc = CandleGlyph(self.__CND_INC_COLOR)
         self.__glydec = CandleGlyph(self.__CND_DEC_COLOR)
@@ -165,6 +166,19 @@ class CandleStick(object):
         self.__glydec.set_data(df[decflg], gran)
         self.__glyequ.set_data(df[equflg], gran)
 
+        len_ = int(len(df) * self.__WIDE_SCALE)
+        self.__mainst = df.index[-len_]
+        self.__mained = oc.OandaGrn.offset(df.index[-1], gran)
+
+        self.__rngst = df.index[0]
+        self.__rnged = self.__mained
+        print("mainst = {}" .format(self.__mainst))
+        print("mained = {}" .format(self.__mained))
+        print("rngst = {}" .format(self.__rngst))
+        print("rnged = {}" .format(self.__rnged))
+        self.__main_range = Range1d(self.__mainst, self.__mained)
+        self.__rng_range = Range1d(self.__rngst, self.__rnged)
+
     def get_widget(self):
 
         set_tools = bc.ToolType.gen_str(bc.ToolType.WHEEL_ZOOM,
@@ -176,9 +190,11 @@ class CandleStick(object):
             plot_height=400,
             x_axis_type=bc.AxisTyp.X_DATETIME,
             tools=set_tools,
+            # x_range=[self.__mainst, self.__mained],
             background_fill_color=self.__BG_COLOR,
             title="Candlestick Chart"
         )
+        plt_main.x_range = Range1d(self.__mainst, self.__mained)
 
         self.__glyinc.add_plot(plt_main)
         self.__glydec.add_plot(plt_main)
@@ -186,7 +202,34 @@ class CandleStick(object):
 
         plt_main.xaxis.major_label_orientation = pi / 4
         plt_main.grid.grid_line_alpha = 0.3
-        return plt_main
+
+        # --------------- レンジツールfigure ---------------
+        plt_rang = figure(
+            plot_height=100,
+            plot_width=plt_main.plot_width,
+            # x_range=[self.__rngst, self.__rnged],
+            y_range=plt_main.y_range,
+            x_axis_type=bc.AxisTyp.X_DATETIME,
+            background_fill_color=self.__BG_COLOR,
+            toolbar_location=None,
+        )
+        plt_rang.x_range = Range1d(self.__rngst, self.__rnged)
+
+        plt_rang.xaxis.major_label_orientation = pi / 4
+        plt_rang.grid.grid_line_alpha = 0.3
+
+        self.__glyinc.add_plot(plt_rang)
+        self.__glydec.add_plot(plt_rang)
+        self.__glyequ.add_plot(plt_rang)
+
+        # range_tool = RangeTool(x_range=plt_main.x_range)
+        range_tool = RangeTool()
+        range_tool.x_range = plt_main.x_range
+
+        plt_rang.add_tools(range_tool)
+        plt_rang.toolbar.active_multi = range_tool
+
+        return plt_main, plt_rang
 
     def __change_dt_fmt(self, granularity, dt):
         """"日付フォーマットの変換メソッド

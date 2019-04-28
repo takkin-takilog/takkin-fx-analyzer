@@ -244,26 +244,27 @@ class Viewer(object):
         w2 = self.__widsel_gran
 
         wbox1 = row(children=[w1, w2])
-        fig = self.__widcs.get_widget()
+        fig_main, fig_rng = self.__widcs.get_widget()
 
         point_events = [
             events.Tap, events.DoubleTap, events.Press,
             events.MouseMove, events.MouseEnter, events.MouseLeave
         ]
         point_attributes = ['x', 'y', 'sx', 'sy']  # Point events
-        div = Div(width=400, height=fig.plot_height, height_policy="fixed")
+        div = Div(width=400, height=400, height_policy="fixed")
 
         for event in point_events:
-            fig.js_on_event(event, self.__callback_disp(
+            fig_main.js_on_event(event, self.__callback_disp(
                 div, attributes=point_attributes))
 
-        fig.on_event(events.Tap, self.__callback_tap)
-        fig.on_event(events.Press, self.__callback_press)
+        fig_main.on_event(events.Tap, self.__callback_tap)
+        fig_main.on_event(events.Press, self.__callback_press)
 
         layout = gridplot(
             [
                 [wbox1],
-                [fig, div],
+                [fig_main, div],
+                [fig_rng],
                 [self.__text_input]
             ],
             merge_tools=False)
