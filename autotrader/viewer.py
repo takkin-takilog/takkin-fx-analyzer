@@ -4,6 +4,10 @@ from bokeh.models.widgets import Select, TextInput
 from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
 import autotrader.oanda_common as oc
+from oandapyV20.exceptions import V20Error
+import logging
+
+logging.basicConfig(filename='logfile/logger.log', level=logging.DEBUG)
 
 
 class Viewer(object):
@@ -44,7 +48,7 @@ class Viewer(object):
         Args:
             None
         """
-        self.__DISP_NUM = 30
+        self.__DISP_NUM = 100
 
         # 辞書登録：通貨ペア
         self.__INST_DICT = {
@@ -93,11 +97,9 @@ class Viewer(object):
         # Widgetセレクト（期間）
         GRAN_OPS = [
             self.GRAN_W, self.GRAN_D, self.GRAN_H12, self.GRAN_H8,
-            self.GRAN_H6, self.GRAN_H4, self.GRAN_H3, self.GRAN_H2,
-            self.GRAN_H1, self.GRAN_M30, self.GRAN_M15, self.GRAN_M10,
-            self.GRAN_M5, self.GRAN_M4, self.GRAN_M3, self.GRAN_M2,
-            self.GRAN_M1, self.GRAN_S30, self.GRAN_S15, self.GRAN_S10,
-            self.GRAN_S5
+            self.GRAN_H6, self.GRAN_H4, self.GRAN_H2, self.GRAN_H1,
+            self.GRAN_M30, self.GRAN_M15, self.GRAN_M10, self.GRAN_M5,
+            self.GRAN_M1
         ]
 
         self.__widsel_gran = Select(title="期間:",
@@ -113,65 +115,54 @@ class Viewer(object):
         self.__dt_from = from_
 
         self.__widcs = cdl.CandleStick()
-        self.__widcs.fetch(self.__gran, self.__inst,
-                           self.__dt_from, self.__dt_to)
+        try:
+            self.__widcs.fetch(self.__gran, self.__inst,
+                               self.__dt_from, self.__dt_to)
+        except V20Error as v20err:
+            print("-----V20Error: {}".format(v20err))
+        except ConnectionError as cerr:
+            print("----- ConnectionError: {}".format(cerr))
+        except Exception as err:
+            print("----- ExceptionError: {}".format(err))
 
     def __get_gran(self, gran, num):
 
-        now_ = datetime.now()
+        # 標準時の現在時刻を取得
+        now_ = datetime.now() - timedelta(hours=9)
+        to_ = datetime(now_.year, now_.month, now_.day,
+                       now_.hour, now_.minute, now_.second)
+
         if gran is oc.OandaGrn.D:
-            print("---1D---")
-            to_ = datetime(now_.year, now_.month, now_.day - 1,
-                           now_.hour, now_.minute, now_.second)
             from_ = to_ - timedelta(days=num)
         elif gran is oc.OandaGrn.H12:
-            print("---12H---")
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(hours=num * 12)
         elif gran is oc.OandaGrn.H8:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(hours=num * 8)
         elif gran is oc.OandaGrn.H6:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(hours=num * 6)
         elif gran is oc.OandaGrn.H4:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(hours=num * 4)
         elif gran is oc.OandaGrn.H3:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(hours=num * 3)
         elif gran is oc.OandaGrn.H2:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(hours=num * 2)
         elif gran is oc.OandaGrn.H1:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(hours=num)
         elif gran is oc.OandaGrn.M30:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(minutes=num * 30)
         elif gran is oc.OandaGrn.M15:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(minutes=num * 15)
         elif gran is oc.OandaGrn.M10:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(minutes=num * 10)
         elif gran is oc.OandaGrn.M5:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(minutes=num * 5)
+        elif gran is oc.OandaGrn.M4:
+            from_ = to_ - timedelta(minutes=num * 4)
+        elif gran is oc.OandaGrn.M3:
+            from_ = to_ - timedelta(minutes=num * 3)
+        elif gran is oc.OandaGrn.M2:
+            from_ = to_ - timedelta(minutes=num * 2)
         elif gran is oc.OandaGrn.M1:
-            to_ = datetime(now_.year, now_.month, now_.day,
-                           now_.hour - 12, now_.minute, now_.second)
             from_ = to_ - timedelta(minutes=num)
 
         return to_, from_
@@ -187,8 +178,15 @@ class Viewer(object):
         """
         self.__debug_text_inst.value = new
         self.__inst = self.__INST_DICT[new]
-        self.__widcs.fetch(self.__gran, self.__inst,
-                           self.__dt_from, self.__dt_to)
+        try:
+            self.__widcs.fetch(self.__gran, self.__inst,
+                               self.__dt_from, self.__dt_to)
+        except V20Error as v20err:
+            print("-----V20Error: {}".format(v20err))
+        except ConnectionError as cerr:
+            print("----- ConnectionError: {}".format(cerr))
+        except Exception as err:
+            print("----- ExceptionError: {}".format(err))
 
     def __sel_gran_callback(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
@@ -204,14 +202,17 @@ class Viewer(object):
         to_, from_ = self.__get_gran(self.__gran, self.__DISP_NUM)
         self.__dt_to = to_
         self.__dt_from = from_
-        self.__widcs.fetch(self.__gran, self.__inst,
-                           self.__dt_from, self.__dt_to)
+        try:
+            self.__widcs.fetch(self.__gran, self.__inst,
+                               self.__dt_from, self.__dt_to)
+        except V20Error as v20err:
+            print("-----V20Error: {}".format(v20err))
+        except ConnectionError as cerr:
+            print("----- ConnectionError: {}".format(cerr))
+        except Exception as err:
+            print("----- ExceptionError: {}".format(err))
 
     def get_layout(self):
-        """
-        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from,
-                           self.__dt_to)
-        """
         layout = gridplot(
             [
                 [self.__widsel_inst, self.__widsel_gran],

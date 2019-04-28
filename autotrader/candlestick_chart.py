@@ -2,8 +2,10 @@ from math import pi
 from bokeh.layouts import column
 from bokeh.models import RangeTool, ColumnDataSource
 from bokeh.plotting import figure, output_file
-from oandapyV20 import API
 from bokeh.models.glyphs import Segment, VBar
+from oandapyV20 import API
+from oandapyV20.exceptions import V20Error
+from retrying import retry
 import datetime
 import oandapyV20.endpoints.instruments as inst
 import pandas as pd
@@ -49,6 +51,7 @@ class CandleStick(object):
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=oc.OandaEnv.PRACTICE)
 
+    @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran_, inst_, dt_from, dt_to):
 
         params_ = {
@@ -60,7 +63,11 @@ class CandleStick(object):
 
         # APIへ過去データをリクエスト
         ic = inst.InstrumentsCandles(instrument=inst_, params=params_)
-        self.__api.request(ic)
+
+        try:
+            self.__api.request(ic)
+        except Exception as err:
+            raise err
 
         data = []
         for raw in ic.response[oc.OandaRsp.CNDL]:
@@ -175,6 +182,15 @@ class CandleStick(object):
         elif granularity is oc.OandaGrn.M5:
             hour_ = tdt.hour
             minute_ = 5 * (tdt.minute // 5)
+        elif granularity is oc.OandaGrn.M4:
+            hour_ = tdt.hour
+            minute_ = 4 * (tdt.minute // 4)
+        elif granularity is oc.OandaGrn.M3:
+            hour_ = tdt.hour
+            minute_ = 3 * (tdt.minute // 3)
+        elif granularity is oc.OandaGrn.M2:
+            hour_ = tdt.hour
+            minute_ = 2 * (tdt.minute // 2)
         elif granularity is oc.OandaGrn.M1:
             hour_ = tdt.hour
             minute_ = 1 * (tdt.minute // 1)
