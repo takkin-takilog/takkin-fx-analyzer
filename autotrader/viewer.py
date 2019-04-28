@@ -1,6 +1,6 @@
 from bokeh.io import show
 from bokeh.layouts import gridplot
-from bokeh.models.widgets import Select, TextInput
+from bokeh.models.widgets import Select
 from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
 import autotrader.oanda_common as oc
@@ -78,9 +78,6 @@ class Viewer(object):
             self.GRAN_D: oc.OandaGrn.D,
             self.GRAN_W: oc.OandaGrn.W
         }
-
-        self.__debug_text_inst = TextInput(value=inst_def, title="debug text:")
-        self.__debug_text_gran = TextInput(value=gran_def, title="debug text:")
 
         # Widgetセレクト（通貨ペア）
         INST_OPS = [
@@ -173,7 +170,6 @@ class Viewer(object):
         戻り値[Returns]:
             None
         """
-        self.__debug_text_inst.value = new
         self.__inst = self.__INST_DICT[new]
         try:
             self.__widcs.fetch(self.__gran, self.__inst,
@@ -194,7 +190,6 @@ class Viewer(object):
         戻り値[Returns]:
             なし[None]
         """
-        self.__debug_text_gran.value = new
         self.__gran = self.__GRAN_DICT[new]
         to_, from_ = self.__get_gran(self.__gran, self.__DISP_NUM)
         self.__dt_to = to_
@@ -213,7 +208,6 @@ class Viewer(object):
         layout = gridplot(
             [
                 [self.__widsel_inst, self.__widsel_gran],
-                [self.__debug_text_inst, self.__debug_text_gran],
                 [self.__widcs.get_widget(fig_width=1000), None],
             ],
             merge_tools=False)

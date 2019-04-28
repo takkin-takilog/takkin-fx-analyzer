@@ -163,7 +163,7 @@ class CandleStick(object):
         self.__glydec.set_data(df[decflg], gran_)
         self.__glyequ.set_data(df[equflg], gran_)
 
-    def get_widget(self, fig_width=1000):
+    def get_widget(self):
 
         set_tools = bc.ToolType.gen_str(bc.ToolType.XPAN,
                                         bc.ToolType.WHEEL_ZOOM,
@@ -173,11 +173,10 @@ class CandleStick(object):
 
         plt_main = figure(
             plot_height=400,
-            plot_width=fig_width,
             x_axis_type=bc.AxisTyp.X_DATETIME,
             tools=set_tools,
             background_fill_color=self.__BG_COLOR,
-            title="Candlestick example"
+            title="Candlestick Chart"
         )
 
         self.__glyinc.add_plot(plt_main)
