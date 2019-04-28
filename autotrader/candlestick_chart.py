@@ -57,7 +57,7 @@ class CandleGlyph(object):
 
         _width = 1
         if gran_ is oc.OandaGrn.D:
-            _width = 24 * 60 * 60 * 1000  # half day in ms
+            _width = 24 * 60 * 60 * 1000
         elif gran_ is oc.OandaGrn.H12:
             _width = 12 * 60 * 60 * 1000
         elif gran_ is oc.OandaGrn.H8:

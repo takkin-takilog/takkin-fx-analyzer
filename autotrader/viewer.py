@@ -208,7 +208,7 @@ class Viewer(object):
         layout = gridplot(
             [
                 [self.__widsel_inst, self.__widsel_gran],
-                [self.__widcs.get_widget(fig_width=1000), None],
+                [self.__widcs.get_widget(), None],
             ],
             merge_tools=False)
         return(layout)
