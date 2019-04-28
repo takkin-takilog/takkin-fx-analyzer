@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
 import autotrader.oanda_common as oc
 from oandapyV20.exceptions import V20Error
-from bokeh.models import PointDrawTool
+
 
 class Viewer(object):
     """ Viewer
@@ -235,7 +235,6 @@ class Viewer(object):
         self.__text_input.value = "Tap: " + str_
 
     def __callback_press(self, event):
-        import autotrader.bokeh_common as bc
         date = datetime.fromtimestamp(int(event.x) / 1000)
         str_ = str(date) + ":" + str(event.y)
         self.__text_input.value = "Press: " + str_

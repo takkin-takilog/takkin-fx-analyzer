@@ -38,7 +38,7 @@ class CandleGlyph(object):
                              line_width=0,
                              line_color=self.__COLOR)
 
-    def set_data(self, df, gran_):
+    def set_data(self, df, gran):
 
         self.__src.data = dict(
             xdt=df.index.tolist(),
@@ -47,46 +47,46 @@ class CandleGlyph(object):
             yop=df[_OPEN].astype(float).values.tolist(),
             ycl=df[_CLOSE].astype(float).values.tolist(),
         )
-        self.__glvbar.width = self.__get_width(gran_)
+        self.__glvbar.width = self.__get_width(gran)
 
     def add_plot(self, plt):
         plt.add_glyph(self.__src, self.__glyseg)
         plt.add_glyph(self.__src, self.__glvbar)
 
-    def __get_width(self, gran_):
+    def __get_width(self, gran):
 
         _width = 1
-        if gran_ is oc.OandaGrn.D:
+        if gran is oc.OandaGrn.D:
             _width = 24 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.H12:
+        elif gran is oc.OandaGrn.H12:
             _width = 12 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.H8:
+        elif gran is oc.OandaGrn.H8:
             _width = 8 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.H6:
+        elif gran is oc.OandaGrn.H6:
             _width = 6 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.H4:
+        elif gran is oc.OandaGrn.H4:
             _width = 4 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.H3:
+        elif gran is oc.OandaGrn.H3:
             _width = 3 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.H2:
+        elif gran is oc.OandaGrn.H2:
             _width = 2 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.H1:
+        elif gran is oc.OandaGrn.H1:
             _width = 1 * 60 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M30:
+        elif gran is oc.OandaGrn.M30:
             _width = 30 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M15:
+        elif gran is oc.OandaGrn.M15:
             _width = 15 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M10:
+        elif gran is oc.OandaGrn.M10:
             _width = 10 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M5:
+        elif gran is oc.OandaGrn.M5:
             _width = 5 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M4:
+        elif gran is oc.OandaGrn.M4:
             _width = 4 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M3:
+        elif gran is oc.OandaGrn.M3:
             _width = 3 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M2:
+        elif gran is oc.OandaGrn.M2:
             _width = 2 * 60 * 1000
-        elif gran_ is oc.OandaGrn.M1:
+        elif gran is oc.OandaGrn.M1:
             _width = 1 * 60 * 1000
 
         _width = _width * self.__WIDE_SCALE
@@ -117,13 +117,13 @@ class CandleStick(object):
                          environment=oc.OandaEnv.PRACTICE)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
-    def fetch(self, gran_, inst_, dt_from, dt_to):
+    def fetch(self, gran, inst_, dt_from, dt_to):
 
         params_ = {
             # "alignmentTimezone": "Japan",
             "from": dt_from.strftime(self.__DT_FMT),
             "to": dt_to.strftime(self.__DT_FMT),
-            "granularity": gran_
+            "granularity": gran
         }
 
         # APIへ過去データをリクエスト
@@ -135,7 +135,7 @@ class CandleStick(object):
 
         data = []
         for raw in ic.response[oc.OandaRsp.CNDL]:
-            dt_ = oc.OandaGrn.convert_dtfmt(gran_, raw[oc.OandaRsp.TIME],
+            dt_ = oc.OandaGrn.convert_dtfmt(gran, raw[oc.OandaRsp.TIME],
                                             dt_ofs=datetime.timedelta(hours=9),
                                             fmt=self.__DT_FMT)
             data.append([dt_,
@@ -161,15 +161,14 @@ class CandleStick(object):
         decflg = df[_OPEN] > df[_CLOSE]
         equflg = df[_CLOSE] == df[_OPEN]
 
-        self.__glyinc.set_data(df[incflg], gran_)
-        self.__glydec.set_data(df[decflg], gran_)
-        self.__glyequ.set_data(df[equflg], gran_)
+        self.__glyinc.set_data(df[incflg], gran)
+        self.__glydec.set_data(df[decflg], gran)
+        self.__glyequ.set_data(df[equflg], gran)
 
     def get_widget(self):
 
-        set_tools = bc.ToolType.gen_str(bc.ToolType.XPAN,
-                                        bc.ToolType.WHEEL_ZOOM,
-                                        bc.ToolType.BOX_ZOOM,
+        set_tools = bc.ToolType.gen_str(bc.ToolType.WHEEL_ZOOM,
+                                        bc.ToolType.XBOX_ZOOM,
                                         bc.ToolType.RESET,
                                         bc.ToolType.SAVE)
 
