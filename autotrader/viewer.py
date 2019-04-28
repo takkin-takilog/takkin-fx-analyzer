@@ -1,12 +1,9 @@
-from bokeh.io import output_file, show
-from bokeh.layouts import widgetbox, gridplot
+from bokeh.io import show
+from bokeh.layouts import gridplot
 from bokeh.models.widgets import Select, TextInput
-from bokeh.io import curdoc
 import datetime
-
-import autotrader.widget.candlestick_chart as cdl
-from autotrader.widget import oanda_common as oc
-from bokeh.layouts import column, row
+import autotrader.candlestick_chart as cdl
+import autotrader.oanda_common as oc
 
 
 class Viewer(object):
