@@ -1,0 +1,1 @@
+# takkin-fx-autotrader
