@@ -46,9 +46,9 @@ class Viewer(object):
         """
 
         self.__dt_from = datetime.datetime(
-            year=2018, month=1, day=1, hour=0, minute=0, second=0)
+            year=2019, month=1, day=1, hour=0, minute=0, second=0)
         self.__dt_to = datetime.datetime(
-            year=2019, month=2, day=1, hour=12, minute=0, second=0)
+            year=2019, month=3, day=20, hour=12, minute=0, second=0)
 
         # 辞書登録：通貨ペア
         self.__INST_DICT = {
@@ -112,6 +112,8 @@ class Viewer(object):
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
+        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from, self.__dt_to)
+
     def __sel_inst_callback(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
         引数[Args]:
@@ -123,6 +125,7 @@ class Viewer(object):
         """
         self.__debug_text_inst.value = new
         self.__inst = self.__INST_DICT[new]
+        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from, self.__dt_to)
 
     def __sel_gran_callback(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
@@ -135,15 +138,18 @@ class Viewer(object):
         """
         self.__debug_text_gran.value = new
         self.__gran = self.__GRAN_DICT[new]
+        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from, self.__dt_to)
 
     def get_layout(self):
+        """
         self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from,
                            self.__dt_to)
+        """
         layout = gridplot(
             [
                 [self.__widsel_inst, self.__widsel_gran],
                 [self.__debug_text_inst, self.__debug_text_gran],
-                [None, self.__widcs.get_widget(fig_width=1000)],
+                [self.__widcs.get_widget(fig_width=1000), None],
             ],
             merge_tools=False)
         return(layout)
