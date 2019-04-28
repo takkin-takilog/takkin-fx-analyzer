@@ -109,6 +109,8 @@ class Viewer(object):
         self.__widsel_gran.on_change("value", self.__sel_gran_callback)
 
         self.__widcs = cdl.CandleStick()
+        self.__inst = self.__INST_DICT[inst_def]
+        self.__gran = self.__GRAN_DICT[gran_def]
 
     def __sel_inst_callback(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
@@ -120,6 +122,7 @@ class Viewer(object):
             None
         """
         self.__debug_text_inst.value = new
+        self.__inst = self.__INST_DICT[new]
 
     def __sel_gran_callback(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
@@ -131,11 +134,10 @@ class Viewer(object):
             なし[None]
         """
         self.__debug_text_gran.value = new
+        self.__gran = self.__GRAN_DICT[new]
 
     def get_layout(self):
-        granularity = self.__GRAN_DICT[self.__widsel_gran.value]
-        instrument = self.__INST_DICT[self.__widsel_inst.value]
-        self.__widcs.fetch(granularity, instrument, self.__dt_from,
+        self.__widcs.fetch(self.__gran, self.__inst, self.__dt_from,
                            self.__dt_to)
         layout = gridplot(
             [
