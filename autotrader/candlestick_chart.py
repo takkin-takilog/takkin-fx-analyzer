@@ -117,6 +117,37 @@ class CandleStick(object):
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=oc.OandaEnv.PRACTICE)
 
+        set_tools = bc.ToolType.gen_str(bc.ToolType.WHEEL_ZOOM,
+                                        bc.ToolType.XBOX_ZOOM,
+                                        bc.ToolType.RESET,
+                                        bc.ToolType.SAVE)
+
+        # Main chart figure
+        self.__plt_main = figure(
+            plot_height=400,
+            x_axis_type=bc.AxisTyp.X_DATETIME,
+            tools=set_tools,
+            # x_range=[self.__mainst, self.__mained],
+            background_fill_color=self.__BG_COLOR,
+            title="Candlestick Chart"
+        )
+        self.__plt_main.xaxis.major_label_orientation = pi / 4
+        self.__plt_main.grid.grid_line_alpha = 0.3
+
+        # Range chart figure
+        self.__plt_rang = figure(
+            plot_height=100,
+            plot_width=self.__plt_main.plot_width,
+            # x_range=[self.__rngst, self.__rnged],
+            y_range=self.__plt_main.y_range,
+            x_axis_type=bc.AxisTyp.X_DATETIME,
+            background_fill_color=self.__BG_COLOR,
+            toolbar_location=None,
+        )
+
+        self.__plt_rang.xaxis.major_label_orientation = pi / 4
+        self.__plt_rang.grid.grid_line_alpha = 0.3
+
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst_, dt_from, dt_to):
 
@@ -176,60 +207,30 @@ class CandleStick(object):
         print("mained = {}" .format(self.__mained))
         print("rngst = {}" .format(self.__rngst))
         print("rnged = {}" .format(self.__rnged))
-        self.__main_range = Range1d(self.__mainst, self.__mained)
-        self.__rng_range = Range1d(self.__rngst, self.__rnged)
+
+        self.__plt_main.x_range.start = self.__mainst
+        self.__plt_main.x_range.end = self.__mained
+        self.__plt_rang.x_range.start = self.__rngst
+        self.__plt_rang.x_range.end = self.__rnged
 
     def get_widget(self):
 
-        set_tools = bc.ToolType.gen_str(bc.ToolType.WHEEL_ZOOM,
-                                        bc.ToolType.XBOX_ZOOM,
-                                        bc.ToolType.RESET,
-                                        bc.ToolType.SAVE)
+        self.__glyinc.add_plot(self.__plt_main)
+        self.__glydec.add_plot(self.__plt_main)
+        self.__glyequ.add_plot(self.__plt_main)
 
-        plt_main = figure(
-            plot_height=400,
-            x_axis_type=bc.AxisTyp.X_DATETIME,
-            tools=set_tools,
-            # x_range=[self.__mainst, self.__mained],
-            background_fill_color=self.__BG_COLOR,
-            title="Candlestick Chart"
-        )
-        plt_main.x_range = Range1d(self.__mainst, self.__mained)
+        self.__glyinc.add_plot(self.__plt_rang)
+        self.__glydec.add_plot(self.__plt_rang)
+        self.__glyequ.add_plot(self.__plt_rang)
 
-        self.__glyinc.add_plot(plt_main)
-        self.__glydec.add_plot(plt_main)
-        self.__glyequ.add_plot(plt_main)
-
-        plt_main.xaxis.major_label_orientation = pi / 4
-        plt_main.grid.grid_line_alpha = 0.3
-
-        # --------------- レンジツールfigure ---------------
-        plt_rang = figure(
-            plot_height=100,
-            plot_width=plt_main.plot_width,
-            # x_range=[self.__rngst, self.__rnged],
-            y_range=plt_main.y_range,
-            x_axis_type=bc.AxisTyp.X_DATETIME,
-            background_fill_color=self.__BG_COLOR,
-            toolbar_location=None,
-        )
-        plt_rang.x_range = Range1d(self.__rngst, self.__rnged)
-
-        plt_rang.xaxis.major_label_orientation = pi / 4
-        plt_rang.grid.grid_line_alpha = 0.3
-
-        self.__glyinc.add_plot(plt_rang)
-        self.__glydec.add_plot(plt_rang)
-        self.__glyequ.add_plot(plt_rang)
-
-        # range_tool = RangeTool(x_range=plt_main.x_range)
+        # range_tool = RangeTool(x_range=self.__plt_main.x_range)
         range_tool = RangeTool()
-        range_tool.x_range = plt_main.x_range
+        range_tool.x_range = Range1d(self.__mainst, self.__mained)
 
-        plt_rang.add_tools(range_tool)
-        plt_rang.toolbar.active_multi = range_tool
+        self.__plt_rang.add_tools(range_tool)
+        self.__plt_rang.toolbar.active_multi = range_tool
 
-        return plt_main, plt_rang
+        return self.__plt_main, self.__plt_rang
 
     def __change_dt_fmt(self, granularity, dt):
         """"日付フォーマットの変換メソッド
