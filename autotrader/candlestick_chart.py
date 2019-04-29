@@ -135,13 +135,15 @@ class CandleStick(object):
 
         # Range chart figure
         self.__plt_rang = figure(
-            plot_height=100,
+            plot_height=70,
             plot_width=self.__plt_main.plot_width,
             y_range=self.__plt_main.y_range,
             x_axis_type=bc.AxisTyp.X_DATETIME,
             background_fill_color=self.__BG_COLOR,
             toolbar_location=None,
         )
+        self.__plt_rang.yaxis.visible = False
+        self.__plt_rang.ygrid.visible = False
         self.__plt_rang.xgrid.visible = False
 
         self.__range_tool = RangeTool()
