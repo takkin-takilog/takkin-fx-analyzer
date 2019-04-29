@@ -150,6 +150,11 @@ class CandleStick(object):
 
         self.__range_tool = RangeTool()
         self.__plt_rang.add_tools(self.__range_tool)
+        self.__plt_rang.toolbar.active_multi = self.__range_tool
+
+        self.__plt_main.x_range = Range1d()
+
+        # self__rng1d = Range1d()
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst_, dt_from, dt_to):
@@ -208,47 +213,19 @@ class CandleStick(object):
         self.__glydec.add_plot(self.__plt_rang)
         self.__glyequ.add_plot(self.__plt_rang)
 
-
-
-
         len_ = int(len(df) * self.__WIDE_SCALE)
         self.__mainst = df.index[-len_]
         self.__mained = oc.OandaGrn.offset(df.index[-1], gran)
 
         self.__rngst = df.index[0]
         self.__rnged = self.__mained
-        print("mainst = {}" .format(self.__mainst))
-        print("mained = {}" .format(self.__mained))
-        print("rngst = {}" .format(self.__rngst))
-        print("rnged = {}" .format(self.__rnged))
 
-        self.__plt_main.x_range = Range1d(self.__mainst, self.__mained)
-        # self.__plt_rang.x_range = Range1d(start=self.__rngst, end=self.__rnged)
-
-        #self.__plt_main.x_range.start = self.__mainst
-        #self.__plt_main.x_range.end = self.__mained
-        #self.__plt_rang.x_range.start = self.__rngst
-        #self.__plt_rang.x_range.end = self.__rnged
-        print("********** start **********")
-        print(self.__plt_main.x_range.start)
-        print("********** end **********")
-        print(self.__plt_main.x_range.end)
+        self.__plt_main.x_range.start = self.__mainst
+        self.__plt_main.x_range.end = self.__mained
 
         self.__range_tool.x_range = self.__plt_main.x_range
 
-        # self.__range_tool.x_range = Range1d(self.__mainst, self.__mained)
-        #self.__range_tool.x_range = Range1d(self.__mainst, self.__mained)
-        #self.__plt_rang.add_tools(self.__range_tool)
-        self.__plt_rang.toolbar.active_multi = self.__range_tool
-
-
     def get_widget(self):
-
-
-        # self.__range_tool = RangeTool(x_range=self.__plt_main.x_range)
-
-        # self.__plt_rang.add_tools(self.__range_tool)
-        # self.__plt_rang.toolbar.active_multi = self.__range_tool
 
         return self.__plt_main, self.__plt_rang
 
