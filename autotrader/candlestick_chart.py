@@ -131,6 +131,7 @@ class CandleStick(object):
         )
         self.__plt_main.xaxis.major_label_orientation = pi / 4
         self.__plt_main.grid.grid_line_alpha = 0.3
+        self.__plt_main.x_range = Range1d()
 
         # Range chart figure
         self.__plt_rang = figure(
@@ -141,7 +142,7 @@ class CandleStick(object):
             background_fill_color=self.__BG_COLOR,
             toolbar_location=None,
         )
-        self.__plt_main.x_range = Range1d()
+        self.__plt_rang.xgrid.visible = False
 
         self.__range_tool = RangeTool()
         self.__plt_rang.add_tools(self.__range_tool)
