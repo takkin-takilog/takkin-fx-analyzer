@@ -214,14 +214,8 @@ class CandleStick(object):
         self.__glyequ.add_plot(self.__plt_rang)
 
         len_ = int(len(df) * self.__WIDE_SCALE)
-        self.__mainst = df.index[-len_]
-        self.__mained = oc.OandaGrn.offset(df.index[-1], gran)
-
-        self.__rngst = df.index[0]
-        self.__rnged = self.__mained
-
-        self.__plt_main.x_range.start = self.__mainst
-        self.__plt_main.x_range.end = self.__mained
+        self.__plt_main.x_range.start = df.index[-len_]
+        self.__plt_main.x_range.end = oc.OandaGrn.offset(df.index[-1], gran)
 
         self.__range_tool.x_range = self.__plt_main.x_range
 
