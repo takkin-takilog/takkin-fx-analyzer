@@ -1,7 +1,6 @@
 from math import pi
-from bokeh.layouts import Column, column
 from bokeh.models import Range1d, RangeTool, ColumnDataSource
-from bokeh.plotting import figure, output_file
+from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
 from retrying import retry
@@ -127,7 +126,6 @@ class CandleStick(object):
             plot_height=400,
             x_axis_type=bc.AxisTyp.X_DATETIME,
             tools=set_tools,
-            # x_range=[self.__mainst, self.__mained],
             background_fill_color=self.__BG_COLOR,
             title="Candlestick Chart"
         )
@@ -138,23 +136,18 @@ class CandleStick(object):
         self.__plt_rang = figure(
             plot_height=100,
             plot_width=self.__plt_main.plot_width,
-            # x_range=[self.__rngst, self.__rnged],
             y_range=self.__plt_main.y_range,
             x_axis_type=bc.AxisTyp.X_DATETIME,
             background_fill_color=self.__BG_COLOR,
             toolbar_location=None,
         )
-
-        self.__plt_rang.xaxis.major_label_orientation = pi / 4
-        self.__plt_rang.grid.grid_line_alpha = 0.3
+        self.__plt_main.x_range = Range1d()
 
         self.__range_tool = RangeTool()
         self.__plt_rang.add_tools(self.__range_tool)
         self.__plt_rang.toolbar.active_multi = self.__range_tool
-
-        self.__plt_main.x_range = Range1d()
-
-        # self__rng1d = Range1d()
+        self.__plt_rang.xaxis.major_label_orientation = pi / 4
+        self.__plt_rang.grid.grid_line_alpha = 0.3
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst_, dt_from, dt_to):
