@@ -1,5 +1,5 @@
 from math import pi
-from bokeh.models import Range1d, RangeTool, ColumnDataSource
+from bokeh.models import Range1d, RangeTool, ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
@@ -23,18 +23,24 @@ _CLOSE = "close"
 
 class CandleGlyph(object):
 
+    XDT = "xdt"
+    YHI = "yhi"
+    YLO = "ylo"
+    YOP = "yop"
+    YCL = "ycl"
+
     def __init__(self, color_):
         self.__WIDE_SCALE = 0.5
         self.__COLOR = color_
+
         self.__src = ColumnDataSource(
             dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[])
         )
-        self.__glyseg = Segment(x0="xdt", y0="ylo", x1="xdt", y1="yhi",
-                                line_color=self.__COLOR,
+        self.__glyseg = Segment(x0=self.XDT, y0=self.YLO, x1=self.XDT,
+                                y1=self.YHI, line_color=self.__COLOR,
                                 line_width=1)
-        self.__glvbar = VBar(x="xdt", top="yop", bottom="ycl",
-                             fill_color=self.__COLOR,
-                             line_width=0,
+        self.__glvbar = VBar(x=self.XDT, top=self.YOP, bottom=self.YCL,
+                             fill_color=self.__COLOR, line_width=0,
                              line_color=self.__COLOR)
 
     def set_data(self, df, gran):
@@ -151,6 +157,15 @@ class CandleStick(object):
         self.__plt_rang.toolbar.active_multi = self.__range_tool
         self.__plt_rang.xaxis.major_label_orientation = pi / 4
         self.__plt_rang.grid.grid_line_alpha = 0.3
+
+        hover = HoverTool()
+        hover.formatters = {CandleGlyph.XDT: "datetime"}
+        hover.tooltips = [(_TIME, "@" + CandleGlyph.XDT+"{%F}"),
+                          (_HIGH, "@" + CandleGlyph.YHI),
+                          (_OPEN, "@" + CandleGlyph.YOP),
+                          (_CLOSE, "@" + CandleGlyph.YCL),
+                          (_LOW, "@" + CandleGlyph.YLO)]
+        self.__plt_main.add_tools(hover)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst_, dt_from, dt_to):
