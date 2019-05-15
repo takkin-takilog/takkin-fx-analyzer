@@ -5,6 +5,7 @@ from bokeh.models.widgets import Select, TextInput
 from bokeh import events
 from datetime import datetime, timedelta
 import autotrader.candlestick_chart as cdl
+import autotrader.oders as ord
 import autotrader.oanda_common as oc
 from oandapyV20.exceptions import V20Error
 
@@ -112,9 +113,10 @@ class Viewer(object):
         self.__dt_to = to_
         self.__dt_from = from_
 
-        self.__widcs = cdl.CandleStick()
+        self.__wicdl = cdl.CandleStick()
+        self.__widord = ord.Orders()
         try:
-            self.__widcs.fetch(self.__gran, self.__inst,
+            self.__wicdl.fetch(self.__gran, self.__inst,
                                self.__dt_from, self.__dt_to)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
@@ -176,7 +178,7 @@ class Viewer(object):
         """
         self.__inst = self.__INST_DICT[new]
         try:
-            self.__widcs.fetch(self.__gran, self.__inst,
+            self.__wicdl.fetch(self.__gran, self.__inst,
                                self.__dt_from, self.__dt_to)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
@@ -199,7 +201,7 @@ class Viewer(object):
         self.__dt_to = to_
         self.__dt_from = from_
         try:
-            self.__widcs.fetch(self.__gran, self.__inst,
+            self.__wicdl.fetch(self.__gran, self.__inst,
                                self.__dt_from, self.__dt_to)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
@@ -234,6 +236,11 @@ class Viewer(object):
         str_ = str(date) + ":" + str(event.y)
         self.__text_input.value = "Tap: " + str_
 
+        # fetch Open Order and Position
+        dt_ = datetime(year=2017, month=2, day=1,
+                           hour=12, minute=0, second=0)
+        self.__widord.fetch(self.__inst, dt_)
+
     def __callback_press(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000)
         str_ = str(date) + ":" + str(event.y)
@@ -244,7 +251,8 @@ class Viewer(object):
         w2 = self.__widsel_gran
 
         wbox1 = row(children=[w1, w2])
-        fig_main, fig_rng = self.__widcs.get_widget()
+        chart, rang = self.__wicdl.get_widget()
+        order, posi = self.__widord.get_widget()
 
         point_events = [
             events.Tap, events.DoubleTap, events.Press,
@@ -254,17 +262,23 @@ class Viewer(object):
         div = Div(width=400, height=400, height_policy="fixed")
 
         for event in point_events:
-            fig_main.js_on_event(event, self.__callback_disp(
+            chart.js_on_event(event, self.__callback_disp(
                 div, attributes=point_attributes))
 
-        fig_main.on_event(events.Tap, self.__callback_tap)
-        fig_main.on_event(events.Press, self.__callback_press)
+        chart.on_event(events.Tap, self.__callback_tap)
+        chart.on_event(events.Press, self.__callback_press)
+
+        chartlay = gridplot(
+            [
+                [order, posi, chart, div],
+                [None, None, rang],
+            ],
+            merge_tools=False)
 
         layout = gridplot(
             [
                 [wbox1],
-                [fig_main, div],
-                [fig_rng],
+                [chartlay],
                 [self.__text_input]
             ],
             merge_tools=False)

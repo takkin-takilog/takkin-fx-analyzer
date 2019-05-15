@@ -122,16 +122,16 @@ class CandleStick(object):
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=oc.OandaEnv.PRACTICE)
 
-        set_tools = bc.ToolType.gen_str(bc.ToolType.WHEEL_ZOOM,
-                                        bc.ToolType.XBOX_ZOOM,
-                                        bc.ToolType.RESET,
-                                        bc.ToolType.SAVE)
+        tools_ = bc.ToolType.gen_str(bc.ToolType.WHEEL_ZOOM,
+                                     bc.ToolType.XBOX_ZOOM,
+                                     bc.ToolType.RESET,
+                                     bc.ToolType.SAVE)
 
         # Main chart figure
         self.__plt_main = figure(
             plot_height=400,
             x_axis_type=bc.AxisTyp.X_DATETIME,
-            tools=set_tools,
+            tools=tools_,
             background_fill_color=self.__BG_COLOR,
             title="Candlestick Chart"
         )
