@@ -268,7 +268,6 @@ class CandleStick(object):
         戻り値[Returns]:
             self.__plt_main (figure) : メインfigure[main figure]
             self.__plt_rang (figure) : レンジfigure[range figure]
-            plt (figure) : bokehのfigureクラス[class of bokeh's figure]
         """
         return self.__plt_main, self.__plt_rang
 

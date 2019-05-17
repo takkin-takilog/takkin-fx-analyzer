@@ -1,13 +1,13 @@
 from bokeh.io import show
-from bokeh.layouts import gridplot, row, column, widgetbox
+from bokeh.layouts import gridplot, row
 from bokeh.models import CustomJS, Div
 from bokeh.models.widgets import Select, TextInput
 from bokeh import events
 from datetime import datetime, timedelta
-import autotrader.candlestick_chart as cdl
-import autotrader.oders as ord
-import autotrader.oanda_common as oc
 from oandapyV20.exceptions import V20Error
+import autotrader.candlestick_chart as cd
+import autotrader.oders as od
+import autotrader.oanda_common as oc
 
 
 class Viewer(object):
@@ -44,9 +44,10 @@ class Viewer(object):
     GRAN_W = "週足"
 
     def __init__(self, inst_def=INST_USDJPY, gran_def=GRAN_D):
-        """"コンストラクタ
-        Args:
-            None
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            inst_def (str) : 通貨ペア[instrument]
+            gran_def (str) : ローソク足の時間足[granularity of a candlestick]
         """
         self.__DISP_NUM = 100
 
@@ -109,12 +110,12 @@ class Viewer(object):
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
-        to_, from_ = self.__get_gran(self.__gran, self.__DISP_NUM)
+        from_, to_ = self.__get_period(self.__gran, self.__DISP_NUM)
         self.__dt_to = to_
         self.__dt_from = from_
 
-        self.__wicdl = cdl.CandleStick()
-        self.__widord = ord.Orders()
+        self.__wicdl = cd.CandleStick()
+        self.__widord = od.Orders()
         try:
             self.__wicdl.fetch(self.__gran, self.__inst,
                                self.__dt_from, self.__dt_to)
@@ -125,8 +126,15 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
-    def __get_gran(self, gran, num):
-
+    def __get_period(self, gran, num):
+        """"チャートを描写する期間を取得する[get period of chart]
+        引数[Args]:
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+            num (int) : ローソクの表示本数[number of drawn candlestick]
+        戻り値[Returns]:
+            from_ (datetime) : 開始日時[from date]
+            to_ (datetime) : 終了日時[to date]
+        """
         # 標準時の現在時刻を取得
         now_ = datetime.now() - timedelta(hours=9)
         to_ = datetime(now_.year, now_.month, now_.day,
@@ -165,7 +173,7 @@ class Viewer(object):
         elif gran is oc.OandaGrn.M1:
             from_ = to_ - timedelta(minutes=num)
 
-        return to_, from_
+        return from_, to_
 
     def __sel_inst_callback(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
@@ -197,7 +205,7 @@ class Viewer(object):
             なし[None]
         """
         self.__gran = self.__GRAN_DICT[new]
-        to_, from_ = self.__get_gran(self.__gran, self.__DISP_NUM)
+        from_, to_ = self.__get_period(self.__gran, self.__DISP_NUM)
         self.__dt_to = to_
         self.__dt_from = from_
         try:
@@ -247,6 +255,12 @@ class Viewer(object):
         self.__text_input.value = "Press: " + str_
 
     def get_layout(self):
+        """レイアウトを取得する[get layout]
+        引数[Args]:
+            None
+        戻り値[Returns]:
+            layout (layout) : レイアウト[layout]
+        """
         w1 = self.__widsel_inst
         w2 = self.__widsel_gran
 
@@ -286,4 +300,10 @@ class Viewer(object):
         return(layout)
 
     def view(self):
+        """描写する[view]
+        引数[Args]:
+            None
+        戻り値[Returns]:
+            None
+        """
         show(self.get_layout())
