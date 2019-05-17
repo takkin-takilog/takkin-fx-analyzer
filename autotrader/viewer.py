@@ -238,7 +238,7 @@ class Viewer(object):
 
         # fetch Open Order and Position
         dt_ = datetime(year=2017, month=2, day=1,
-                           hour=12, minute=0, second=0)
+                       hour=12, minute=0, second=0)
         self.__widord.fetch(self.__inst, dt_)
 
     def __callback_press(self, event):

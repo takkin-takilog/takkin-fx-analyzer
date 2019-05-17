@@ -4,8 +4,8 @@ from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
 from retrying import retry
-import datetime
-import oandapyV20.endpoints.instruments as inst
+import datetime as dt
+import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import autotrader.bokeh_common as bc
 import autotrader.oanda_common as oc
@@ -22,7 +22,9 @@ _CLOSE = "close"
 
 
 class CandleGlyph(object):
-
+    """ CandleGlyph
+            - ローソク図形定義クラス[Candle stick glyph definition class]
+    """
     XDT = "xdt"
     YHI = "yhi"
     YLO = "ylo"
@@ -30,6 +32,10 @@ class CandleGlyph(object):
     YCL = "ycl"
 
     def __init__(self, color_):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            None
+        """
         self.__WIDE_SCALE = 0.5
         self.__COLOR = color_
 
@@ -44,7 +50,13 @@ class CandleGlyph(object):
                              line_color=self.__COLOR)
 
     def set_data(self, df, gran):
-
+        """"データを設定する[set glyph date]
+        引数[Args]:
+            df (pandas data frame) : pandasデータフレーム[pandas data frame]
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+        戻り値[Returns]:
+            None
+        """
         self.__src.data = dict(
             xdt=df.index.tolist(),
             ylo=df[_LOW].astype(float).values.tolist(),
@@ -55,11 +67,22 @@ class CandleGlyph(object):
         self.__glvbar.width = self.__get_width(gran)
 
     def add_plot(self, plt):
+        """"プロットを追加する[add plot]
+        引数[Args]:
+            plt (figure) : bokehのfigureクラス[class of bokeh's figure]
+        戻り値[Returns]:
+            None
+        """
         plt.add_glyph(self.__src, self.__glyseg)
         plt.add_glyph(self.__src, self.__glvbar)
 
     def __get_width(self, gran):
-
+        """"ローソク足の幅を取得する[get candlestick width]
+        引数[Args]:
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+        戻り値[Returns]:
+            _width (int) : ローソク足の幅[candlestick width]
+        """
         _width = 1
         if gran is oc.OandaGrn.D:
             _width = 24 * 60 * 60 * 1000
@@ -160,7 +183,7 @@ class CandleStick(object):
 
         hover = HoverTool()
         hover.formatters = {CandleGlyph.XDT: "datetime"}
-        hover.tooltips = [(_TIME, "@" + CandleGlyph.XDT+"{%F}"),
+        hover.tooltips = [(_TIME, "@" + CandleGlyph.XDT + "{%F}"),
                           (_HIGH, "@" + CandleGlyph.YHI),
                           (_OPEN, "@" + CandleGlyph.YOP),
                           (_CLOSE, "@" + CandleGlyph.YCL),
@@ -168,8 +191,16 @@ class CandleStick(object):
         self.__plt_main.add_tools(hover)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
-    def fetch(self, gran, inst_, dt_from, dt_to):
-
+    def fetch(self, gran, inst, dt_from, dt_to):
+        """"ローソク足情報を取得する[fetch candles]
+        引数[Args]:
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+            inst (str) : 通貨ペア[instrument]
+            dt_from (datetime) : 開始日時[from date]
+            dt_to (datetime) : 終了日時[to date]
+        戻り値[Returns]:
+            None
+        """
         params_ = {
             # "alignmentTimezone": "Japan",
             "from": dt_from.strftime(self.__DT_FMT),
@@ -178,7 +209,7 @@ class CandleStick(object):
         }
 
         # APIへ過去データをリクエスト
-        ic = inst.InstrumentsCandles(instrument=inst_, params=params_)
+        ic = it.InstrumentsCandles(instrument=inst, params=params_)
         try:
             self.__api.request(ic)
         except Exception as err:
@@ -187,7 +218,7 @@ class CandleStick(object):
         data = []
         for raw in ic.response[oc.OandaRsp.CNDL]:
             dt_ = oc.OandaGrn.convert_dtfmt(gran, raw[oc.OandaRsp.TIME],
-                                            dt_ofs=datetime.timedelta(hours=9),
+                                            dt_ofs=dt.timedelta(hours=9),
                                             fmt=self.__DT_FMT)
             data.append([dt_,
                          raw[oc.OandaRsp.VLM],
@@ -231,61 +262,69 @@ class CandleStick(object):
         self.__range_tool.x_range = self.__plt_main.x_range
 
     def get_widget(self):
-
+        """"ウィジェットを取得する[get widget]
+        引数[Args]:
+            None
+        戻り値[Returns]:
+            self.__plt_main (figure) : メインfigure[main figure]
+            self.__plt_rang (figure) : レンジfigure[range figure]
+            plt (figure) : bokehのfigureクラス[class of bokeh's figure]
+        """
         return self.__plt_main, self.__plt_rang
 
-    def __change_dt_fmt(self, granularity, dt):
-        """"日付フォーマットの変換メソッド
+    def __change_dt_fmt(self, gran, date_):
+        """"日付フォーマットを変換する[change datetime format]
         引数[Args]:
-            granularity (str): 時間足[Candle stick granularity]
-            dt (str): DT_FMT形式でフォーマットされた日付
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+            date_ (str) : DT_FMT形式でフォーマットされた日付
+                         [datetime of formatted "DT_FMT" type]
         戻り値[Returns]:
-            tf_dt (str): 変換後の日付
+            tf_dt (str) : 変換後の日付
         """
         hour_ = 0
         minute_ = 0
-        tdt = datetime.datetime.strptime(dt, self.__DT_FMT)
-        if granularity is oc.OandaGrn.D:
+        tdt = dt.datetime.strptime(date_, self.__DT_FMT)
+        if gran is oc.OandaGrn.D:
             pass
-        elif granularity is oc.OandaGrn.H12:
+        elif gran is oc.OandaGrn.H12:
             hour_ = 12 * (tdt.hour // 12)
-        elif granularity is oc.OandaGrn.H8:
+        elif gran is oc.OandaGrn.H8:
             hour_ = 8 * (tdt.hour // 8)
-        elif granularity is oc.OandaGrn.H6:
+        elif gran is oc.OandaGrn.H6:
             hour_ = 6 * (tdt.hour // 6)
-        elif granularity is oc.OandaGrn.H4:
+        elif gran is oc.OandaGrn.H4:
             hour_ = 4 * (tdt.hour // 4)
-        elif granularity is oc.OandaGrn.H3:
+        elif gran is oc.OandaGrn.H3:
             hour_ = 3 * (tdt.hour // 3)
-        elif granularity is oc.OandaGrn.H2:
+        elif gran is oc.OandaGrn.H2:
             hour_ = 2 * (tdt.hour // 2)
-        elif granularity is oc.OandaGrn.H1:
+        elif gran is oc.OandaGrn.H1:
             hour_ = 1 * (tdt.hour // 1)
-        elif granularity is oc.OandaGrn.M30:
+        elif gran is oc.OandaGrn.M30:
             hour_ = tdt.hour
             minute_ = 30 * (tdt.minute // 30)
-        elif granularity is oc.OandaGrn.M15:
+        elif gran is oc.OandaGrn.M15:
             hour_ = tdt.hour
             minute_ = 15 * (tdt.minute // 15)
-        elif granularity is oc.OandaGrn.M10:
+        elif gran is oc.OandaGrn.M10:
             hour_ = tdt.hour
             minute_ = 10 * (tdt.minute // 10)
-        elif granularity is oc.OandaGrn.M5:
+        elif gran is oc.OandaGrn.M5:
             hour_ = tdt.hour
             minute_ = 5 * (tdt.minute // 5)
-        elif granularity is oc.OandaGrn.M4:
+        elif gran is oc.OandaGrn.M4:
             hour_ = tdt.hour
             minute_ = 4 * (tdt.minute // 4)
-        elif granularity is oc.OandaGrn.M3:
+        elif gran is oc.OandaGrn.M3:
             hour_ = tdt.hour
             minute_ = 3 * (tdt.minute // 3)
-        elif granularity is oc.OandaGrn.M2:
+        elif gran is oc.OandaGrn.M2:
             hour_ = tdt.hour
             minute_ = 2 * (tdt.minute // 2)
-        elif granularity is oc.OandaGrn.M1:
+        elif gran is oc.OandaGrn.M1:
             hour_ = tdt.hour
             minute_ = 1 * (tdt.minute // 1)
 
-        tf_dt = datetime.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
+        tf_dt = dt.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
 
         return tf_dt

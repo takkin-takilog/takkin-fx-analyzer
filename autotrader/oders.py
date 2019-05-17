@@ -2,7 +2,7 @@ from bokeh.plotting import figure
 from oandapyV20 import API
 from retrying import retry
 import datetime
-import oandapyV20.endpoints.instruments as instruments
+import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import autotrader.bokeh_common as bc
 import autotrader.oanda_common as oc
@@ -12,7 +12,10 @@ import autotrader.oanda_account as oa
 class Orders(object):
 
     def __init__(self):
-
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            None
+        """
         self.__ORD_BOOK = "orderBook"
 
         self.__BG_COLOR = "#2E2E2E"
@@ -73,20 +76,20 @@ class Orders(object):
         self.__pltpos.toolbar_location = None
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
-    def fetch(self, inst_, dt_):
+    def fetch(self, inst, dt_):
 
         params_ = {
             "time": dt_.strftime(self.__DT_FMT),
         }
 
         # APIへ過去データをリクエスト
-        ic_ord = instruments.InstrumentsOrderBook(instrument=inst_,
-                                                  params=params_)
+        ic_ord = it.InstrumentsOrderBook(instrument=inst,
+                                         params=params_)
         self.__fetch(self.__ORD_BOOK, ic_ord, self.__pltodr)
 
         # APIへ過去データをリクエスト
-        ic_pos = instruments.InstrumentsPositionBook(instrument=inst_,
-                                                     params=params_)
+        ic_pos = it.InstrumentsPositionBook(instrument=inst,
+                                            params=params_)
         self.__fetch(self.__POS_BOOK, ic_pos, self.__pltpos)
 
     def __fetch(self, label, ic, plt):
@@ -112,7 +115,7 @@ class Orders(object):
         bucket_width = float(ic.response[label][self.__BUCKET_WIDTH])
         idx_th = bucket_width * self.__CUT_TH
         dfpos = df[(df.index > cur_price - idx_th)
-                           & (df.index < cur_price + idx_th)]
+                   & (df.index < cur_price + idx_th)]
 
         df_up = dfpos[self.__LONG][(dfpos.index > cur_price)]
         df_lo = -dfpos[self.__SHORT][(dfpos.index < cur_price)]
@@ -123,14 +126,18 @@ class Orders(object):
         df_left = pd.concat([df_up, df_lo])
 
         plt.hbar(y=dfpos.index, height=0.03, left=df_right,
-                  right=0, color=self.__BAR_R_COLOR)
+                 right=0, color=self.__BAR_R_COLOR)
         plt.hbar(y=dfpos.index, height=0.03, left=df_left,
-                  right=0, color=self.__BAR_L_COLOR)
+                 right=0, color=self.__BAR_L_COLOR)
         plt.line(x=[-self.__X_AXIS_MAX, self.__X_AXIS_MAX],
-                  y=[cur_price, cur_price],
-                  color=self.__CURPRI_COLOR, line_width=3)
+                 y=[cur_price, cur_price],
+                 color=self.__CURPRI_COLOR, line_width=3)
 
     def get_widget(self):
+        """"ウィジェット取得[get widget]
+        引数[Args]:
+            None
+        """
         return self.__pltodr, self.__pltpos
 
     def __changeDateTimeFmt(self, dt):
