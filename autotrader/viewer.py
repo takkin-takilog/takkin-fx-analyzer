@@ -249,6 +249,17 @@ class Viewer(object):
                        hour=12, minute=0, second=0)
         self.__widord.fetch(self.__inst, dt_)
 
+        print("------------------1")
+        order, posi = self.__widord.get_widget()
+        print("------------------2")
+        chart, rang = self.__wicdl.get_widget()
+        print("------------------3")
+
+        order.y_range.start = chart.y_range.start
+        order.y_range.end = chart.y_range.end
+        posi.y_range.start = chart.y_range.start
+        posi.y_range.end = chart.y_range.end
+
     def __callback_press(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000)
         str_ = str(date) + ":" + str(event.y)

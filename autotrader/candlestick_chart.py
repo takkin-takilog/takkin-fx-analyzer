@@ -278,7 +278,7 @@ class CandleStick(object):
             date_ (str) : DT_FMT形式でフォーマットされた日付
                          [datetime of formatted "DT_FMT" type]
         戻り値[Returns]:
-            tf_dt (str) : 変換後の日付
+            tf_dt (str) : 変換後の日付[changed datetime]
         """
         hour_ = 0
         minute_ = 0
