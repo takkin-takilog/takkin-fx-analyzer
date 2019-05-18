@@ -240,25 +240,33 @@ class Viewer(object):
 
     def __callback_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
+
+        print("--------update")
+        yrng = self.__wicdl.get_widget_yrng()
+        print(yrng)
+        self.__widord.update_yrange(yrng)
+        print("--------end")
+
         date = datetime.fromtimestamp(int(event.x) / 1000)
         str_ = str(date) + ":" + str(event.y)
         self.__text_input.value = "Tap: " + str_
+
+        """
+        order, posi = self.__widord.get_widget()
+        chart, rang = self.__wicdl.get_widget()
+        order.y_range.start = chart.y_range.start
+        order.y_range.end = chart.y_range.end
+        posi.y_range.start = chart.y_range.start
+        posi.y_range.end = chart.y_range.end
+        """
+
+        #yrng = self.__wicdl.get_widget_yrng()
+        #print(yrng)
 
         # fetch Open Order and Position
         dt_ = datetime(year=2017, month=2, day=1,
                        hour=12, minute=0, second=0)
         self.__widord.fetch(self.__inst, dt_)
-
-        print("------------------1")
-        order, posi = self.__widord.get_widget()
-        print("------------------2")
-        chart, rang = self.__wicdl.get_widget()
-        print("------------------3")
-
-        order.y_range.start = chart.y_range.start
-        order.y_range.end = chart.y_range.end
-        posi.y_range.start = chart.y_range.start
-        posi.y_range.end = chart.y_range.end
 
     def __callback_press(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000)

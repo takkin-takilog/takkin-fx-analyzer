@@ -1,5 +1,6 @@
 from math import pi
-from bokeh.models import Range1d, RangeTool, ColumnDataSource, HoverTool
+from bokeh.models import Range1d, RangeTool, ColumnDataSource
+from bokeh.models import HoverTool, CrosshairTool
 from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
@@ -138,6 +139,8 @@ class CandleStick(object):
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
         self.__WIDE_SCALE = 0.2
 
+        self.__CH_COLOR = "#FFFF00" # Crosshair line color
+
         self.__glyinc = CandleGlyph(self.__CND_INC_COLOR)
         self.__glydec = CandleGlyph(self.__CND_DEC_COLOR)
         self.__glyequ = CandleGlyph(self.__CND_EQU_COLOR)
@@ -189,6 +192,12 @@ class CandleStick(object):
                           (_CLOSE, "@" + CandleGlyph.YCL),
                           (_LOW, "@" + CandleGlyph.YLO)]
         self.__plt_main.add_tools(hover)
+
+        ch = CrosshairTool()
+        ch.dimensions = "height"
+        ch.line_color = self.__CH_COLOR
+        ch.line_alpha = 0.7
+        self.__plt_main.add_tools(ch)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, dt_from, dt_to):
@@ -270,6 +279,16 @@ class CandleStick(object):
             self.__plt_rang (figure) : レンジfigure[range figure]
         """
         return self.__plt_main, self.__plt_rang
+
+    def get_widget_yrng(self):
+        """"ウィジェットのYレンジを取得する[get widget]
+        引数[Args]:
+            None
+        戻り値[Returns]:
+            self.__plt_main.y_range.start (float) : メインfigureのY開始[main figure]
+            self.__plt_rang (figure) : レンジfigure[range figure]
+        """
+        return (self.__plt_main.y_range.start, self.__plt_main.y_range.end)
 
     def __change_dt_fmt(self, gran, date_):
         """"日付フォーマットを変換する[change datetime format]

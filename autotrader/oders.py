@@ -52,6 +52,7 @@ class Orders(object):
             plot_height=400,
             plot_width=200,
             x_range=(-self.__X_AXIS_MAX, self.__X_AXIS_MAX),
+            y_range=(0, 10),
             tools=tools_,
             title="Orders",
             background_fill_color=self.__BG_COLOR
@@ -66,6 +67,7 @@ class Orders(object):
             plot_height=400,
             plot_width=200,
             x_range=(-self.__X_AXIS_MAX, self.__X_AXIS_MAX),
+            y_range=(0, 10),
             tools=tools_,
             title="Position",
             background_fill_color=self.__BG_COLOR
@@ -91,6 +93,20 @@ class Orders(object):
         ic_pos = it.InstrumentsPositionBook(instrument=inst,
                                             params=params_)
         self.__fetch(self.__POS_BOOK, ic_pos, self.__pltpos)
+
+        #self.__pltodr.y_ranges.start = yrng[0]
+        #self.__pltodr.y_ranges.end = yrng[1]
+        #self.__pltpos.y_range.start = 0
+        #self.__pltpos.y_range.end = 100
+        #self.__pltodr.y_range.update(start=100, end=130)
+        #self.__pltpos.y_range.update(start=100, end=130)
+
+        print("----------pltodr")
+        print(self.__pltodr.y_range.start)
+        print(self.__pltodr.y_range.end)
+        print("----------pltpos")
+        print(self.__pltpos.y_range.start)
+        print(self.__pltpos.y_range.end)
 
     def __fetch(self, label, ic, plt):
 
@@ -132,6 +148,10 @@ class Orders(object):
         plt.line(x=[-self.__X_AXIS_MAX, self.__X_AXIS_MAX],
                  y=[cur_price, cur_price],
                  color=self.__CURPRI_COLOR, line_width=3)
+
+    def update_yrange(self, yrng):
+        self.__pltodr.y_range.update(start=yrng[0], end=yrng[1])
+        self.__pltpos.y_range.update(start=yrng[0], end=yrng[1])
 
     def get_widget(self):
         """"ウィジェット取得[get widget]
