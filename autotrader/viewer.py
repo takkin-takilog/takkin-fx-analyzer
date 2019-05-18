@@ -115,16 +115,17 @@ class Viewer(object):
         self.__dt_from = from_
 
         self.__wicdl = cd.CandleStick()
-        self.__widord = od.Orders()
         try:
-            self.__wicdl.fetch(self.__gran, self.__inst,
-                               self.__dt_from, self.__dt_to)
+            yrng = self.__wicdl.fetch(self.__gran, self.__inst,
+                                      self.__dt_from, self.__dt_to)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
             print("----- ConnectionError: {}".format(cerr))
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
+
+        self.__widord = od.Orders(yrng)
 
     def __get_period(self, gran, num):
         """"チャートを描写する期間を取得する[get period of chart]
@@ -186,14 +187,16 @@ class Viewer(object):
         """
         self.__inst = self.__INST_DICT[new]
         try:
-            self.__wicdl.fetch(self.__gran, self.__inst,
-                               self.__dt_from, self.__dt_to)
+            yrng = self.__wicdl.fetch(self.__gran, self.__inst,
+                                      self.__dt_from, self.__dt_to)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
             print("----- ConnectionError: {}".format(cerr))
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
+
+        self.__widord.update_yrange(yrng)
 
     def __sel_gran_callback(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
@@ -209,14 +212,16 @@ class Viewer(object):
         self.__dt_to = to_
         self.__dt_from = from_
         try:
-            self.__wicdl.fetch(self.__gran, self.__inst,
-                               self.__dt_from, self.__dt_to)
+            yrng = self.__wicdl.fetch(self.__gran, self.__inst,
+                                      self.__dt_from, self.__dt_to)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
             print("----- ConnectionError: {}".format(cerr))
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
+
+        self.__widord.update_yrange(yrng)
 
     def __callback_disp(self, div, attributes=[],
                         style='float:left;clear:left;font_size=10pt'):
@@ -241,27 +246,9 @@ class Viewer(object):
     def __callback_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
 
-        print("--------update")
-        yrng = self.__wicdl.get_widget_yrng()
-        print(yrng)
-        self.__widord.update_yrange(yrng)
-        print("--------end")
-
         date = datetime.fromtimestamp(int(event.x) / 1000)
         str_ = str(date) + ":" + str(event.y)
         self.__text_input.value = "Tap: " + str_
-
-        """
-        order, posi = self.__widord.get_widget()
-        chart, rang = self.__wicdl.get_widget()
-        order.y_range.start = chart.y_range.start
-        order.y_range.end = chart.y_range.end
-        posi.y_range.start = chart.y_range.start
-        posi.y_range.end = chart.y_range.end
-        """
-
-        #yrng = self.__wicdl.get_widget_yrng()
-        #print(yrng)
 
         # fetch Open Order and Position
         dt_ = datetime(year=2017, month=2, day=1,
