@@ -141,37 +141,37 @@ class Viewer(object):
         to_ = datetime(now_.year, now_.month, now_.day,
                        now_.hour, now_.minute, now_.second)
 
-        if gran is oc.OandaGrn.D:
+        if gran == oc.OandaGrn.D:
             from_ = to_ - timedelta(days=num)
-        elif gran is oc.OandaGrn.H12:
+        elif gran == oc.OandaGrn.H12:
             from_ = to_ - timedelta(hours=num * 12)
-        elif gran is oc.OandaGrn.H8:
+        elif gran == oc.OandaGrn.H8:
             from_ = to_ - timedelta(hours=num * 8)
-        elif gran is oc.OandaGrn.H6:
+        elif gran == oc.OandaGrn.H6:
             from_ = to_ - timedelta(hours=num * 6)
-        elif gran is oc.OandaGrn.H4:
+        elif gran == oc.OandaGrn.H4:
             from_ = to_ - timedelta(hours=num * 4)
-        elif gran is oc.OandaGrn.H3:
+        elif gran == oc.OandaGrn.H3:
             from_ = to_ - timedelta(hours=num * 3)
-        elif gran is oc.OandaGrn.H2:
+        elif gran == oc.OandaGrn.H2:
             from_ = to_ - timedelta(hours=num * 2)
-        elif gran is oc.OandaGrn.H1:
+        elif gran == oc.OandaGrn.H1:
             from_ = to_ - timedelta(hours=num)
-        elif gran is oc.OandaGrn.M30:
+        elif gran == oc.OandaGrn.M30:
             from_ = to_ - timedelta(minutes=num * 30)
-        elif gran is oc.OandaGrn.M15:
+        elif gran == oc.OandaGrn.M15:
             from_ = to_ - timedelta(minutes=num * 15)
-        elif gran is oc.OandaGrn.M10:
+        elif gran == oc.OandaGrn.M10:
             from_ = to_ - timedelta(minutes=num * 10)
-        elif gran is oc.OandaGrn.M5:
+        elif gran == oc.OandaGrn.M5:
             from_ = to_ - timedelta(minutes=num * 5)
-        elif gran is oc.OandaGrn.M4:
+        elif gran == oc.OandaGrn.M4:
             from_ = to_ - timedelta(minutes=num * 4)
-        elif gran is oc.OandaGrn.M3:
+        elif gran == oc.OandaGrn.M3:
             from_ = to_ - timedelta(minutes=num * 3)
-        elif gran is oc.OandaGrn.M2:
+        elif gran == oc.OandaGrn.M2:
             from_ = to_ - timedelta(minutes=num * 2)
-        elif gran is oc.OandaGrn.M1:
+        elif gran == oc.OandaGrn.M1:
             from_ = to_ - timedelta(minutes=num)
 
         return from_, to_

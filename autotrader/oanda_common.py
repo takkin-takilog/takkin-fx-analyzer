@@ -43,49 +43,49 @@ class OandaGrn(object):
 
     @classmethod
     def offset(cls, dt, granularity):
-        if granularity is cls.S5:
+        if granularity == cls.S5:
             return dt + offsets.Second(5 * cls.__OFS_MAG)
-        elif granularity is cls.S10:
+        elif granularity == cls.S10:
             return dt + offsets.Second(10 * cls.__OFS_MAG)
-        elif granularity is cls.S15:
+        elif granularity == cls.S15:
             return dt + offsets.Second(15 * cls.__OFS_MAG)
-        elif granularity is cls.S30:
+        elif granularity == cls.S30:
             return dt + offsets.Second(30 * cls.__OFS_MAG)
-        elif granularity is cls.M1:
+        elif granularity == cls.M1:
             return dt + offsets.Minute(1 * cls.__OFS_MAG)
-        elif granularity is cls.M2:
+        elif granularity == cls.M2:
             return dt + offsets.Minute(2 * cls.__OFS_MAG)
-        elif granularity is cls.M3:
+        elif granularity == cls.M3:
             return dt + offsets.Minute(3 * cls.__OFS_MAG)
-        elif granularity is cls.M4:
+        elif granularity == cls.M4:
             return dt + offsets.Minute(4 * cls.__OFS_MAG)
-        elif granularity is cls.M5:
+        elif granularity == cls.M5:
             return dt + offsets.Minute(5 * cls.__OFS_MAG)
-        elif granularity is cls.M10:
+        elif granularity == cls.M10:
             return dt + offsets.Minute(10 * cls.__OFS_MAG)
-        elif granularity is cls.M15:
+        elif granularity == cls.M15:
             return dt + offsets.Minute(15 * cls.__OFS_MAG)
-        elif granularity is cls.M30:
+        elif granularity == cls.M30:
             return dt + offsets.Minute(30 * cls.__OFS_MAG)
-        elif granularity is cls.H1:
+        elif granularity == cls.H1:
             return dt + offsets.Hour(1 * cls.__OFS_MAG)
-        elif granularity is cls.H2:
+        elif granularity == cls.H2:
             return dt + offsets.Hour(2 * cls.__OFS_MAG)
-        elif granularity is cls.H3:
+        elif granularity == cls.H3:
             return dt + offsets.Hour(3 * cls.__OFS_MAG)
-        elif granularity is cls.H4:
+        elif granularity == cls.H4:
             return dt + offsets.Hour(4 * cls.__OFS_MAG)
-        elif granularity is cls.H6:
+        elif granularity == cls.H6:
             return dt + offsets.Hour(6 * cls.__OFS_MAG)
-        elif granularity is cls.H8:
+        elif granularity == cls.H8:
             return dt + offsets.Hour(8 * cls.__OFS_MAG)
-        elif granularity is cls.H12:
+        elif granularity == cls.H12:
             return dt + offsets.Hour(12 * cls.__OFS_MAG)
-        elif granularity is cls.D:
+        elif granularity == cls.D:
             return dt + offsets.Day(1 * cls.__OFS_MAG)
-        elif granularity is cls.W:
+        elif granularity == cls.W:
             return dt + offsets.Week(1 * cls.__OFS_MAG)
-        elif granularity is cls.M:
+        elif granularity == cls.M:
             return dt + offsets.MonthOffset(1 * cls.__OFS_MAG)
 
     @classmethod
@@ -103,42 +103,42 @@ class OandaGrn(object):
         tdt = datetime.datetime.strptime(dt, fmt) + dt_ofs
         if granularity is cls.D:
             pass
-        elif granularity is cls.H12:
+        elif granularity == cls.H12:
             hour_ = 12 * (tdt.hour // 12)
-        elif granularity is cls.H8:
+        elif granularity == cls.H8:
             hour_ = 8 * (tdt.hour // 8)
-        elif granularity is cls.H6:
+        elif granularity == cls.H6:
             hour_ = 6 * (tdt.hour // 6)
-        elif granularity is cls.H4:
+        elif granularity == cls.H4:
             hour_ = 4 * (tdt.hour // 4)
-        elif granularity is cls.H3:
+        elif granularity == cls.H3:
             hour_ = 3 * (tdt.hour // 3)
-        elif granularity is cls.H2:
+        elif granularity == cls.H2:
             hour_ = 2 * (tdt.hour // 2)
-        elif granularity is cls.H1:
+        elif granularity == cls.H1:
             hour_ = 1 * (tdt.hour // 1)
-        elif granularity is cls.M30:
+        elif granularity == cls.M30:
             hour_ = tdt.hour
             minute_ = 30 * (tdt.minute // 30)
-        elif granularity is cls.M15:
+        elif granularity == cls.M15:
             hour_ = tdt.hour
             minute_ = 15 * (tdt.minute // 15)
-        elif granularity is cls.M10:
+        elif granularity == cls.M10:
             hour_ = tdt.hour
             minute_ = 10 * (tdt.minute // 10)
-        elif granularity is cls.M5:
+        elif granularity == cls.M5:
             hour_ = tdt.hour
             minute_ = 5 * (tdt.minute // 5)
-        elif granularity is cls.M4:
+        elif granularity == cls.M4:
             hour_ = tdt.hour
             minute_ = 4 * (tdt.minute // 4)
-        elif granularity is cls.M3:
+        elif granularity == cls.M3:
             hour_ = tdt.hour
             minute_ = 3 * (tdt.minute // 3)
-        elif granularity is cls.M2:
+        elif granularity == cls.M2:
             hour_ = tdt.hour
             minute_ = 2 * (tdt.minute // 2)
-        elif granularity is cls.M1:
+        elif granularity == cls.M1:
             hour_ = tdt.hour
             minute_ = 1 * (tdt.minute // 1)
 

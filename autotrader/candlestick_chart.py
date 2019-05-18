@@ -85,37 +85,37 @@ class CandleGlyph(object):
             _width (int) : ローソク足の幅[candlestick width]
         """
         _width = 1
-        if gran is oc.OandaGrn.D:
+        if gran == oc.OandaGrn.D:
             _width = 24 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.H12:
+        elif gran == oc.OandaGrn.H12:
             _width = 12 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.H8:
+        elif gran == oc.OandaGrn.H8:
             _width = 8 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.H6:
+        elif gran == oc.OandaGrn.H6:
             _width = 6 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.H4:
+        elif gran == oc.OandaGrn.H4:
             _width = 4 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.H3:
+        elif gran == oc.OandaGrn.H3:
             _width = 3 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.H2:
+        elif gran == oc.OandaGrn.H2:
             _width = 2 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.H1:
+        elif gran == oc.OandaGrn.H1:
             _width = 1 * 60 * 60 * 1000
-        elif gran is oc.OandaGrn.M30:
+        elif gran == oc.OandaGrn.M30:
             _width = 30 * 60 * 1000
-        elif gran is oc.OandaGrn.M15:
+        elif gran == oc.OandaGrn.M15:
             _width = 15 * 60 * 1000
-        elif gran is oc.OandaGrn.M10:
+        elif gran == oc.OandaGrn.M10:
             _width = 10 * 60 * 1000
-        elif gran is oc.OandaGrn.M5:
+        elif gran == oc.OandaGrn.M5:
             _width = 5 * 60 * 1000
-        elif gran is oc.OandaGrn.M4:
+        elif gran == oc.OandaGrn.M4:
             _width = 4 * 60 * 1000
-        elif gran is oc.OandaGrn.M3:
+        elif gran == oc.OandaGrn.M3:
             _width = 3 * 60 * 1000
-        elif gran is oc.OandaGrn.M2:
+        elif gran == oc.OandaGrn.M2:
             _width = 2 * 60 * 1000
-        elif gran is oc.OandaGrn.M1:
+        elif gran == oc.OandaGrn.M1:
             _width = 1 * 60 * 1000
 
         _width = _width * self.__WIDE_SCALE
@@ -305,44 +305,44 @@ class CandleStick(object):
         hour_ = 0
         minute_ = 0
         tdt = dt.datetime.strptime(date_, self.__DT_FMT)
-        if gran is oc.OandaGrn.D:
+        if gran == oc.OandaGrn.D:
             pass
-        elif gran is oc.OandaGrn.H12:
+        elif gran == oc.OandaGrn.H12:
             hour_ = 12 * (tdt.hour // 12)
-        elif gran is oc.OandaGrn.H8:
+        elif gran == oc.OandaGrn.H8:
             hour_ = 8 * (tdt.hour // 8)
-        elif gran is oc.OandaGrn.H6:
+        elif gran == oc.OandaGrn.H6:
             hour_ = 6 * (tdt.hour // 6)
-        elif gran is oc.OandaGrn.H4:
+        elif gran == oc.OandaGrn.H4:
             hour_ = 4 * (tdt.hour // 4)
-        elif gran is oc.OandaGrn.H3:
+        elif gran == oc.OandaGrn.H3:
             hour_ = 3 * (tdt.hour // 3)
-        elif gran is oc.OandaGrn.H2:
+        elif gran == oc.OandaGrn.H2:
             hour_ = 2 * (tdt.hour // 2)
-        elif gran is oc.OandaGrn.H1:
+        elif gran == oc.OandaGrn.H1:
             hour_ = 1 * (tdt.hour // 1)
-        elif gran is oc.OandaGrn.M30:
+        elif gran == oc.OandaGrn.M30:
             hour_ = tdt.hour
             minute_ = 30 * (tdt.minute // 30)
-        elif gran is oc.OandaGrn.M15:
+        elif gran == oc.OandaGrn.M15:
             hour_ = tdt.hour
             minute_ = 15 * (tdt.minute // 15)
-        elif gran is oc.OandaGrn.M10:
+        elif gran == oc.OandaGrn.M10:
             hour_ = tdt.hour
             minute_ = 10 * (tdt.minute // 10)
-        elif gran is oc.OandaGrn.M5:
+        elif gran == oc.OandaGrn.M5:
             hour_ = tdt.hour
             minute_ = 5 * (tdt.minute // 5)
-        elif gran is oc.OandaGrn.M4:
+        elif gran == oc.OandaGrn.M4:
             hour_ = tdt.hour
             minute_ = 4 * (tdt.minute // 4)
-        elif gran is oc.OandaGrn.M3:
+        elif gran == oc.OandaGrn.M3:
             hour_ = tdt.hour
             minute_ = 3 * (tdt.minute // 3)
-        elif gran is oc.OandaGrn.M2:
+        elif gran == oc.OandaGrn.M2:
             hour_ = tdt.hour
             minute_ = 2 * (tdt.minute // 2)
-        elif gran is oc.OandaGrn.M1:
+        elif gran == oc.OandaGrn.M1:
             hour_ = tdt.hour
             minute_ = 1 * (tdt.minute // 1)
 
