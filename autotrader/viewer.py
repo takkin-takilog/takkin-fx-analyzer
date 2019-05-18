@@ -251,9 +251,13 @@ class Viewer(object):
         self.__text_input.value = "Tap: " + str_
 
         # fetch Open Order and Position
-        dt_ = datetime(year=2017, month=2, day=1,
-                       hour=12, minute=0, second=0)
-        self.__widord.fetch(self.__inst, dt_)
+        dt_ = datetime(year=2019, month=5, day=3,
+                       hour=12, minute=25, second=0)
+        print("---------1")
+        print(date.strftime("%Y-%m-%dT%H:%M:00Z"))
+        print("---------2")
+        print(dt_.strftime("%Y-%m-%dT%H:%M:00Z"))
+        self.__widord.fetch(self.__inst, date)
 
     def __callback_press(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000)

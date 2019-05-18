@@ -80,6 +80,9 @@ class Orders(object):
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def fetch(self, inst, dt_):
 
+        print("-------------aaaaaa")
+        print(dt_.strftime(self.__DT_FMT))
+
         params_ = {
             "time": dt_.strftime(self.__DT_FMT),
         }
