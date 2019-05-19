@@ -8,6 +8,7 @@ from retrying import retry
 import datetime as dt
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
+import numpy as np
 import autotrader.bokeh_common as bc
 import autotrader.oanda_common as oc
 import autotrader.oanda_account as oa
@@ -282,6 +283,45 @@ class CandleStick(object):
         yrng = (str_, end_)
 
         return yrng
+
+    """
+    def __add_orders_vline(self, gran, dt_from, dt_to):
+
+        if gran == oc.OandaGrn.D:
+            dlt = dt.datetime(day=1)
+        elif gran == oc.OandaGrn.H12:
+            dlt = dt.datetime(hour=12)
+        elif gran == oc.OandaGrn.H8:
+            dlt = dt.datetime(hour=8)
+        elif gran == oc.OandaGrn.H6:
+            dlt = dt.datetime(hour=6)
+        elif gran == oc.OandaGrn.H4:
+            dlt = dt.datetime(hour=4)
+        elif gran == oc.OandaGrn.H3:
+            dlt = dt.datetime(hour=3)
+        elif gran == oc.OandaGrn.H2:
+            dlt = dt.datetime(hour=2)
+        elif gran == oc.OandaGrn.H1 or \
+                gran == oc.OandaGrn.M30 or \
+                gran == oc.OandaGrn.M15:
+            dlt = dt.datetime(hour=1)
+        elif gran == oc.OandaGrn.M10 or \
+                gran == oc.OandaGrn.M5 or \
+                gran == oc.OandaGrn.M4 or \
+                gran == oc.OandaGrn.M3 or \
+                gran == oc.OandaGrn.M2 or \
+                gran == oc.OandaGrn.M1:
+            dlt = dt.datetime(minute=20)
+        else:
+            dlt = dt.datetime(day=1)
+
+        x = np.linspace(start=dt_from, stop=dt_to, dtype=)
+
+        start = pd.Timestamp('2015-07-01')
+        end = pd.Timestamp('2015-08-01')
+        t = np.linspace(start.value, end.value, 100)
+        t = pd.to_datetime(t)
+    """
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]
