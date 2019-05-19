@@ -5,9 +5,9 @@ from bokeh.models.widgets import Select, TextInput
 from bokeh import events
 from datetime import datetime, timedelta
 from oandapyV20.exceptions import V20Error
-import autotrader.candlestick_chart as cd
-import autotrader.oders as od
-import autotrader.oanda_common as oc
+from autotrader.candlestick_chart import CandleStick
+from autotrader.oders import Orders
+from autotrader.oanda_common import OandaGrn, OandaIns
 
 
 class Viewer(object):
@@ -53,34 +53,34 @@ class Viewer(object):
 
         # 辞書登録：通貨ペア
         self.__INST_DICT = {
-            self.INST_USDJPY: oc.OandaIns.USD_JPY,
-            self.INST_EURJPY: oc.OandaIns.EUR_JPY,
-            self.INST_EURUSD: oc.OandaIns.EUR_USD
+            self.INST_USDJPY: OandaIns.USD_JPY,
+            self.INST_EURJPY: OandaIns.EUR_JPY,
+            self.INST_EURUSD: OandaIns.EUR_USD
         }
 
         # 辞書登録：時間足
         self.__GRAN_DICT = {
-            self.GRAN_S5: oc.OandaGrn.S5,
-            self.GRAN_S10: oc.OandaGrn.S10,
-            self.GRAN_S15: oc.OandaGrn.S15,
-            self.GRAN_S30: oc.OandaGrn.S30,
-            self.GRAN_M1: oc.OandaGrn.M1,
-            self.GRAN_M2: oc.OandaGrn.M2,
-            self.GRAN_M3: oc.OandaGrn.M3,
-            self.GRAN_M4: oc.OandaGrn.M4,
-            self.GRAN_M5: oc.OandaGrn.M5,
-            self.GRAN_M10: oc.OandaGrn.M10,
-            self.GRAN_M15: oc.OandaGrn.M15,
-            self.GRAN_M30: oc.OandaGrn.M30,
-            self.GRAN_H1: oc.OandaGrn.H1,
-            self.GRAN_H2: oc.OandaGrn.H2,
-            self.GRAN_H3: oc.OandaGrn.H3,
-            self.GRAN_H4: oc.OandaGrn.H4,
-            self.GRAN_H6: oc.OandaGrn.H6,
-            self.GRAN_H8: oc.OandaGrn.H8,
-            self.GRAN_H12: oc.OandaGrn.H12,
-            self.GRAN_D: oc.OandaGrn.D,
-            self.GRAN_W: oc.OandaGrn.W
+            self.GRAN_S5: OandaGrn.S5,
+            self.GRAN_S10: OandaGrn.S10,
+            self.GRAN_S15: OandaGrn.S15,
+            self.GRAN_S30: OandaGrn.S30,
+            self.GRAN_M1: OandaGrn.M1,
+            self.GRAN_M2: OandaGrn.M2,
+            self.GRAN_M3: OandaGrn.M3,
+            self.GRAN_M4: OandaGrn.M4,
+            self.GRAN_M5: OandaGrn.M5,
+            self.GRAN_M10: OandaGrn.M10,
+            self.GRAN_M15: OandaGrn.M15,
+            self.GRAN_M30: OandaGrn.M30,
+            self.GRAN_H1: OandaGrn.H1,
+            self.GRAN_H2: OandaGrn.H2,
+            self.GRAN_H3: OandaGrn.H3,
+            self.GRAN_H4: OandaGrn.H4,
+            self.GRAN_H6: OandaGrn.H6,
+            self.GRAN_H8: OandaGrn.H8,
+            self.GRAN_H12: OandaGrn.H12,
+            self.GRAN_D: OandaGrn.D,
+            self.GRAN_W: OandaGrn.W
         }
 
         # Widgetセレクト（通貨ペア）
@@ -114,7 +114,7 @@ class Viewer(object):
         self.__dt_to = to_
         self.__dt_from = from_
 
-        self.__wicdl = cd.CandleStick()
+        self.__wicdl = CandleStick()
         try:
             yrng = self.__wicdl.fetch(self.__gran, self.__inst,
                                       self.__dt_from, self.__dt_to)
@@ -125,7 +125,7 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
-        self.__widord = od.Orders(yrng)
+        self.__widord = Orders(yrng)
 
     def __get_period(self, gran, num):
         """"チャートを描写する期間を取得する[get period of chart]
@@ -141,37 +141,37 @@ class Viewer(object):
         to_ = datetime(now_.year, now_.month, now_.day,
                        now_.hour, now_.minute, now_.second)
 
-        if gran == oc.OandaGrn.D:
+        if gran == OandaGrn.D:
             from_ = to_ - timedelta(days=num)
-        elif gran == oc.OandaGrn.H12:
+        elif gran == OandaGrn.H12:
             from_ = to_ - timedelta(hours=num * 12)
-        elif gran == oc.OandaGrn.H8:
+        elif gran == OandaGrn.H8:
             from_ = to_ - timedelta(hours=num * 8)
-        elif gran == oc.OandaGrn.H6:
+        elif gran == OandaGrn.H6:
             from_ = to_ - timedelta(hours=num * 6)
-        elif gran == oc.OandaGrn.H4:
+        elif gran == OandaGrn.H4:
             from_ = to_ - timedelta(hours=num * 4)
-        elif gran == oc.OandaGrn.H3:
+        elif gran == OandaGrn.H3:
             from_ = to_ - timedelta(hours=num * 3)
-        elif gran == oc.OandaGrn.H2:
+        elif gran == OandaGrn.H2:
             from_ = to_ - timedelta(hours=num * 2)
-        elif gran == oc.OandaGrn.H1:
+        elif gran == OandaGrn.H1:
             from_ = to_ - timedelta(hours=num)
-        elif gran == oc.OandaGrn.M30:
+        elif gran == OandaGrn.M30:
             from_ = to_ - timedelta(minutes=num * 30)
-        elif gran == oc.OandaGrn.M15:
+        elif gran == OandaGrn.M15:
             from_ = to_ - timedelta(minutes=num * 15)
-        elif gran == oc.OandaGrn.M10:
+        elif gran == OandaGrn.M10:
             from_ = to_ - timedelta(minutes=num * 10)
-        elif gran == oc.OandaGrn.M5:
+        elif gran == OandaGrn.M5:
             from_ = to_ - timedelta(minutes=num * 5)
-        elif gran == oc.OandaGrn.M4:
+        elif gran == OandaGrn.M4:
             from_ = to_ - timedelta(minutes=num * 4)
-        elif gran == oc.OandaGrn.M3:
+        elif gran == OandaGrn.M3:
             from_ = to_ - timedelta(minutes=num * 3)
-        elif gran == oc.OandaGrn.M2:
+        elif gran == OandaGrn.M2:
             from_ = to_ - timedelta(minutes=num * 2)
-        elif gran == oc.OandaGrn.M1:
+        elif gran == OandaGrn.M1:
             from_ = to_ - timedelta(minutes=num)
 
         return from_, to_

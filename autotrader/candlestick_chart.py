@@ -7,13 +7,14 @@ from oandapyV20 import API
 from retrying import retry
 from bokeh.io.showing import show
 from autotrader.bokeh_common import GlyphVbarAbs
+from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
+from autotrader.bokeh_common import ToolType, AxisTyp
 import datetime as dt
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import numpy as np
-import autotrader.bokeh_common as bc
-import autotrader.oanda_common as oc
 import autotrader.oanda_account as oa
+
 
 # Pandas data label
 _TIME = "time"
@@ -108,17 +109,17 @@ class CandleStick(object):
         self.__glyequ = CandleGlyph(self.__CND_EQU_COLOR)
 
         self.__api = API(access_token=oa.ACCESS_TOKEN,
-                         environment=oc.OandaEnv.PRACTICE)
+                         environment=OandaEnv.PRACTICE)
 
-        tools_ = bc.ToolType.gen_str(bc.ToolType.WHEEL_ZOOM,
-                                     bc.ToolType.XBOX_ZOOM,
-                                     bc.ToolType.RESET,
-                                     bc.ToolType.SAVE)
+        tools_ = ToolType.gen_str(ToolType.WHEEL_ZOOM,
+                                  ToolType.XBOX_ZOOM,
+                                  ToolType.RESET,
+                                  ToolType.SAVE)
 
         # Main chart figure
         self.__plt_main = figure(
             plot_height=400,
-            x_axis_type=bc.AxisTyp.X_DATETIME,
+            x_axis_type=AxisTyp.X_DATETIME,
             tools=tools_,
             background_fill_color=self.__BG_COLOR,
             title="Candlestick Chart"
@@ -132,7 +133,7 @@ class CandleStick(object):
             plot_height=70,
             plot_width=self.__plt_main.plot_width,
             y_range=self.__plt_main.y_range,
-            x_axis_type=bc.AxisTyp.X_DATETIME,
+            x_axis_type=AxisTyp.X_DATETIME,
             background_fill_color=self.__BG_COLOR,
             toolbar_location=None,
         )
@@ -188,16 +189,16 @@ class CandleStick(object):
             raise err
 
         data = []
-        for raw in ic.response[oc.OandaRsp.CNDL]:
-            dt_ = oc.OandaGrn.convert_dtfmt(gran, raw[oc.OandaRsp.TIME],
-                                            dt_ofs=dt.timedelta(hours=9),
-                                            fmt=self.__DT_FMT)
+        for raw in ic.response[OandaRsp.CNDL]:
+            dt_ = OandaGrn.convert_dtfmt(gran, raw[OandaRsp.TIME],
+                                         dt_ofs=dt.timedelta(hours=9),
+                                         fmt=self.__DT_FMT)
             data.append([dt_,
-                         raw[oc.OandaRsp.VLM],
-                         float(raw[oc.OandaRsp.MID][oc.OandaRsp.OPN]),
-                         float(raw[oc.OandaRsp.MID][oc.OandaRsp.HIG]),
-                         float(raw[oc.OandaRsp.MID][oc.OandaRsp.LOW]),
-                         float(raw[oc.OandaRsp.MID][oc.OandaRsp.CLS])
+                         raw[OandaRsp.VLM],
+                         float(raw[OandaRsp.MID][OandaRsp.OPN]),
+                         float(raw[OandaRsp.MID][OandaRsp.HIG]),
+                         float(raw[OandaRsp.MID][OandaRsp.LOW]),
+                         float(raw[OandaRsp.MID][OandaRsp.CLS])
                          ])
 
         # convert List to pandas data frame
@@ -230,7 +231,7 @@ class CandleStick(object):
 
         len_ = int(len(df) * self.__WIDE_SCALE)
         self.__plt_main.x_range.update(
-            start=df.index[-len_], end=oc.OandaGrn.offset(df.index[-1], gran))
+            start=df.index[-len_], end=OandaGrn.offset(df.index[-1], gran))
 
         self.__range_tool.x_range = self.__plt_main.x_range
 
@@ -246,30 +247,30 @@ class CandleStick(object):
 
     def add_orders_vline(self, gran, dt_from, dt_to):
 
-        if gran == oc.OandaGrn.D:
+        if gran == OandaGrn.D:
             freq_ = pd.offsets.Day(1)
-        elif gran == oc.OandaGrn.H12:
+        elif gran == OandaGrn.H12:
             freq_ = pd.offsets.Hour(12)
-        elif gran == oc.OandaGrn.H8:
+        elif gran == OandaGrn.H8:
             freq_ = pd.offsets.Hour(8)
-        elif gran == oc.OandaGrn.H6:
+        elif gran == OandaGrn.H6:
             freq_ = pd.offsets.Hour(6)
-        elif gran == oc.OandaGrn.H4:
+        elif gran == OandaGrn.H4:
             freq_ = pd.offsets.Hour(4)
-        elif gran == oc.OandaGrn.H3:
+        elif gran == OandaGrn.H3:
             freq_ = pd.offsets.Hour(3)
-        elif gran == oc.OandaGrn.H2:
+        elif gran == OandaGrn.H2:
             freq_ = pd.offsets.Hour(2)
-        elif gran == oc.OandaGrn.H1 or \
-                gran == oc.OandaGrn.M30 or \
-                gran == oc.OandaGrn.M15:
+        elif gran == OandaGrn.H1 or \
+                gran == OandaGrn.M30 or \
+                gran == OandaGrn.M15:
             freq_ = pd.offsets.Hour(1)
-        elif gran == oc.OandaGrn.M10 or \
-                gran == oc.OandaGrn.M5 or \
-                gran == oc.OandaGrn.M4 or \
-                gran == oc.OandaGrn.M3 or \
-                gran == oc.OandaGrn.M2 or \
-                gran == oc.OandaGrn.M1:
+        elif gran == OandaGrn.M10 or \
+                gran == OandaGrn.M5 or \
+                gran == OandaGrn.M4 or \
+                gran == OandaGrn.M3 or \
+                gran == OandaGrn.M2 or \
+                gran == OandaGrn.M1:
             freq_ = pd.offsets.Minute(20)
         else:
             freq_ = pd.offsets.Minute(20)
@@ -300,44 +301,44 @@ class CandleStick(object):
         hour_ = 0
         minute_ = 0
         tdt = dt.datetime.strptime(date_, self.__DT_FMT)
-        if gran == oc.OandaGrn.D:
+        if gran == OandaGrn.D:
             pass
-        elif gran == oc.OandaGrn.H12:
+        elif gran == OandaGrn.H12:
             hour_ = 12 * (tdt.hour // 12)
-        elif gran == oc.OandaGrn.H8:
+        elif gran == OandaGrn.H8:
             hour_ = 8 * (tdt.hour // 8)
-        elif gran == oc.OandaGrn.H6:
+        elif gran == OandaGrn.H6:
             hour_ = 6 * (tdt.hour // 6)
-        elif gran == oc.OandaGrn.H4:
+        elif gran == OandaGrn.H4:
             hour_ = 4 * (tdt.hour // 4)
-        elif gran == oc.OandaGrn.H3:
+        elif gran == OandaGrn.H3:
             hour_ = 3 * (tdt.hour // 3)
-        elif gran == oc.OandaGrn.H2:
+        elif gran == OandaGrn.H2:
             hour_ = 2 * (tdt.hour // 2)
-        elif gran == oc.OandaGrn.H1:
+        elif gran == OandaGrn.H1:
             hour_ = 1 * (tdt.hour // 1)
-        elif gran == oc.OandaGrn.M30:
+        elif gran == OandaGrn.M30:
             hour_ = tdt.hour
             minute_ = 30 * (tdt.minute // 30)
-        elif gran == oc.OandaGrn.M15:
+        elif gran == OandaGrn.M15:
             hour_ = tdt.hour
             minute_ = 15 * (tdt.minute // 15)
-        elif gran == oc.OandaGrn.M10:
+        elif gran == OandaGrn.M10:
             hour_ = tdt.hour
             minute_ = 10 * (tdt.minute // 10)
-        elif gran == oc.OandaGrn.M5:
+        elif gran == OandaGrn.M5:
             hour_ = tdt.hour
             minute_ = 5 * (tdt.minute // 5)
-        elif gran == oc.OandaGrn.M4:
+        elif gran == OandaGrn.M4:
             hour_ = tdt.hour
             minute_ = 4 * (tdt.minute // 4)
-        elif gran == oc.OandaGrn.M3:
+        elif gran == OandaGrn.M3:
             hour_ = tdt.hour
             minute_ = 3 * (tdt.minute // 3)
-        elif gran == oc.OandaGrn.M2:
+        elif gran == OandaGrn.M2:
             hour_ = tdt.hour
             minute_ = 2 * (tdt.minute // 2)
-        elif gran == oc.OandaGrn.M1:
+        elif gran == OandaGrn.M1:
             hour_ = tdt.hour
             minute_ = 1 * (tdt.minute // 1)
 
@@ -355,7 +356,7 @@ if __name__ == "__main__":
 
     cs = CandleStick()
 
-    gran = oc.OandaGrn.D
+    gran = OandaGrn.D
     dt_from = dt.datetime(year=2019, month=1, day=1,
                           hour=0, minute=0, second=0)
     dt_to = dt.datetime(year=2019, month=2, day=1, hour=12, minute=0, second=0)
@@ -364,7 +365,7 @@ if __name__ == "__main__":
 
     plot = figure(
         plot_height=400,
-        x_axis_type=bc.AxisTyp.X_DATETIME,
+        x_axis_type=AxisTyp.X_DATETIME,
         background_fill_color=__BG_COLOR,
         title="Candlestick Chart"
     )

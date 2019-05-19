@@ -1,11 +1,11 @@
 from bokeh.plotting import figure
 from oandapyV20 import API
 from retrying import retry
+from autotrader.oanda_common import OandaEnv
+from autotrader.bokeh_common import ToolType
 import datetime
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
-import autotrader.bokeh_common as bc
-import autotrader.oanda_common as oc
 import autotrader.oanda_account as oa
 
 
@@ -39,13 +39,13 @@ class Orders(object):
         self.__BUCKET_WIDTH = "bucketWidth"
 
         self.__api = API(access_token=oa.ACCESS_TOKEN,
-                         environment=oc.OandaEnv.PRACTICE)
+                         environment=OandaEnv.PRACTICE)
 
-        tools_ = bc.ToolType.gen_str(bc.ToolType.XPAN,
-                                     bc.ToolType.WHEEL_ZOOM,
-                                     bc.ToolType.BOX_ZOOM,
-                                     bc.ToolType.RESET,
-                                     bc.ToolType.SAVE)
+        tools_ = ToolType.gen_str(ToolType.XPAN,
+                                  ToolType.WHEEL_ZOOM,
+                                  ToolType.BOX_ZOOM,
+                                  ToolType.RESET,
+                                  ToolType.SAVE)
 
         # ---------- Orders ----------
         self.__pltodr = figure(
