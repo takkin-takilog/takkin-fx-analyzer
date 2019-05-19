@@ -12,6 +12,7 @@ import numpy as np
 import autotrader.bokeh_common as bc
 import autotrader.oanda_common as oc
 import autotrader.oanda_account as oa
+from bokeh.io.showing import show
 
 
 # Pandas data label
@@ -284,44 +285,39 @@ class CandleStick(object):
 
         return yrng
 
-    """
-    def __add_orders_vline(self, gran, dt_from, dt_to):
+    def add_orders_vline(self, gran, dt_from, dt_to):
 
         if gran == oc.OandaGrn.D:
-            dlt = dt.datetime(day=1)
+            freq_ = pd.offsets.Day(1)
         elif gran == oc.OandaGrn.H12:
-            dlt = dt.datetime(hour=12)
+            freq_ = pd.offsets.Hour(12)
         elif gran == oc.OandaGrn.H8:
-            dlt = dt.datetime(hour=8)
+            freq_ = pd.offsets.Hour(8)
         elif gran == oc.OandaGrn.H6:
-            dlt = dt.datetime(hour=6)
+            freq_ = pd.offsets.Hour(6)
         elif gran == oc.OandaGrn.H4:
-            dlt = dt.datetime(hour=4)
+            freq_ = pd.offsets.Hour(4)
         elif gran == oc.OandaGrn.H3:
-            dlt = dt.datetime(hour=3)
+            freq_ = pd.offsets.Hour(3)
         elif gran == oc.OandaGrn.H2:
-            dlt = dt.datetime(hour=2)
+            freq_ = pd.offsets.Hour(2)
         elif gran == oc.OandaGrn.H1 or \
                 gran == oc.OandaGrn.M30 or \
                 gran == oc.OandaGrn.M15:
-            dlt = dt.datetime(hour=1)
+            freq_ = pd.offsets.Hour(1)
         elif gran == oc.OandaGrn.M10 or \
                 gran == oc.OandaGrn.M5 or \
                 gran == oc.OandaGrn.M4 or \
                 gran == oc.OandaGrn.M3 or \
                 gran == oc.OandaGrn.M2 or \
                 gran == oc.OandaGrn.M1:
-            dlt = dt.datetime(minute=20)
+            freq_ = pd.offsets.Minute(20)
         else:
-            dlt = dt.datetime(day=1)
+            freq_ = pd.offsets.Minute(20)
 
-        x = np.linspace(start=dt_from, stop=dt_to, dtype=)
-
-        start = pd.Timestamp('2015-07-01')
-        end = pd.Timestamp('2015-08-01')
-        t = np.linspace(start.value, end.value, 100)
-        t = pd.to_datetime(t)
-    """
+        dtlist = pd.date_range(start=dt_from, end=dt_to, freq=freq_)
+        print(dtlist)
+        return dtlist
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]
@@ -389,3 +385,48 @@ class CandleStick(object):
         tf_dt = dt.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
 
         return tf_dt
+
+
+if __name__ == "__main__":
+    from bokeh.models.glyphs import Line
+    from bokeh.models import Span
+#    import holoviews as hv
+
+    __BG_COLOR = "#2E2E2E"  # Background color
+
+    cs = CandleStick()
+
+    gran = oc.OandaGrn.D
+    dt_from = dt.datetime(year=2019, month=1, day=1,
+                          hour=0, minute=0, second=0)
+    dt_to = dt.datetime(year=2019, month=2, day=1, hour=12, minute=0, second=0)
+
+    dtlist = cs.add_orders_vline(gran, dt_from, dt_to)
+
+    plot = figure(
+        plot_height=400,
+        x_axis_type=bc.AxisTyp.X_DATETIME,
+        background_fill_color=__BG_COLOR,
+        title="Candlestick Chart"
+    )
+    plot.xaxis.major_label_orientation = pi / 4
+    plot.grid.grid_line_alpha = 0.3
+
+    x = dtlist
+    y = np.linspace(start=0, stop=dtlist.shape[0], num=dtlist.shape[0])
+
+    src = ColumnDataSource(dict(x=x, y=y))
+    print(src)
+
+    gly = Line(x="x", y="y", line_color="#f46d43",
+               line_width=6, line_alpha=0.6)
+
+    plot.add_glyph(src, gly)
+
+    vline = Span(location=(dtlist[0], dtlist[1]),
+                 dimension='height', line_color='green',
+                 line_dash='dashed', line_width=3)
+
+    plot.add_layout(vline)
+
+    show(plot)
