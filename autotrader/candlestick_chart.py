@@ -8,10 +8,9 @@ from retrying import retry
 from autotrader.bokeh_common import GlyphVbarAbs
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
-import datetime as dt
+from datetime import datetime, timedelta
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
-import numpy as np
 import autotrader.oanda_account as oa
 
 
@@ -242,7 +241,7 @@ class CandleStick(object):
         data = []
         for raw in ic.response[OandaRsp.CNDL]:
             dt_ = OandaGrn.convert_dtfmt(gran, raw[OandaRsp.TIME],
-                                         dt_ofs=dt.timedelta(hours=9),
+                                         dt_ofs=timedelta(hours=9),
                                          fmt=self.__DT_FMT)
             data.append([dt_,
                          raw[OandaRsp.VLM],
@@ -342,8 +341,8 @@ class CandleStick(object):
             freq_ = pd.offsets.Minute(20)
             minute_ = 20
 
-        str_ = dt.datetime(dt_from.year, dt_from.month,
-                           dt_from.day, hour_, minute_)
+        str_ = datetime(dt_from.year, dt_from.month,
+                        dt_from.day, hour_, minute_)
         end_ = dt_to
 
         date_ = pd.date_range(start=str_, end=end_, freq=freq_).to_pydatetime()
