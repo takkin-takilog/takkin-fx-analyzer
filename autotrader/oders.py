@@ -1,9 +1,9 @@
 from bokeh.plotting import figure
 from oandapyV20 import API
 from retrying import retry
+from datetime import datetime, timedelta
 from autotrader.oanda_common import OandaEnv
 from autotrader.bokeh_common import ToolType
-import datetime
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import autotrader.oanda_account as oa
@@ -80,11 +80,10 @@ class Orders(object):
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def fetch(self, inst, dt_):
 
-        print("-------------aaaaaa")
-        print(dt_.strftime(self.__DT_FMT))
+        jpdt = dt_ - timedelta(hours=9)
 
         params_ = {
-            "time": dt_.strftime(self.__DT_FMT),
+            "time": jpdt.strftime(self.__DT_FMT),
         }
 
         # APIへ過去データをリクエスト
@@ -156,6 +155,6 @@ class Orders(object):
         戻り値:
             tf_dt (str): 変換後の日付
         """
-        tdt = datetime.datetime.strptime(dt, self.__DT_FMT)
+        tdt = datetime.strptime(dt, self.__DT_FMT)
 
         return tdt

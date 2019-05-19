@@ -101,7 +101,7 @@ class OandaGrn(object):
         hour_ = 0
         minute_ = 0
         tdt = datetime.datetime.strptime(dt, fmt) + dt_ofs
-        if granularity is cls.D:
+        if granularity == cls.D:
             pass
         elif granularity == cls.H12:
             hour_ = 12 * (tdt.hour // 12)

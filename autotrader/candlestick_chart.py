@@ -301,24 +301,35 @@ class CandleStick(object):
 
     def add_orders_vline(self, gran, dt_from, dt_to):
 
+        hour_ = dt_from.hour
+        minute_ = dt_from.minute
         if gran == OandaGrn.D:
             freq_ = pd.offsets.Day(1)
+            hour_ = 0
+            minute_ = 0
         elif gran == OandaGrn.H12:
             freq_ = pd.offsets.Hour(12)
+            minute_ = 0
         elif gran == OandaGrn.H8:
             freq_ = pd.offsets.Hour(8)
+            minute_ = 0
         elif gran == OandaGrn.H6:
             freq_ = pd.offsets.Hour(6)
+            minute_ = 0
         elif gran == OandaGrn.H4:
             freq_ = pd.offsets.Hour(4)
+            minute_ = 0
         elif gran == OandaGrn.H3:
             freq_ = pd.offsets.Hour(3)
+            minute_ = 0
         elif gran == OandaGrn.H2:
             freq_ = pd.offsets.Hour(2)
+            minute_ = 0
         elif gran == OandaGrn.H1 or \
                 gran == OandaGrn.M30 or \
                 gran == OandaGrn.M15:
             freq_ = pd.offsets.Hour(1)
+            minute_ = 0
         elif gran == OandaGrn.M10 or \
                 gran == OandaGrn.M5 or \
                 gran == OandaGrn.M4 or \
@@ -326,41 +337,23 @@ class CandleStick(object):
                 gran == OandaGrn.M2 or \
                 gran == OandaGrn.M1:
             freq_ = pd.offsets.Minute(20)
+            minute_ = 20
         else:
             freq_ = pd.offsets.Minute(20)
+            minute_ = 20
 
-        """
-        str_ = OandaGrn.convert_dtfmt(gran, dt_from,
-                                      dt_ofs=dt.timedelta(hours=9),
-                                      fmt=self.__DT_FMT)
-        """
+        str_ = dt.datetime(dt_from.year, dt_from.month,
+                           dt_from.day, hour_, minute_)
+        end_ = dt_to
 
-        date_ = pd.date_range(start=dt_to, end=dt_from, freq=freq_).to_pydatetime()
-        print(date_)
+        date_ = pd.date_range(start=str_, end=end_, freq=freq_).to_pydatetime()
         data = {OrdersVbarGlyph.XDT: date_,
                 OrdersVbarGlyph.YBT: self.__yrng[0],
                 OrdersVbarGlyph.YTP: self.__yrng[1],
                 }
         df = pd.DataFrame(data)
         df = df.set_index(OrdersVbarGlyph.XDT)
-        print(df)
         """
-        df = df.set_index(_TIME)
-        df[OrdersVbarGlyph.YBT] = 0
-        df[OrdersVbarGlyph.YTP] = 0
-        """
-
-        """
-        df = pd.DataFrame(data)
-        df.columns = [_TIME,
-                      _VOLUME,
-                      _OPEN,
-                      _HIGH,
-                      _LOW,
-                      _CLOSE]
-        df = df.set_index(_TIME)
-
-
         self.__glyord.set_data(df, gran)
         self.__glyord.add_plot(self.__plt_main)
         """
@@ -374,92 +367,3 @@ class CandleStick(object):
             self.__plt_rang (figure) : レンジfigure[range figure]
         """
         return self.__plt_main, self.__plt_rang
-
-    def __change_dt_fmt(self, gran, date_):
-        """"日付フォーマットを変換する[change datetime format]
-        引数[Args]:
-            gran (str) : ローソク足の時間足[granularity of a candlestick]
-            date_ (str) : DT_FMT形式でフォーマットされた日付
-                         [datetime of formatted "DT_FMT" type]
-        戻り値[Returns]:
-            tf_dt (str) : 変換後の日付[changed datetime]
-        """
-        hour_ = 0
-        minute_ = 0
-        tdt = dt.datetime.strptime(date_, self.__DT_FMT)
-        if gran == OandaGrn.D:
-            pass
-        elif gran == OandaGrn.H12:
-            hour_ = 12 * (tdt.hour // 12)
-        elif gran == OandaGrn.H8:
-            hour_ = 8 * (tdt.hour // 8)
-        elif gran == OandaGrn.H6:
-            hour_ = 6 * (tdt.hour // 6)
-        elif gran == OandaGrn.H4:
-            hour_ = 4 * (tdt.hour // 4)
-        elif gran == OandaGrn.H3:
-            hour_ = 3 * (tdt.hour // 3)
-        elif gran == OandaGrn.H2:
-            hour_ = 2 * (tdt.hour // 2)
-        elif gran == OandaGrn.H1:
-            hour_ = 1 * (tdt.hour // 1)
-        elif gran == OandaGrn.M30:
-            hour_ = tdt.hour
-            minute_ = 30 * (tdt.minute // 30)
-        elif gran == OandaGrn.M15:
-            hour_ = tdt.hour
-            minute_ = 15 * (tdt.minute // 15)
-        elif gran == OandaGrn.M10:
-            hour_ = tdt.hour
-            minute_ = 10 * (tdt.minute // 10)
-        elif gran == OandaGrn.M5:
-            hour_ = tdt.hour
-            minute_ = 5 * (tdt.minute // 5)
-        elif gran == OandaGrn.M4:
-            hour_ = tdt.hour
-            minute_ = 4 * (tdt.minute // 4)
-        elif gran == OandaGrn.M3:
-            hour_ = tdt.hour
-            minute_ = 3 * (tdt.minute // 3)
-        elif gran == OandaGrn.M2:
-            hour_ = tdt.hour
-            minute_ = 2 * (tdt.minute // 2)
-        elif gran == OandaGrn.M1:
-            hour_ = tdt.hour
-            minute_ = 1 * (tdt.minute // 1)
-
-        tf_dt = dt.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
-
-        return tf_dt
-
-
-if __name__ == "__main__":
-    from bokeh.models.glyphs import Line
-    from bokeh.models import Span
-#    import holoviews as hv
-
-    __BG_COLOR = "#2E2E2E"  # Background color
-
-    cs = CandleStick()
-
-    gran = OandaGrn.D
-    dt_from = dt.datetime(year=2019, month=1, day=1,
-                          hour=0, minute=0, second=0)
-    dt_to = dt.datetime(year=2019, month=2, day=1, hour=12, minute=0, second=0)
-
-    dtlist = cs.add_orders_vline(gran, dt_from, dt_to)
-
-    plot = figure(
-        plot_height=400,
-        x_axis_type=AxisTyp.X_DATETIME,
-        background_fill_color=__BG_COLOR,
-        title="Candlestick Chart"
-    )
-    plot.xaxis.major_label_orientation = pi / 4
-    plot.grid.grid_line_alpha = 0.3
-
-    x = dtlist
-    y = np.linspace(start=0, stop=dtlist.shape[0], num=dtlist.shape[0])
-
-    src = ColumnDataSource(dict(x=x, y=y))
-    print(src)

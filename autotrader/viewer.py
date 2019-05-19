@@ -43,7 +43,7 @@ class Viewer(object):
     GRAN_D = "日足"
     GRAN_W = "週足"
 
-    def __init__(self, inst_def=INST_USDJPY, gran_def=GRAN_D):
+    def __init__(self, inst_def=INST_USDJPY, gran_def=GRAN_H1):
         """"コンストラクタ[Constructor]
         引数[Args]:
             inst_def (str) : 通貨ペア[instrument]
@@ -246,21 +246,15 @@ class Viewer(object):
     def __callback_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
 
-        date = datetime.fromtimestamp(int(event.x) / 1000)
+        date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         str_ = str(date) + ":" + str(event.y)
         self.__text_input.value = "Tap: " + str_
 
         # fetch Open Order and Position
-        dt_ = datetime(year=2019, month=5, day=3,
-                       hour=12, minute=25, second=0)
-        print("---------1")
-        print(date.strftime("%Y-%m-%dT%H:%M:00Z"))
-        print("---------2")
-        print(dt_.strftime("%Y-%m-%dT%H:%M:00Z"))
         self.__widord.fetch(self.__inst, date)
 
     def __callback_press(self, event):
-        date = datetime.fromtimestamp(int(event.x) / 1000)
+        date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         str_ = str(date) + ":" + str(event.y)
         self.__text_input.value = "Press: " + str_
 
