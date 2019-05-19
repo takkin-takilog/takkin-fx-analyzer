@@ -5,6 +5,8 @@ from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
 from retrying import retry
+from bokeh.io.showing import show
+from autotrader.bokeh_common import GlyphVbarAbs
 import datetime as dt
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
@@ -12,8 +14,6 @@ import numpy as np
 import autotrader.bokeh_common as bc
 import autotrader.oanda_common as oc
 import autotrader.oanda_account as oa
-from bokeh.io.showing import show
-
 
 # Pandas data label
 _TIME = "time"
@@ -24,7 +24,7 @@ _LOW = "low"
 _CLOSE = "close"
 
 
-class CandleGlyph(object):
+class CandleGlyph(GlyphVbarAbs):
     """ CandleGlyph
             - ローソク図形定義クラス[Candle stick glyph definition class]
     """
@@ -41,6 +41,8 @@ class CandleGlyph(object):
         """
         self.__WIDE_SCALE = 0.5
         self.__COLOR = color_
+
+        super().__init__(self.__WIDE_SCALE)
 
         self.__src = ColumnDataSource(
             dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[])
@@ -67,7 +69,8 @@ class CandleGlyph(object):
             yop=df[_OPEN].tolist(),
             ycl=df[_CLOSE].tolist(),
         )
-        self.__glvbar.width = self.__get_width(gran)
+        self.__glvbar.width = self.get_width(gran)
+        print(self.__glvbar.width)
 
     def add_plot(self, plt):
         """"プロットを追加する[add plot]
@@ -78,50 +81,6 @@ class CandleGlyph(object):
         """
         plt.add_glyph(self.__src, self.__glyseg)
         plt.add_glyph(self.__src, self.__glvbar)
-
-    def __get_width(self, gran):
-        """"ローソク足の幅を取得する[get candlestick width]
-        引数[Args]:
-            gran (str) : ローソク足の時間足[granularity of a candlestick]
-        戻り値[Returns]:
-            _width (int) : ローソク足の幅[candlestick width]
-        """
-        _width = 1
-        if gran == oc.OandaGrn.D:
-            _width = 24 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.H12:
-            _width = 12 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.H8:
-            _width = 8 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.H6:
-            _width = 6 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.H4:
-            _width = 4 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.H3:
-            _width = 3 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.H2:
-            _width = 2 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.H1:
-            _width = 1 * 60 * 60 * 1000
-        elif gran == oc.OandaGrn.M30:
-            _width = 30 * 60 * 1000
-        elif gran == oc.OandaGrn.M15:
-            _width = 15 * 60 * 1000
-        elif gran == oc.OandaGrn.M10:
-            _width = 10 * 60 * 1000
-        elif gran == oc.OandaGrn.M5:
-            _width = 5 * 60 * 1000
-        elif gran == oc.OandaGrn.M4:
-            _width = 4 * 60 * 1000
-        elif gran == oc.OandaGrn.M3:
-            _width = 3 * 60 * 1000
-        elif gran == oc.OandaGrn.M2:
-            _width = 2 * 60 * 1000
-        elif gran == oc.OandaGrn.M1:
-            _width = 1 * 60 * 1000
-
-        _width = _width * self.__WIDE_SCALE
-        return _width
 
 
 class CandleStick(object):
