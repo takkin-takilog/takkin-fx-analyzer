@@ -5,7 +5,6 @@ from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
 from retrying import retry
-from bokeh.io.showing import show
 from autotrader.bokeh_common import GlyphVbarAbs
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
@@ -71,7 +70,6 @@ class CandleGlyph(GlyphVbarAbs):
             ycl=df[_CLOSE].tolist(),
         )
         self.__glvbar.width = self.get_width(gran)
-        print(self.__glvbar.width)
 
     def add_plot(self, plt):
         """"プロットを追加する[add plot]
@@ -81,6 +79,56 @@ class CandleGlyph(GlyphVbarAbs):
             None
         """
         plt.add_glyph(self.__src, self.__glyseg)
+        plt.add_glyph(self.__src, self.__glvbar)
+
+
+class OrdersVbarGlyph(GlyphVbarAbs):
+    """ CandleGlyph
+            - ローソク図形定義クラス[Candle stick glyph definition class]
+    """
+    XDT = "xdt"  # X軸(datetime)
+    YTP = "ytp"  # Y軸 VbarのTop
+    YBT = "ybt"  # Y軸 VbarのBottom
+
+    def __init__(self, color_):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            None
+        """
+        self.__WIDE_SCALE = 0.1
+        self.__COLOR = color_
+
+        super().__init__(self.__WIDE_SCALE)
+
+        self.__src = ColumnDataSource(
+            dict(xdt=[], ytp=[], ybt=[])
+        )
+        self.__glvbar = VBar(x=self.XDT, top=self.YTP, bottom=self.YBT,
+                             fill_color=self.__COLOR, line_width=0,
+                             line_color=self.__COLOR)
+
+    def set_data(self, df, gran):
+        """"データを設定する[set glyph date]
+        引数[Args]:
+            df (pandas data frame) : pandasデータフレーム[pandas data frame]
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+        戻り値[Returns]:
+            None
+        """
+        self.__src.data = dict(
+            xdt=df.index.tolist(),
+            ytp=df[self.YTP].tolist(),
+            ybt=df[self.YBT].tolist(),
+        )
+        self.__glvbar.width = self.get_width(gran)
+
+    def add_plot(self, plt):
+        """"プロットを追加する[add plot]
+        引数[Args]:
+            plt (figure) : bokehのfigureクラス[class of bokeh's figure]
+        戻り値[Returns]:
+            None
+        """
         plt.add_glyph(self.__src, self.__glvbar)
 
 
@@ -104,9 +152,12 @@ class CandleStick(object):
 
         self.__CH_COLOR = "#FFFF00"  # Crosshair line color
 
+        self.__yrng = [0, 0]  # [min, max]
         self.__glyinc = CandleGlyph(self.__CND_INC_COLOR)
         self.__glydec = CandleGlyph(self.__CND_DEC_COLOR)
         self.__glyequ = CandleGlyph(self.__CND_EQU_COLOR)
+
+        self.__glyord = OrdersVbarGlyph(self.__CND_EQU_COLOR)
 
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=OandaEnv.PRACTICE)
@@ -242,6 +293,9 @@ class CandleStick(object):
         end_ = max_ + mar
         self.__plt_main.y_range.update(start=str_, end=end_)
         yrng = (str_, end_)
+        self.__yrng = [str_, end_]
+
+        self.add_orders_vline(gran, dt_from, dt_to)
 
         return yrng
 
@@ -275,9 +329,41 @@ class CandleStick(object):
         else:
             freq_ = pd.offsets.Minute(20)
 
-        dtlist = pd.date_range(start=dt_from, end=dt_to, freq=freq_)
-        print(dtlist)
-        return dtlist
+        """
+        str_ = OandaGrn.convert_dtfmt(gran, dt_from,
+                                      dt_ofs=dt.timedelta(hours=9),
+                                      fmt=self.__DT_FMT)
+        """
+
+        date_ = pd.date_range(start=dt_to, end=dt_from, freq=freq_).to_pydatetime()
+        print(date_)
+        data = {OrdersVbarGlyph.XDT: date_,
+                OrdersVbarGlyph.YBT: self.__yrng[0],
+                OrdersVbarGlyph.YTP: self.__yrng[1],
+                }
+        df = pd.DataFrame(data)
+        df = df.set_index(OrdersVbarGlyph.XDT)
+        print(df)
+        """
+        df = df.set_index(_TIME)
+        df[OrdersVbarGlyph.YBT] = 0
+        df[OrdersVbarGlyph.YTP] = 0
+        """
+
+        """
+        df = pd.DataFrame(data)
+        df.columns = [_TIME,
+                      _VOLUME,
+                      _OPEN,
+                      _HIGH,
+                      _LOW,
+                      _CLOSE]
+        df = df.set_index(_TIME)
+
+
+        self.__glyord.set_data(df, gran)
+        self.__glyord.add_plot(self.__plt_main)
+        """
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]
@@ -377,16 +463,3 @@ if __name__ == "__main__":
 
     src = ColumnDataSource(dict(x=x, y=y))
     print(src)
-
-    gly = Line(x="x", y="y", line_color="#f46d43",
-               line_width=6, line_alpha=0.6)
-
-    plot.add_glyph(src, gly)
-
-    vline = Span(location=(dtlist[0], dtlist[1]),
-                 dimension='height', line_color='green',
-                 line_dash='dashed', line_width=3)
-
-    plot.add_layout(vline)
-
-    show(plot)
