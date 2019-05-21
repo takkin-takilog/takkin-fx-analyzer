@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import autotrader.oanda_account as oa
+from dask.array.tests.test_numpy_compat import dtype
+from comtypes.npsupport import numpy
 
 
 # Pandas data label
@@ -344,18 +346,28 @@ class CandleStick(object):
         str_ = datetime(dt_from.year, dt_from.month,
                         dt_from.day, hour_, minute_)
         end_ = dt_to
+        """
+        self.__dtlist = pd.date_range(
+            start=str_, end=end_, freq=freq_).to_pydatetime()
+        """
+        dtlist = pd.date_range(start=str_, end=end_, freq=freq_).to_pydatetime()
+        self.__dtdf = pd.DataFrame(dtlist).astype('int64') // 10**9
 
-        date_ = pd.date_range(start=str_, end=end_, freq=freq_).to_pydatetime()
-        data = {OrdersVbarGlyph.XDT: date_,
+        """
+        data = {OrdersVbarGlyph.XDT: self.__dtlist,
                 OrdersVbarGlyph.YBT: self.__yrng[0],
                 OrdersVbarGlyph.YTP: self.__yrng[1],
                 }
         df = pd.DataFrame(data)
         df = df.set_index(OrdersVbarGlyph.XDT)
-        """
         self.__glyord.set_data(df, gran)
         self.__glyord.add_plot(self.__plt_main)
         """
+
+    def get_draw_vline(self, point):
+        print("--------------------1")
+        print(numpy.abs(point.timestamp() - self.__dtdf).idxmin())
+        # aaa = point - self.__dtlist
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]

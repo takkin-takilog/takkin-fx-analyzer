@@ -105,7 +105,8 @@ class Viewer(object):
                                     options=GRAN_OPS)
         self.__widsel_gran.on_change("value", self.__sel_gran_callback)
 
-        self.__text_input = TextInput(value="default", title="Label:")
+        self.__text_debug01 = TextInput(value="default", title="Label:")
+        self.__text_debug02 = TextInput(value="default", title="Label:")
 
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
@@ -248,7 +249,7 @@ class Viewer(object):
 
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         str_ = str(date) + ":" + str(event.y)
-        self.__text_input.value = "Tap: " + str_
+        self.__text_debug01.value = "Tap: " + str_
 
         # fetch Open Order and Position
         self.__widord.fetch(self.__inst, date)
@@ -256,7 +257,12 @@ class Viewer(object):
     def __callback_press(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         str_ = str(date) + ":" + str(event.y)
-        self.__text_input.value = "Press: " + str_
+        self.__text_debug01.value = "Press: " + str_
+
+    def __callback_mousemove(self, event):
+        date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
+        self.__text_debug02.value = "MouseMove: " + str(date)
+        self.__wicdl.get_draw_vline(date)
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -285,6 +291,7 @@ class Viewer(object):
 
         chart.on_event(events.Tap, self.__callback_tap)
         chart.on_event(events.Press, self.__callback_press)
+        chart.on_event(events.MouseMove, self.__callback_mousemove)
 
         chartlay = gridplot(
             [
@@ -297,7 +304,7 @@ class Viewer(object):
             [
                 [wbox1],
                 [chartlay],
-                [self.__text_input]
+                [row(children=[self.__text_debug01, self.__text_debug02])]
             ],
             merge_tools=False)
 
