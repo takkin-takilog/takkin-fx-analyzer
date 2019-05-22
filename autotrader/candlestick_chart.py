@@ -343,15 +343,26 @@ class CandleStick(object):
             freq_ = pd.offsets.Minute(20)
             minute_ = 20
 
+        print("=================1")
+        print(freq_)
+        print("=================2")
+        print(freq_/2)
+        print("=================3")
+
         str_ = datetime(dt_from.year, dt_from.month,
                         dt_from.day, hour_, minute_)
-        end_ = dt_to
+        end_ = dt_to + timedelta(hours=9)
         """
         self.__dtlist = pd.date_range(
             start=str_, end=end_, freq=freq_).to_pydatetime()
         """
         dtlist = pd.date_range(start=str_, end=end_, freq=freq_).to_pydatetime()
-        self.__dtdf = pd.DataFrame(dtlist).astype('int64') // 10**9
+        ofslist = dtlist + freq_/2
+        #self.__dtdf = pd.DataFrame(dtlist).astype('int64') // 10**9
+
+        self.__orddf = pd.DataFrame({'point': dtlist,
+                                     'thresh': ofslist})
+        print(self.__orddf)
 
         """
         data = {OrdersVbarGlyph.XDT: self.__dtlist,
@@ -364,10 +375,18 @@ class CandleStick(object):
         self.__glyord.add_plot(self.__plt_main)
         """
 
-    def get_draw_vline(self, point):
+    def get_draw_vline(self, point_):
         print("--------------------1")
-        print(numpy.abs(point.timestamp() - self.__dtdf).idxmin())
-        # aaa = point - self.__dtlist
+        print(point_)
+        print("--------------------2")
+        aaaa = self.__orddf["thresh"] > point_
+        # aaaa = self.__orddf["point"]
+        print(aaaa)
+
+        #aaaa = self.__orddf.loc[self.__orddf["thresh"] > point_, 'point']
+        #print(aaaa.astype('int64') // 10**9)
+        print("--------------------3")
+
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]
