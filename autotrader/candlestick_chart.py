@@ -343,28 +343,25 @@ class CandleStick(object):
             freq_ = pd.offsets.Minute(20)
             minute_ = 20
 
-        print("=================1")
-        print(freq_)
-        print("=================2")
-        print(freq_/2)
-        print("=================3")
-
         str_ = datetime(dt_from.year, dt_from.month,
-                        dt_from.day, hour_, minute_)
+                        dt_from.day, hour_, minute_) + timedelta(hours=9)
         end_ = dt_to + timedelta(hours=9)
         """
         self.__dtlist = pd.date_range(
             start=str_, end=end_, freq=freq_).to_pydatetime()
         """
-        dtlist = pd.date_range(start=str_, end=end_, freq=freq_).to_pydatetime()
-        ofslist = dtlist + freq_/2
-        #self.__dtdf = pd.DataFrame(dtlist).astype('int64') // 10**9
+        dtlist = pd.date_range(start=str_, end=end_, freq=freq_)
+        self.__dtdf = pd.DataFrame({"point": dtlist})
+        f_brackets = lambda x: x.timestamp()
+        self.__dtdf["thresh"] = self.__dtdf["point"].map(f_brackets)
+        print(self.__dtdf)
 
-        self.__orddf = pd.DataFrame({'point': dtlist,
-                                     'thresh': ofslist})
-        print(self.__orddf)
+        self.dtlist = dtlist
 
         """
+        self.__orddf = pd.DataFrame({'point': dtlist,
+                                     'thresh': ofslist})
+
         data = {OrdersVbarGlyph.XDT: self.__dtlist,
                 OrdersVbarGlyph.YBT: self.__yrng[0],
                 OrdersVbarGlyph.YTP: self.__yrng[1],
@@ -375,18 +372,20 @@ class CandleStick(object):
         self.__glyord.add_plot(self.__plt_main)
         """
 
-    def get_draw_vline(self, point_):
-        print("--------------------1")
-        print(point_)
-        print("--------------------2")
-        aaaa = self.__orddf["thresh"] > point_
-        # aaaa = self.__orddf["point"]
-        print(aaaa)
-
-        #aaaa = self.__orddf.loc[self.__orddf["thresh"] > point_, 'point']
-        #print(aaaa.astype('int64') // 10**9)
-        print("--------------------3")
-
+    def get_draw_vline(self, point):
+        # aaa = datetime(year=19, month=5, day=23)
+        # print(aaa)
+        # print(aaa.timestamp())
+        print("-------------------1")
+        print(point)
+        print(point.timestamp())
+        print("-------------------2")
+        print(self.__dtdf["point"].tail())
+        print(self.__dtdf["thresh"].tail())
+        print("-------------------3")
+        # print(numpy.abs(self.__dtdf["thresh"] - point.timestamp()))
+        #print(self.__utdf - point)
+        #print(numpy.abs(point.timestamp() - self.__utdf))
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]
