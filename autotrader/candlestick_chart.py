@@ -348,18 +348,11 @@ class CandleStick(object):
                         dttky_.day, hour_, minute_)
         end_ = gmtend.tokyo
 
-        dtlist = pd.date_range(start=str_, end=end_,
-                               freq=freq_, tz="Asia/Tokyo").to_pydatetime()
-        self.__dtdf = pd.DataFrame({"point": dtlist})
-        self.__dtdf["thresh"] = self.__dtdf["point"].map(
-            lambda x: x.timestamp())
+        dti = pd.date_range(start=str_, end=end_, freq=freq_)
+        uti = dti.tz_localize('Asia/Tokyo').astype(np.int64) // 10**9
 
-        print(self.__dtdf.tail(3))
+        self.__dtdf = pd.DataFrame({"timestamp": dti, "unixtime":uti})
 
-        for index, row in self.__dtdf.iterrows():
-            aaa = row['point']
-            bb =  aaa.timestamp()
-            print("{}   {}" .format(aaa, aaa.timestamp()))
 
         """
         self.__orddf = pd.DataFrame({'point': dtlist,
@@ -376,11 +369,11 @@ class CandleStick(object):
         """
 
     def get_draw_vline(self, point, gran):
-        idxmin = np.abs(self.__dtdf["thresh"] - point.timestamp()).idxmin()
+        idxmin = np.abs(self.__dtdf["unixtime"] - point.timestamp()).idxmin()
 
         if not self.__idxmin == idxmin:
             data = []
-            data.append([self.__dtdf["point"][idxmin],
+            data.append([self.__dtdf["timestamp"][idxmin],
                          self.__yrng[0],
                          self.__yrng[1],
                          ])
@@ -392,7 +385,6 @@ class CandleStick(object):
             # date型を整形する
             df.index = pd.to_datetime(df.index)
 
-            print(df)
             self.__glyord.set_data(df, gran)
             self.__glyord.add_plot(self.__plt_main)
             self.__idxmin = idxmin
