@@ -267,7 +267,7 @@ class Viewer(object):
     def __callback_mousemove(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         self.__text_debug02.value = "MouseMove: " + str(date)
-        self.__wicdl.get_draw_vline(date)
+        self.__wicdl.get_draw_vline(date, self.__gran)
 
     def get_layout(self):
         """レイアウトを取得する[get layout]

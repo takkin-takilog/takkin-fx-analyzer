@@ -9,11 +9,10 @@ from autotrader.bokeh_common import GlyphVbarAbs
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
 from datetime import datetime, timedelta
+from comtypes.npsupport import numpy as np
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import autotrader.oanda_account as oa
-from dask.array.tests.test_numpy_compat import dtype
-from comtypes.npsupport import numpy
 
 
 # Pandas data label
@@ -214,6 +213,8 @@ class CandleStick(object):
         ch.line_alpha = 0.7
         self.__plt_main.add_tools(ch)
 
+        self.__idxmin = -1
+
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, gmtstr, gmtend):
         """"ローソク足情報を取得する[fetch candles]
@@ -296,11 +297,11 @@ class CandleStick(object):
         yrng = (str_, end_)
         self.__yrng = [str_, end_]
 
-        self.add_orders_vline(gran, gmtstr, gmtend)
+        self.__add_orders_vline(gran, gmtstr, gmtend)
 
         return yrng
 
-    def add_orders_vline(self, gran, gmtstr, gmtend):
+    def __add_orders_vline(self, gran, gmtstr, gmtend):
         hour_ = gmtstr.tokyo.hour
         minute_ = gmtend.tokyo.minute
         if gran == OandaGrn.D:
@@ -347,30 +348,18 @@ class CandleStick(object):
                         dttky_.day, hour_, minute_)
         end_ = gmtend.tokyo
 
-        print("tttttttttttttttttttt")
-        print(end_)
-        print(datetime.now())
-
-        """
-        self.__dtlist = pd.date_range(
-            start=str_, end=end_, freq=freq_).to_pydatetime()
-        """
-
-        dtlist = pd.date_range(start=str_, end=end_, freq=freq_, tz="Asia/Tokyo")
+        dtlist = pd.date_range(start=str_, end=end_,
+                               freq=freq_, tz="Asia/Tokyo").to_pydatetime()
         self.__dtdf = pd.DataFrame({"point": dtlist})
-        f_brackets = lambda x: x.timestamp()
-        # self.__dtdf["thresh"] = self.__dtdf["point"].map(f_brackets)
-        self.__dtdf["thresh"] = self.__dtdf["point"]
-        print("--------------------1")
-        print(self.__dtdf)
-        print("--------------------2")
-        self.dtlist = dtlist
+        self.__dtdf["thresh"] = self.__dtdf["point"].map(
+            lambda x: x.timestamp())
+
+        print(self.__dtdf.tail(3))
 
         for index, row in self.__dtdf.iterrows():
             aaa = row['point']
-            bbb = datetime.fromtimestamp(aaa.timestamp())
+            bb =  aaa.timestamp()
             print("{}   {}" .format(aaa, aaa.timestamp()))
-            b = aaa
 
         """
         self.__orddf = pd.DataFrame({'point': dtlist,
@@ -386,20 +375,27 @@ class CandleStick(object):
         self.__glyord.add_plot(self.__plt_main)
         """
 
-    def get_draw_vline(self, point):
-        # aaa = datetime(year=19, month=5, day=23)
-        # print(aaa)
-        # print(aaa.timestamp())
-        print("-------------------1")
-        print(point)
-        print(point.timestamp())
-        print("-------------------2")
-        print(self.__dtdf["point"].tail())
-        print(self.__dtdf["thresh"].tail())
-        print("-------------------3")
-        # print(numpy.abs(self.__dtdf["thresh"] - point.timestamp()))
-        #print(self.__utdf - point)
-        #print(numpy.abs(point.timestamp() - self.__utdf))
+    def get_draw_vline(self, point, gran):
+        idxmin = np.abs(self.__dtdf["thresh"] - point.timestamp()).idxmin()
+
+        if not self.__idxmin == idxmin:
+            data = []
+            data.append([self.__dtdf["point"][idxmin],
+                         self.__yrng[0],
+                         self.__yrng[1],
+                         ])
+            df = pd.DataFrame(data)
+            df.columns = [OrdersVbarGlyph.XDT,
+                          OrdersVbarGlyph.YBT,
+                          OrdersVbarGlyph.YTP]
+            df = df.set_index(OrdersVbarGlyph.XDT)
+            # date型を整形する
+            df.index = pd.to_datetime(df.index)
+
+            print(df)
+            self.__glyord.set_data(df, gran)
+            self.__glyord.add_plot(self.__plt_main)
+            self.__idxmin = idxmin
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]
