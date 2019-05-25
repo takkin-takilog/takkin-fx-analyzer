@@ -215,21 +215,21 @@ class CandleStick(object):
         self.__plt_main.add_tools(ch)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
-    def fetch(self, gran, inst, dt_from, dt_to):
+    def fetch(self, gran, inst, gmtstr, gmtend):
         """"ローソク足情報を取得する[fetch candles]
         引数[Args]:
             gran (str) : ローソク足の時間足[granularity of a candlestick]
             inst (str) : 通貨ペア[instrument]
-            dt_from (datetime) : 開始日時[from date]
-            dt_to (datetime) : 終了日時[to date]
+            gmtstr (DateTimeManager) : 開始日時[from date]
+            gmtend (DateTimeManager) : 終了日時[to date]
         戻り値[Returns]:
             yrng (tuple) : Y軸の最小値、最大値 (min, max)
                            [Y range min and max]
         """
         params_ = {
             # "alignmentTimezone": "Japan",
-            "from": dt_from.strftime(self.__DT_FMT),
-            "to": dt_to.strftime(self.__DT_FMT),
+            "from": gmtstr.gmt.strftime(self.__DT_FMT),
+            "to": gmtend.gmt.strftime(self.__DT_FMT),
             "granularity": gran
         }
 
@@ -296,14 +296,13 @@ class CandleStick(object):
         yrng = (str_, end_)
         self.__yrng = [str_, end_]
 
-        self.add_orders_vline(gran, dt_from, dt_to)
+        self.add_orders_vline(gran, gmtstr, gmtend)
 
         return yrng
 
-    def add_orders_vline(self, gran, dt_from, dt_to):
-
-        hour_ = dt_from.hour
-        minute_ = dt_from.minute
+    def add_orders_vline(self, gran, gmtstr, gmtend):
+        hour_ = gmtstr.tokyo.hour
+        minute_ = gmtend.tokyo.minute
         if gran == OandaGrn.D:
             freq_ = pd.offsets.Day(1)
             hour_ = 0
@@ -343,20 +342,35 @@ class CandleStick(object):
             freq_ = pd.offsets.Minute(20)
             minute_ = 20
 
-        str_ = datetime(dt_from.year, dt_from.month,
-                        dt_from.day, hour_, minute_) + timedelta(hours=9)
-        end_ = dt_to + timedelta(hours=9)
+        dttky_ = gmtstr.tokyo
+        str_ = datetime(dttky_.year, dttky_.month,
+                        dttky_.day, hour_, minute_)
+        end_ = gmtend.tokyo
+
+        print("tttttttttttttttttttt")
+        print(end_)
+        print(datetime.now())
+
         """
         self.__dtlist = pd.date_range(
             start=str_, end=end_, freq=freq_).to_pydatetime()
         """
-        dtlist = pd.date_range(start=str_, end=end_, freq=freq_)
+
+        dtlist = pd.date_range(start=str_, end=end_, freq=freq_, tz="Asia/Tokyo")
         self.__dtdf = pd.DataFrame({"point": dtlist})
         f_brackets = lambda x: x.timestamp()
-        self.__dtdf["thresh"] = self.__dtdf["point"].map(f_brackets)
+        # self.__dtdf["thresh"] = self.__dtdf["point"].map(f_brackets)
+        self.__dtdf["thresh"] = self.__dtdf["point"]
+        print("--------------------1")
         print(self.__dtdf)
-
+        print("--------------------2")
         self.dtlist = dtlist
+
+        for index, row in self.__dtdf.iterrows():
+            aaa = row['point']
+            bbb = datetime.fromtimestamp(aaa.timestamp())
+            print("{}   {}" .format(aaa, aaa.timestamp()))
+            b = aaa
 
         """
         self.__orddf = pd.DataFrame({'point': dtlist,

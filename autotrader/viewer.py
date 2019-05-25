@@ -8,6 +8,7 @@ from oandapyV20.exceptions import V20Error
 from autotrader.candlestick_chart import CandleStick
 from autotrader.oders import Orders
 from autotrader.oanda_common import OandaGrn, OandaIns
+from autotrader.utils import DateTimeManager
 
 
 class Viewer(object):
@@ -111,14 +112,14 @@ class Viewer(object):
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
-        from_, to_ = self.__get_period(self.__gran, self.__DISP_NUM)
-        self.__dt_to = to_
-        self.__dt_from = from_
+        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__DISP_NUM)
+        self.__gmtstr = gmtstr_
+        self.__gmtend = gmtend_
 
         self.__wicdl = CandleStick()
         try:
             yrng = self.__wicdl.fetch(self.__gran, self.__inst,
-                                      self.__dt_from, self.__dt_to)
+                                      self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
@@ -134,11 +135,12 @@ class Viewer(object):
             gran (str) : ローソク足の時間足[granularity of a candlestick]
             num (int) : ローソクの表示本数[number of drawn candlestick]
         戻り値[Returns]:
-            from_ (datetime) : 開始日時[from date]
-            to_ (datetime) : 終了日時[to date]
+            dtmstr (DateTimeManager) : 開始日時[start date]
+            dtmend (DateTimeManager) : 終了日時[end date]
         """
-        # 標準時の現在時刻を取得
-        now_ = datetime.now() - timedelta(hours=9)
+        # 現在時刻を取得
+        dtm = DateTimeManager(datetime.now())
+        now_ = dtm.tokyo
         to_ = datetime(now_.year, now_.month, now_.day,
                        now_.hour, now_.minute, now_.second)
 
@@ -175,7 +177,10 @@ class Viewer(object):
         elif gran == OandaGrn.M1:
             from_ = to_ - timedelta(minutes=num)
 
-        return from_, to_
+        dtmstr = DateTimeManager(from_)
+        dtmend = DateTimeManager(to_)
+
+        return dtmstr, dtmend
 
     def __sel_inst_callback(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
@@ -189,7 +194,7 @@ class Viewer(object):
         self.__inst = self.__INST_DICT[new]
         try:
             yrng = self.__wicdl.fetch(self.__gran, self.__inst,
-                                      self.__dt_from, self.__dt_to)
+                                      self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
@@ -209,12 +214,12 @@ class Viewer(object):
             なし[None]
         """
         self.__gran = self.__GRAN_DICT[new]
-        from_, to_ = self.__get_period(self.__gran, self.__DISP_NUM)
-        self.__dt_to = to_
-        self.__dt_from = from_
+        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__DISP_NUM)
+        self.__gmtstr = gmtstr_
+        self.__gmtend = gmtend_
         try:
             yrng = self.__wicdl.fetch(self.__gran, self.__inst,
-                                      self.__dt_from, self.__dt_to)
+                                      self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
