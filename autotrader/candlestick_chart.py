@@ -44,9 +44,10 @@ class CandleGlyph(GlyphVbarAbs):
 
         super().__init__(self.__WIDE_SCALE)
 
-        self.__src = ColumnDataSource(
-            dict(xdt=[], yhi=[], ylo=[], yop=[], ycl=[])
-        )
+        self.__src = ColumnDataSource({self.XDT: [], self.YHI: [],
+                                       self.YLO: [], self.YOP: [],
+                                       self.YCL: []})
+
         self.__glyseg = Segment(x0=self.XDT, y0=self.YLO, x1=self.XDT,
                                 y1=self.YHI, line_color=self.__COLOR,
                                 line_width=1)
@@ -62,13 +63,14 @@ class CandleGlyph(GlyphVbarAbs):
         戻り値[Returns]:
             None
         """
-        self.__src.data = dict(
-            xdt=df.index.tolist(),
-            ylo=df[_LOW].tolist(),
-            yhi=df[_HIGH].tolist(),
-            yop=df[_OPEN].tolist(),
-            ycl=df[_CLOSE].tolist(),
-        )
+        self.__src.data = {
+            self.XDT: df.index.tolist(),
+            self.YHI: df[_HIGH].tolist(),
+            self.YLO: df[_LOW].tolist(),
+            self.YOP: df[_OPEN].tolist(),
+            self.YCL: df[_CLOSE].tolist()
+        }
+
         self.__glvbar.width = self.get_width(gran)
 
     def add_plot(self, plt):
@@ -99,7 +101,7 @@ class OrdersVLineGlyph(object):
 
         # super().__init__(self.__WIDE_SCALE)
 
-        self.__src = ColumnDataSource(dict(xdt=[], ypr=[]))
+        self.__src = ColumnDataSource({self.XDT: [], self.YPR: []})
         self.__glvline = Line(
             x=self.XDT, y=self.YPR, line_color=self.__COLOR,
             line_dash="dashed", line_width=self.__WIDETH, line_alpha=0.5)
