@@ -1,8 +1,8 @@
 from math import pi
 from bokeh.models import Range1d, RangeTool, ColumnDataSource
-from bokeh.models import HoverTool, CrosshairTool
+from bokeh.models import HoverTool
 from bokeh.plotting import figure
-from bokeh.models.glyphs import Segment, VBar
+from bokeh.models.glyphs import Segment, VBar, Line
 from oandapyV20 import API
 from retrying import retry
 from autotrader.bokeh_common import GlyphVbarAbs
@@ -82,32 +82,29 @@ class CandleGlyph(GlyphVbarAbs):
         plt.add_glyph(self.__src, self.__glvbar)
 
 
-class OrdersVbarGlyph(GlyphVbarAbs):
-    """ CandleGlyph
-            - ローソク図形定義クラス[Candle stick glyph definition class]
+class OrdersVLineGlyph(object):
+    """ OrdersVLineGlyph
+            - オーダー垂直線定義クラス[Orders vertical line glyph definition class]
     """
     XDT = "xdt"  # X軸(datetime)
-    YTP = "ytp"  # Y軸 VbarのTop
-    YBT = "ybt"  # Y軸 VbarのBottom
+    YPR = "ypr"  # Y軸(float)
 
     def __init__(self, color_):
         """"コンストラクタ[Constructor]
         引数[Args]:
             None
         """
-        self.__WIDE_SCALE = 0.1
+        self.__WIDETH = 1
         self.__COLOR = color_
 
-        super().__init__(self.__WIDE_SCALE)
+        # super().__init__(self.__WIDE_SCALE)
 
-        self.__src = ColumnDataSource(
-            dict(xdt=[], ytp=[], ybt=[])
-        )
-        self.__glvbar = VBar(x=self.XDT, top=self.YTP, bottom=self.YBT,
-                             fill_color=self.__COLOR, line_width=0,
-                             line_color=self.__COLOR)
+        self.__src = ColumnDataSource(dict(xdt=[], ypr=[]))
+        self.__glvline = Line(
+            x=self.XDT, y=self.YPR, line_color=self.__COLOR,
+            line_dash="dashed", line_width=self.__WIDETH, line_alpha=0.5)
 
-    def set_data(self, df, gran):
+    def set_data(self, dict_):
         """"データを設定する[set glyph date]
         引数[Args]:
             df (pandas data frame) : pandasデータフレーム[pandas data frame]
@@ -115,12 +112,8 @@ class OrdersVbarGlyph(GlyphVbarAbs):
         戻り値[Returns]:
             None
         """
-        self.__src.data = dict(
-            xdt=df.index.tolist(),
-            ytp=df[self.YTP].tolist(),
-            ybt=df[self.YBT].tolist(),
-        )
-        self.__glvbar.width = self.get_width(gran)
+        self.__src.data = dict_
+        # self.__glvline.width = self.get_width(gran)
 
     def add_plot(self, plt):
         """"プロットを追加する[add plot]
@@ -129,7 +122,7 @@ class OrdersVbarGlyph(GlyphVbarAbs):
         戻り値[Returns]:
             None
         """
-        plt.add_glyph(self.__src, self.__glvbar)
+        plt.add_glyph(self.__src, self.__glvline)
 
 
 class CandleStick(object):
@@ -157,7 +150,7 @@ class CandleStick(object):
         self.__glydec = CandleGlyph(self.__CND_DEC_COLOR)
         self.__glyequ = CandleGlyph(self.__CND_EQU_COLOR)
 
-        self.__glyord = OrdersVbarGlyph(self.__CND_EQU_COLOR)
+        self.__glyord = OrdersVLineGlyph(self.__CND_EQU_COLOR)
 
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=OandaEnv.PRACTICE)
@@ -207,11 +200,13 @@ class CandleStick(object):
                           (_LOW, "@" + CandleGlyph.YLO)]
         self.__plt_main.add_tools(hover)
 
+        """
         ch = CrosshairTool()
         ch.dimensions = "height"
         ch.line_color = self.__CH_COLOR
         ch.line_alpha = 0.7
         self.__plt_main.add_tools(ch)
+        """
 
         self.__idxmin = -1
 
@@ -351,41 +346,17 @@ class CandleStick(object):
         dti = pd.date_range(start=str_, end=end_, freq=freq_)
         uti = dti.tz_localize('Asia/Tokyo').astype(np.int64) // 10**9
 
-        self.__dtdf = pd.DataFrame({"timestamp": dti, "unixtime":uti})
+        self.__dtdf = pd.DataFrame({"timestamp": dti, "unixtime": uti})
 
-
-        """
-        self.__orddf = pd.DataFrame({'point': dtlist,
-                                     'thresh': ofslist})
-
-        data = {OrdersVbarGlyph.XDT: self.__dtlist,
-                OrdersVbarGlyph.YBT: self.__yrng[0],
-                OrdersVbarGlyph.YTP: self.__yrng[1],
-                }
-        df = pd.DataFrame(data)
-        df = df.set_index(OrdersVbarGlyph.XDT)
-        self.__glyord.set_data(df, gran)
-        self.__glyord.add_plot(self.__plt_main)
-        """
-
-    def get_draw_vline(self, point, gran):
+    def get_draw_vline(self, point):
         idxmin = np.abs(self.__dtdf["unixtime"] - point.timestamp()).idxmin()
 
         if not self.__idxmin == idxmin:
-            data = []
-            data.append([self.__dtdf["timestamp"][idxmin],
-                         self.__yrng[0],
-                         self.__yrng[1],
-                         ])
-            df = pd.DataFrame(data)
-            df.columns = [OrdersVbarGlyph.XDT,
-                          OrdersVbarGlyph.YBT,
-                          OrdersVbarGlyph.YTP]
-            df = df.set_index(OrdersVbarGlyph.XDT)
-            # date型を整形する
-            df.index = pd.to_datetime(df.index)
+            idxmindt = self.__dtdf["timestamp"][idxmin]
+            dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
+                     OrdersVLineGlyph.YPR: self.__yrng}
 
-            self.__glyord.set_data(df, gran)
+            self.__glyord.set_data(dict_)
             self.__glyord.add_plot(self.__plt_main)
             self.__idxmin = idxmin
 

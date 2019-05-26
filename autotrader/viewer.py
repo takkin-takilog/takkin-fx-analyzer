@@ -1,6 +1,5 @@
 from bokeh.io import show
 from bokeh.layouts import gridplot, row
-from bokeh.models import CustomJS, Div
 from bokeh.models.widgets import Select, TextInput
 from bokeh import events
 from datetime import datetime, timedelta
@@ -229,26 +228,6 @@ class Viewer(object):
 
         self.__widord.update_yrange(yrng)
 
-    def __callback_disp(self, div, attributes=[],
-                        style='float:left;clear:left;font_size=10pt'):
-        return CustomJS(args=dict(div=div), code="""
-        var attrs = %s; var args = [];
-        for (var i = 0; i<attrs.length; i++) {
-            if (attrs[i] == "x") {
-                var date = new Date(cb_obj[attrs[i]])
-                args.push(attrs[i] + '=' + date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes());
-            }else{
-                args.push(attrs[i] + '=' + Number(cb_obj[attrs[i]]).toFixed(2));
-            }
-        }
-        var line = "<span style=%r><b>" + cb_obj.event_name + "</b>(" + args.join(", ") + ")</span>\\n";
-        var text = div.text.concat(line);
-        var lines = text.split("\\n")
-        if (lines.length > 20)
-            lines.shift();
-        div.text = lines.join("\\n");
-    """ % (attributes, style))
-
     def __callback_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
 
@@ -267,7 +246,7 @@ class Viewer(object):
     def __callback_mousemove(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         self.__text_debug02.value = "MouseMove: " + str(date)
-        self.__wicdl.get_draw_vline(date, self.__gran)
+        self.__wicdl.get_draw_vline(date)
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -283,24 +262,13 @@ class Viewer(object):
         chart, rang = self.__wicdl.get_widget()
         order, posi = self.__widord.get_widget()
 
-        point_events = [
-            events.Tap, events.DoubleTap, events.Press,
-            events.MouseMove, events.MouseEnter, events.MouseLeave
-        ]
-        point_attributes = ['x', 'y', 'sx', 'sy']  # Point events
-        div = Div(width=400, height=400, height_policy="fixed")
-
-        for event in point_events:
-            chart.js_on_event(event, self.__callback_disp(
-                div, attributes=point_attributes))
-
         chart.on_event(events.Tap, self.__callback_tap)
         chart.on_event(events.Press, self.__callback_press)
         chart.on_event(events.MouseMove, self.__callback_mousemove)
 
         chartlay = gridplot(
             [
-                [order, posi, chart, div],
+                [order, posi, chart],
                 [None, None, rang],
             ],
             merge_tools=False)
