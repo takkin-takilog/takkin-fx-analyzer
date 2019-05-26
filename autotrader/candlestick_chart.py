@@ -50,7 +50,7 @@ class CandleGlyph(GlyphVbarAbs):
 
         self.__glyseg = Segment(x0=self.XDT, y0=self.YLO, x1=self.XDT,
                                 y1=self.YHI, line_color=self.__COLOR,
-                                line_width=1)
+                                line_width=2)
         self.__glvbar = VBar(x=self.XDT, top=self.YOP, bottom=self.YCL,
                              fill_color=self.__COLOR, line_width=0,
                              line_color=self.__COLOR)
@@ -104,7 +104,7 @@ class OrdersVLineGlyph(object):
         self.__src = ColumnDataSource({self.XDT: [], self.YPR: []})
         self.__glvline = Line(
             x=self.XDT, y=self.YPR, line_color=self.__COLOR,
-            line_dash="dashed", line_width=self.__WIDETH, line_alpha=0.5)
+            line_dash="dashed", line_width=self.__WIDETH, line_alpha=1.0)
 
     def set_data(self, dict_):
         """"データを設定する[set glyph date]
@@ -145,14 +145,18 @@ class CandleStick(object):
         self.__WIDE_SCALE = 0.2
         self.__YRANGE_MARGIN = 0.1
 
-        self.__CH_COLOR = "#FFFF00"  # Crosshair line color
+        self.__ORDLINE_CND_COLOR = "yellow"
+        self.__ORDLINE_FIX_COLOR = "cyan"
+
+        # self.__CH_COLOR = "#FFFF00"  # Crosshair line color
 
         self.__yrng = [0, 0]  # [min, max]
         self.__glyinc = CandleGlyph(self.__CND_INC_COLOR)
         self.__glydec = CandleGlyph(self.__CND_DEC_COLOR)
         self.__glyequ = CandleGlyph(self.__CND_EQU_COLOR)
 
-        self.__glyord = OrdersVLineGlyph(self.__CND_EQU_COLOR)
+        self.__glyordcnd = OrdersVLineGlyph(self.__ORDLINE_CND_COLOR)
+        self.__glyordfix = OrdersVLineGlyph(self.__ORDLINE_FIX_COLOR)
 
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=OandaEnv.PRACTICE)
@@ -201,7 +205,8 @@ class CandleStick(object):
                           (_CLOSE, "@" + CandleGlyph.YCL),
                           (_LOW, "@" + CandleGlyph.YLO)]
         self.__plt_main.add_tools(hover)
-
+        self.__idxmin = -1
+        self.__idxmindt = -1
         """
         ch = CrosshairTool()
         ch.dimensions = "height"
@@ -209,8 +214,6 @@ class CandleStick(object):
         ch.line_alpha = 0.7
         self.__plt_main.add_tools(ch)
         """
-
-        self.__idxmin = -1
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, gmtstr, gmtend):
@@ -290,11 +293,11 @@ class CandleStick(object):
         mar = self.__YRANGE_MARGIN * (max_ - min_)
         str_ = min_ - mar
         end_ = max_ + mar
-        self.__plt_main.y_range.update(start=str_, end=end_)
         yrng = (str_, end_)
         self.__yrng = [str_, end_]
 
         self.__add_orders_vline(gran, gmtstr, gmtend)
+        self.__plt_main.y_range.update(start=str_, end=end_)
 
         return yrng
 
@@ -350,7 +353,7 @@ class CandleStick(object):
 
         self.__dtdf = pd.DataFrame({"timestamp": dti, "unixtime": uti})
 
-    def get_draw_vline(self, point):
+    def draw_orders_cand_vline(self, point):
         idxmin = np.abs(self.__dtdf["unixtime"] - point.timestamp()).idxmin()
 
         if not self.__idxmin == idxmin:
@@ -358,9 +361,22 @@ class CandleStick(object):
             dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
                      OrdersVLineGlyph.YPR: self.__yrng}
 
-            self.__glyord.set_data(dict_)
-            self.__glyord.add_plot(self.__plt_main)
+            self.__glyordcnd.set_data(dict_)
+            self.__glyordcnd.add_plot(self.__plt_main)
+            self.__idxmindt = idxmindt
             self.__idxmin = idxmin
+
+    def draw_orders_fix_vline(self):
+
+        idxmindt = self.__idxmindt
+        dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
+                 OrdersVLineGlyph.YPR: self.__yrng}
+        self.__glyordfix.set_data(dict_)
+        self.__glyordfix.add_plot(self.__plt_main)
+
+    @property
+    def orders_fetch_datetime(self):
+        return self.__idxmindt
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]

@@ -236,7 +236,8 @@ class Viewer(object):
         self.__text_debug01.value = "Tap: " + str_
 
         # fetch Open Order and Position
-        self.__widord.fetch(self.__inst, date)
+        self.__widord.fetch(self.__inst, self.__wicdl.orders_fetch_datetime)
+        self.__wicdl.draw_orders_fix_vline()
 
     def __callback_press(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
@@ -246,7 +247,7 @@ class Viewer(object):
     def __callback_mousemove(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         self.__text_debug02.value = "MouseMove: " + str(date)
-        self.__wicdl.get_draw_vline(date)
+        self.__wicdl.draw_orders_cand_vline(date)
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
