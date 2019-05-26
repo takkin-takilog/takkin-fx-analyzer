@@ -115,6 +115,10 @@ class OrdersVLineGlyph(object):
         """
         self.__src.data = dict_
 
+    def clear(self):
+        dict_ = {self.XDT: [], self.YPR: []}
+        self.__src.data = dict_
+
 
 class CandleStick(object):
     """ CandleStick
@@ -269,6 +273,9 @@ class CandleStick(object):
         self.__glydec.update(df[decflg], gran)
         self.__glyequ.update(df[equflg], gran)
 
+        self.__glyordcnd.clear()
+        self.__glyordfix.clear()
+
         len_ = int(len(df) * self.__WIDE_SCALE)
         self.__plt_main.x_range.update(
             start=df.index[-len_], end=OandaGrn.offset(df.index[-1], gran))
@@ -285,6 +292,7 @@ class CandleStick(object):
 
         self.__add_orders_vline(gran, gmtstr, gmtend)
         self.__plt_main.y_range.update(start=str_, end=end_)
+        print("スケール更新：str={}, end={}" .format(str_, end_))
 
         return yrng
 
