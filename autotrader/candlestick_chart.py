@@ -34,7 +34,7 @@ class CandleGlyph(GlyphVbarAbs):
     YOP = "yop"
     YCL = "ycl"
 
-    def __init__(self, color_):
+    def __init__(self, pltmain, pltrng, color_):
         """"コンストラクタ[Constructor]
         引数[Args]:
             None
@@ -55,7 +55,15 @@ class CandleGlyph(GlyphVbarAbs):
                              fill_color=self.__COLOR, line_width=0,
                              line_color=self.__COLOR)
 
-    def set_data(self, df, gran):
+        self.__pltmain = pltmain
+        self.__pltmain.add_glyph(self.__src, self.__glyseg)
+        self.__pltmain.add_glyph(self.__src, self.__glvbar)
+
+        self.__pltrng = pltrng
+        self.__pltrng.add_glyph(self.__src, self.__glyseg)
+        self.__pltrng.add_glyph(self.__src, self.__glvbar)
+
+    def update(self, df, gran):
         """"データを設定する[set glyph date]
         引数[Args]:
             df (pandas data frame) : pandasデータフレーム[pandas data frame]
@@ -73,16 +81,6 @@ class CandleGlyph(GlyphVbarAbs):
 
         self.__glvbar.width = self.get_width(gran)
 
-    def add_plot(self, plt):
-        """"プロットを追加する[add plot]
-        引数[Args]:
-            plt (figure) : bokehのfigureクラス[class of bokeh's figure]
-        戻り値[Returns]:
-            None
-        """
-        plt.add_glyph(self.__src, self.__glyseg)
-        plt.add_glyph(self.__src, self.__glvbar)
-
 
 class OrdersVLineGlyph(object):
     """ OrdersVLineGlyph
@@ -91,7 +89,7 @@ class OrdersVLineGlyph(object):
     XDT = "xdt"  # X軸(datetime)
     YPR = "ypr"  # Y軸(float)
 
-    def __init__(self, color_):
+    def __init__(self, plt, color_):
         """"コンストラクタ[Constructor]
         引数[Args]:
             None
@@ -99,15 +97,16 @@ class OrdersVLineGlyph(object):
         self.__WIDETH = 1
         self.__COLOR = color_
 
-        # super().__init__(self.__WIDE_SCALE)
-
         self.__src = ColumnDataSource({self.XDT: [], self.YPR: []})
         self.__glvline = Line(
             x=self.XDT, y=self.YPR, line_color=self.__COLOR,
             line_dash="dashed", line_width=self.__WIDETH, line_alpha=1.0)
 
-    def set_data(self, dict_):
-        """"データを設定する[set glyph date]
+        self.__plt = plt
+        self.__plt.add_glyph(self.__src, self.__glvline)
+
+    def update(self, dict_):
+        """"データを更新する[update glyph date]
         引数[Args]:
             df (pandas data frame) : pandasデータフレーム[pandas data frame]
             gran (str) : ローソク足の時間足[granularity of a candlestick]
@@ -115,16 +114,6 @@ class OrdersVLineGlyph(object):
             None
         """
         self.__src.data = dict_
-        # self.__glvline.width = self.get_width(gran)
-
-    def add_plot(self, plt):
-        """"プロットを追加する[add plot]
-        引数[Args]:
-            plt (figure) : bokehのfigureクラス[class of bokeh's figure]
-        戻り値[Returns]:
-            None
-        """
-        plt.add_glyph(self.__src, self.__glvline)
 
 
 class CandleStick(object):
@@ -151,13 +140,6 @@ class CandleStick(object):
         # self.__CH_COLOR = "#FFFF00"  # Crosshair line color
 
         self.__yrng = [0, 0]  # [min, max]
-        self.__glyinc = CandleGlyph(self.__CND_INC_COLOR)
-        self.__glydec = CandleGlyph(self.__CND_DEC_COLOR)
-        self.__glyequ = CandleGlyph(self.__CND_EQU_COLOR)
-
-        self.__glyordcnd = OrdersVLineGlyph(self.__ORDLINE_CND_COLOR)
-        self.__glyordfix = OrdersVLineGlyph(self.__ORDLINE_FIX_COLOR)
-
         self.__api = API(access_token=oa.ACCESS_TOKEN,
                          environment=OandaEnv.PRACTICE)
 
@@ -207,6 +189,19 @@ class CandleStick(object):
         self.__plt_main.add_tools(hover)
         self.__idxmin = -1
         self.__idxmindt = -1
+
+        self.__glyordcnd = OrdersVLineGlyph(
+            self.__plt_main, self.__ORDLINE_CND_COLOR)
+        self.__glyordfix = OrdersVLineGlyph(
+            self.__plt_main, self.__ORDLINE_FIX_COLOR)
+
+        self.__glyinc = CandleGlyph(
+            self.__plt_main, self.__plt_rang, self.__CND_INC_COLOR)
+        self.__glydec = CandleGlyph(
+            self.__plt_main, self.__plt_rang, self.__CND_DEC_COLOR)
+        self.__glyequ = CandleGlyph(
+            self.__plt_main, self.__plt_rang, self.__CND_EQU_COLOR)
+
         """
         ch = CrosshairTool()
         ch.dimensions = "height"
@@ -270,17 +265,9 @@ class CandleStick(object):
         decflg = df[_OPEN] > df[_CLOSE]
         equflg = df[_CLOSE] == df[_OPEN]
 
-        self.__glyinc.set_data(df[incflg], gran)
-        self.__glydec.set_data(df[decflg], gran)
-        self.__glyequ.set_data(df[equflg], gran)
-
-        self.__glyinc.add_plot(self.__plt_main)
-        self.__glydec.add_plot(self.__plt_main)
-        self.__glyequ.add_plot(self.__plt_main)
-
-        self.__glyinc.add_plot(self.__plt_rang)
-        self.__glydec.add_plot(self.__plt_rang)
-        self.__glyequ.add_plot(self.__plt_rang)
+        self.__glyinc.update(df[incflg], gran)
+        self.__glydec.update(df[decflg], gran)
+        self.__glyequ.update(df[equflg], gran)
 
         len_ = int(len(df) * self.__WIDE_SCALE)
         self.__plt_main.x_range.update(
@@ -361,8 +348,7 @@ class CandleStick(object):
             dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
                      OrdersVLineGlyph.YPR: self.__yrng}
 
-            self.__glyordcnd.set_data(dict_)
-            self.__glyordcnd.add_plot(self.__plt_main)
+            self.__glyordcnd.update(dict_)
             self.__idxmindt = idxmindt
             self.__idxmin = idxmin
 
@@ -371,8 +357,7 @@ class CandleStick(object):
         idxmindt = self.__idxmindt
         dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
                  OrdersVLineGlyph.YPR: self.__yrng}
-        self.__glyordfix.set_data(dict_)
-        self.__glyordfix.add_plot(self.__plt_main)
+        self.__glyordfix.update(dict_)
 
     @property
     def orders_fetch_datetime(self):
