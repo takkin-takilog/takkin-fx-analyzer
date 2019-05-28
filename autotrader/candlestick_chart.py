@@ -97,10 +97,14 @@ class OrdersVLineGlyph(object):
         self.__WIDETH = 1
         self.__COLOR = color_
 
-        self.__src = ColumnDataSource({self.XDT: [], self.YPR: []})
-        self.__glvline = Line(
-            x=self.XDT, y=self.YPR, line_color=self.__COLOR,
-            line_dash="dashed", line_width=self.__WIDETH, line_alpha=1.0)
+        self.__src = ColumnDataSource({self.XDT: [],
+                                       self.YPR: []})
+        self.__glvline = Line(x=self.XDT,
+                              y=self.YPR,
+                              line_color=self.__COLOR,
+                              line_dash="dashed",
+                              line_width=self.__WIDETH,
+                              line_alpha=1.0)
 
         self.__plt = plt
         self.__plt.add_glyph(self.__src, self.__glvline)
@@ -116,7 +120,8 @@ class OrdersVLineGlyph(object):
         self.__src.data = dict_
 
     def clear(self):
-        dict_ = {self.XDT: [], self.YPR: []}
+        dict_ = {self.XDT: [],
+                 self.YPR: []}
         self.__src.data = dict_
 
 
@@ -153,26 +158,22 @@ class CandleStick(object):
                                   ToolType.SAVE)
 
         # Main chart figure
-        self.__plt_main = figure(
-            plot_height=400,
-            x_axis_type=AxisTyp.X_DATETIME,
-            tools=tools_,
-            background_fill_color=self.__BG_COLOR,
-            title="Candlestick Chart"
-        )
+        self.__plt_main = figure(plot_height=400,
+                                 x_axis_type=AxisTyp.X_DATETIME,
+                                 tools=tools_,
+                                 background_fill_color=self.__BG_COLOR,
+                                 title="Candlestick Chart")
         self.__plt_main.xaxis.major_label_orientation = pi / 4
         self.__plt_main.grid.grid_line_alpha = 0.3
         self.__plt_main.x_range = Range1d()
 
         # Range chart figure
-        self.__plt_rang = figure(
-            plot_height=70,
-            plot_width=self.__plt_main.plot_width,
-            y_range=self.__plt_main.y_range,
-            x_axis_type=AxisTyp.X_DATETIME,
-            background_fill_color=self.__BG_COLOR,
-            toolbar_location=None,
-        )
+        self.__plt_rang = figure(plot_height=70,
+                                 plot_width=self.__plt_main.plot_width,
+                                 y_range=self.__plt_main.y_range,
+                                 x_axis_type=AxisTyp.X_DATETIME,
+                                 background_fill_color=self.__BG_COLOR,
+                                 toolbar_location=None)
         self.__plt_rang.yaxis.visible = False
         self.__plt_rang.ygrid.visible = False
         self.__plt_rang.xgrid.visible = False
@@ -194,17 +195,20 @@ class CandleStick(object):
         self.__idxmin = -1
         self.__idxmindt = -1
 
-        self.__glyordcnd = OrdersVLineGlyph(
-            self.__plt_main, self.__ORDLINE_CND_COLOR)
-        self.__glyordfix = OrdersVLineGlyph(
-            self.__plt_main, self.__ORDLINE_FIX_COLOR)
+        self.__glyordcnd = OrdersVLineGlyph(self.__plt_main,
+                                            self.__ORDLINE_CND_COLOR)
+        self.__glyordfix = OrdersVLineGlyph(self.__plt_main,
+                                            self.__ORDLINE_FIX_COLOR)
 
-        self.__glyinc = CandleGlyph(
-            self.__plt_main, self.__plt_rang, self.__CND_INC_COLOR)
-        self.__glydec = CandleGlyph(
-            self.__plt_main, self.__plt_rang, self.__CND_DEC_COLOR)
-        self.__glyequ = CandleGlyph(
-            self.__plt_main, self.__plt_rang, self.__CND_EQU_COLOR)
+        self.__glyinc = CandleGlyph(self.__plt_main,
+                                    self.__plt_rang,
+                                    self.__CND_INC_COLOR)
+        self.__glydec = CandleGlyph(self.__plt_main,
+                                    self.__plt_rang,
+                                    self.__CND_DEC_COLOR)
+        self.__glyequ = CandleGlyph(self.__plt_main,
+                                    self.__plt_rang,
+                                    self.__CND_EQU_COLOR)
 
         """
         ch = CrosshairTool()
@@ -292,7 +296,6 @@ class CandleStick(object):
 
         self.__add_orders_vline(gran, gmtstr, gmtend)
         self.__plt_main.y_range.update(start=str_, end=end_)
-        print("スケール更新：str={}, end={}" .format(str_, end_))
 
         return yrng
 
@@ -339,14 +342,18 @@ class CandleStick(object):
             minute_ = 20
 
         dttky_ = gmtstr.tokyo
-        str_ = datetime(dttky_.year, dttky_.month,
-                        dttky_.day, hour_, minute_)
+        str_ = datetime(dttky_.year,
+                        dttky_.month,
+                        dttky_.day,
+                        hour_,
+                        minute_)
         end_ = gmtend.tokyo
 
         dti = pd.date_range(start=str_, end=end_, freq=freq_)
         uti = dti.tz_localize('Asia/Tokyo').astype(np.int64) // 10**9
 
-        self.__dtdf = pd.DataFrame({"timestamp": dti, "unixtime": uti})
+        self.__dtdf = pd.DataFrame({"timestamp": dti,
+                                    "unixtime": uti})
 
     def draw_orders_cand_vline(self, point):
         idxmin = np.abs(self.__dtdf["unixtime"] - point.timestamp()).idxmin()
