@@ -142,6 +142,8 @@ class OpenBooksAbs(metaclass=ABCMeta):
         df_follow = pd.concat([dfhi, -dflo])
         self.__srchbarf = {self.YPR: df.index,
                            self.XCP: df_follow}
+        print("順張り側DataFrame") #TODO: ラベルの振り方
+        print(df_follow)
 
         # 逆張り側DataFrame
         dfhi = df[self.__SHORT][(df.index > price)]
@@ -156,6 +158,14 @@ class OpenBooksAbs(metaclass=ABCMeta):
 
     def update_yrange(self, yrng):
         self.__plt.y_range.update(start=yrng[0], end=yrng[1])
+
+    @property
+    def widget(self):
+        """"ウィジェット取得[get widget]
+        引数[Args]:
+            None
+        """
+        return self.__plt
 
 
 class OpenOrders(OpenBooksAbs):
@@ -181,6 +191,10 @@ class OpenOrders(OpenBooksAbs):
     def update_yrange(self, yrng):
         super().update_yrange(yrng)
 
+    @property
+    def widget(self):
+        return super().widget
+
 
 class OpenPositions(OpenBooksAbs):
 
@@ -198,12 +212,16 @@ class OpenPositions(OpenBooksAbs):
         params_ = super().get_params(dt_)
 
         # APIへ過去データをリクエスト
-        iob = it.InstrumentsOrderBook(instrument=inst,
-                                      params=params_)
+        iob = it.InstrumentsPositionBook(instrument=inst,
+                                         params=params_)
         super().fetch(self.__LABEL, iob)
 
     def update_yrange(self, yrng):
         super().update_yrange(yrng)
+
+    @property
+    def widget(self):
+        return super().widget
 
 
 class Orders(object):

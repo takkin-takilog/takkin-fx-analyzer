@@ -5,7 +5,7 @@ from bokeh import events
 from datetime import datetime, timedelta
 from oandapyV20.exceptions import V20Error
 from autotrader.candlestick_chart import CandleStick
-from autotrader.oders import Orders
+from autotrader.oders import Orders, OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
 
@@ -127,6 +127,8 @@ class Viewer(object):
             print("----- ExceptionError: {}".format(err))
 
         self.__widord = Orders(yrng)
+        self.__widord1 = OpenOrders(yrng)
+        self.__widord2 = OpenPositions(yrng)
 
     def __get_period(self, gran, num):
         """"チャートを描写する期間を取得する[get period of chart]
@@ -202,6 +204,8 @@ class Viewer(object):
             print("----- ExceptionError: {}".format(err))
 
         self.__widord.update_yrange(yrng)
+        self.__widord1.update_yrange(yrng)
+        self.__widord2.update_yrange(yrng)
 
     def __sel_gran_callback(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
@@ -227,6 +231,8 @@ class Viewer(object):
             print("----- ExceptionError: {}".format(err))
 
         self.__widord.update_yrange(yrng)
+        self.__widord1.update_yrange(yrng)
+        self.__widord2.update_yrange(yrng)
 
     def __callback_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
@@ -238,6 +244,8 @@ class Viewer(object):
         # fetch Open Order and Position
         dtmmin = self.__wicdl.orders_fetch_datetime
         self.__widord.fetch(self.__inst, dtmmin)
+        self.__widord1.fetch(self.__inst, dtmmin)
+        self.__widord2.fetch(self.__inst, dtmmin)
         self.__wicdl.draw_orders_fix_vline()
 
     def __callback_press(self, event):
@@ -263,6 +271,8 @@ class Viewer(object):
         wbox1 = row(children=[w1, w2])
         chart, rang = self.__wicdl.get_widget()
         order, posi = self.__widord.get_widget()
+        order1 = self.__widord1.widget
+        posi1 = self.__widord2.widget
 
         chart.on_event(events.Tap, self.__callback_tap)
         chart.on_event(events.Press, self.__callback_press)
@@ -271,6 +281,7 @@ class Viewer(object):
         chartlay = gridplot(
             [
                 [order, posi, chart],
+                [order1, posi1],
                 [None, None, rang],
             ],
             merge_tools=False)
