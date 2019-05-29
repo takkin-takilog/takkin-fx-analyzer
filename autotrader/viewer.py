@@ -236,7 +236,8 @@ class Viewer(object):
         self.__text_debug01.value = "Tap: " + str_
 
         # fetch Open Order and Position
-        self.__widord.fetch(self.__inst, self.__wicdl.orders_fetch_datetime)
+        dtmmin = self.__wicdl.orders_fetch_datetime
+        self.__widord.fetch(self.__inst, dtmmin)
         self.__wicdl.draw_orders_fix_vline()
 
     def __callback_press(self, event):

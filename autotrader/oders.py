@@ -78,7 +78,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                left=0,
                                right=self.XCP,
                                height=0.03,
-                               color=self.__BAR_R_COLOR)
+                               fill_color=self.__BAR_R_COLOR)
         self.__plt.add_glyph(self.__srchbarf,
                              self.__glyhbarf)
 
@@ -89,7 +89,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                left=self.XCP,
                                right=0,
                                height=0.03,
-                               color=self.__BAR_R_COLOR)
+                               fill_color=self.__BAR_R_COLOR)
         self.__plt.add_glyph(self.__srchbarc, self.__glyhbarc)
 
         # 水平ライン
@@ -97,7 +97,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                            self.Y: []})
         self.__glyline = Line(x=self.X,
                               y=self.Y,
-                              color=self.__CURPRI_COLOR,
+                              line_color=self.__CURPRI_COLOR,
                               line_width=3)
         self.__plt.add_glyph(self.__srcline, self.__glyline)
 
@@ -117,7 +117,17 @@ class OpenOrders(OpenBooksAbs):
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def fetch(self, inst, dt_):
-        pass
+
+        jpdt = dt_ - timedelta(hours=9)
+
+        params_ = {
+            "time": jpdt.strftime(self.__DT_FMT),
+        }
+
+        # APIへ過去データをリクエスト
+        ic_ord = it.InstrumentsOrderBook(instrument=inst,
+                                         params=params_)
+        self.__fetch(self.__ORD_BOOK, ic_ord, self.__pltodr)
 
 
 class OpenPositions(OpenBooksAbs):
@@ -203,9 +213,9 @@ class Orders(object):
         self.__pltpos.toolbar_location = None
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
-    def fetch(self, inst, dt_):
+    def fetch(self, inst, dtmmin):
 
-        jpdt = dt_ - timedelta(hours=9)
+        jpdt = dtmmin.gmt
 
         params_ = {
             "time": jpdt.strftime(self.__DT_FMT),

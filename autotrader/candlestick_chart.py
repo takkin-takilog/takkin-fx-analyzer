@@ -10,6 +10,7 @@ from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
 from datetime import datetime, timedelta
 from comtypes.npsupport import numpy as np
+from autotrader.utils import DateTimeManager
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import autotrader.oanda_account as oa
@@ -359,10 +360,9 @@ class CandleStick(object):
         idxmin = np.abs(self.__dtdf["unixtime"] - point.timestamp()).idxmin()
 
         if not self.__idxmin == idxmin:
-            idxmindt = self.__dtdf["timestamp"][idxmin]
+            idxmindt = self.__dtdf["timestamp"][idxmin].to_pydatetime()
             dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
                      OrdersVLineGlyph.YPR: self.__yrng}
-
             self.__glyordcnd.update(dict_)
             self.__idxmindt = idxmindt
             self.__idxmin = idxmin
@@ -376,7 +376,7 @@ class CandleStick(object):
 
     @property
     def orders_fetch_datetime(self):
-        return self.__idxmindt
+        return DateTimeManager(self.__idxmindt)
 
     def get_widget(self):
         """"ウィジェットを取得する[get widget]
