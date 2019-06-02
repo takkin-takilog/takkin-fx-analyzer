@@ -5,7 +5,7 @@ from bokeh import events
 from datetime import datetime, timedelta
 from oandapyV20.exceptions import V20Error
 from autotrader.candlestick_chart import CandleStick
-from autotrader.oders import Orders, OpenOrders, OpenPositions
+from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
 
@@ -115,10 +115,10 @@ class Viewer(object):
         self.__gmtstr = gmtstr_
         self.__gmtend = gmtend_
 
-        self.__wicdl = CandleStick()
+        self.__cs = CandleStick()
         try:
-            yrng = self.__wicdl.fetch(self.__gran, self.__inst,
-                                      self.__gmtstr, self.__gmtend)
+            yrng = self.__cs.fetch(self.__gran, self.__inst,
+                                   self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
@@ -126,9 +126,8 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
-        self.__widord = Orders(yrng)
-        self.__widord1 = OpenOrders(yrng)
-        self.__widord2 = OpenPositions(yrng)
+        self.__opord = OpenOrders(yrng)
+        self.__oppos = OpenPositions(yrng)
 
     def __get_period(self, gran, num):
         """"チャートを描写する期間を取得する[get period of chart]
@@ -194,8 +193,8 @@ class Viewer(object):
         """
         self.__inst = self.__INST_DICT[new]
         try:
-            yrng = self.__wicdl.fetch(self.__gran, self.__inst,
-                                      self.__gmtstr, self.__gmtend)
+            yrng = self.__cs.fetch(self.__gran, self.__inst,
+                                   self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
@@ -203,9 +202,8 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
-        self.__widord.update_yrange(yrng)
-        self.__widord1.update_yrange(yrng)
-        self.__widord2.update_yrange(yrng)
+        self.__opord.update_yrange(yrng)
+        self.__oppos.update_yrange(yrng)
 
     def __sel_gran_callback(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
@@ -221,8 +219,8 @@ class Viewer(object):
         self.__gmtstr = gmtstr_
         self.__gmtend = gmtend_
         try:
-            yrng = self.__wicdl.fetch(self.__gran, self.__inst,
-                                      self.__gmtstr, self.__gmtend)
+            yrng = self.__cs.fetch(self.__gran, self.__inst,
+                                   self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
         except ConnectionError as cerr:
@@ -230,9 +228,8 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
-        self.__widord.update_yrange(yrng)
-        self.__widord1.update_yrange(yrng)
-        self.__widord2.update_yrange(yrng)
+        self.__opord.update_yrange(yrng)
+        self.__oppos.update_yrange(yrng)
 
     def __callback_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
@@ -242,11 +239,10 @@ class Viewer(object):
         self.__text_debug01.value = "Tap: " + str_
 
         # fetch Open Order and Position
-        dtmmin = self.__wicdl.orders_fetch_datetime
-        self.__widord.fetch(self.__inst, dtmmin)
-        self.__widord1.fetch(self.__inst, dtmmin)
-        self.__widord2.fetch(self.__inst, dtmmin)
-        self.__wicdl.draw_orders_fix_vline()
+        dtmmin = self.__cs.orders_fetch_datetime
+        self.__opord.fetch(self.__inst, dtmmin)
+        self.__oppos.fetch(self.__inst, dtmmin)
+        self.__cs.draw_orders_fix_vline()
 
     def __callback_press(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
@@ -256,7 +252,7 @@ class Viewer(object):
     def __callback_mousemove(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         self.__text_debug02.value = "MouseMove: " + str(date)
-        self.__wicdl.draw_orders_cand_vline(date)
+        self.__cs.draw_orders_cand_vline(date)
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -269,10 +265,9 @@ class Viewer(object):
         w2 = self.__widsel_gran
 
         wbox1 = row(children=[w1, w2])
-        chart, rang = self.__wicdl.get_widget()
-        order, posi = self.__widord.get_widget()
-        order1 = self.__widord1.widget
-        posi1 = self.__widord2.widget
+        chart, rang = self.__cs.get_widget()
+        opord = self.__opord.widget
+        oppos = self.__oppos.widget
 
         chart.on_event(events.Tap, self.__callback_tap)
         chart.on_event(events.Press, self.__callback_press)
@@ -280,8 +275,7 @@ class Viewer(object):
 
         chartlay = gridplot(
             [
-                [order, posi, chart],
-                [order1, posi1],
+                [opord, oppos, chart],
                 [None, None, rang],
             ],
             merge_tools=False)
