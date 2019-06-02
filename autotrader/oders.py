@@ -31,8 +31,8 @@ class OpenBooksAbs(metaclass=ABCMeta):
         self.__ORD_BOOK = "orderBook"
 
         self.__BG_COLOR = "#2E2E2E"
-        self.__BAR_R_COLOR = "#00A4BD"
-        self.__BAR_L_COLOR = "#FF8400"
+        self.__BAR_F_COLOR = "#00A4BD"
+        self.__BAR_C_COLOR = "#FF8400"
         self.__CURPRI_COLOR = "#7DA900"
 
         self.__CUTTH = 50  # 現レートから上下何本残すか
@@ -78,7 +78,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                left=0,
                                right=self.XCP,
                                height=0.03,
-                               fill_color=self.__BAR_R_COLOR)
+                               fill_color=self.__BAR_F_COLOR)
         self.__plt.add_glyph(self.__srchbarf,
                              self.__glyhbarf)
 
@@ -89,7 +89,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                left=self.XCP,
                                right=0,
                                height=0.03,
-                               fill_color=self.__BAR_R_COLOR)
+                               fill_color=self.__BAR_C_COLOR)
         self.__plt.add_glyph(self.__srchbarc, self.__glyhbarc)
 
         # 水平ライン
@@ -137,24 +137,22 @@ class OpenBooksAbs(metaclass=ABCMeta):
                 & (df.index < price + idxth)]
 
         # 順張り側DataFrame
-        dfhi = df[self.__LONG][(df.index > price)]
-        dflo = df[self.__SHORT][(df.index < price)]
-        df_follow = pd.concat([dfhi, -dflo])
-        self.__srchbarf = {self.YPR: df.index,
-                           self.XCP: df_follow}
-        print("順張り側DataFrame") #TODO: ラベルの振り方
-        print(df_follow)
+        srhi = df[self.__LONG][(df.index > price)]
+        srlo = df[self.__SHORT][(df.index < price)]
+        df_fol = pd.concat([srhi, -srlo])
+        self.__srchbarf.data = {self.YPR: df_fol.index.tolist(),
+                                self.XCP: df_fol.tolist()}
 
         # 逆張り側DataFrame
-        dfhi = df[self.__SHORT][(df.index > price)]
-        dflo = df[self.__LONG][(df.index < price)]
-        df_contrarian = pd.concat([-dfhi, dflo])
-        self.__srchbarc = {self.YPR: df.index,
-                           self.XCP: df_contrarian}
+        srhi = df[self.__SHORT][(df.index > price)]
+        srlo = df[self.__LONG][(df.index < price)]
+        df_con = pd.concat([-srhi, srlo])
+        self.__srchbarc.data = {self.YPR: df_con.index.tolist(),
+                                self.XCP: df_con.tolist()}
 
         # 現在価格ライン
-        self.__srcline = {self.X: [-self.__X_AXIS_MAX, self.__X_AXIS_MAX],
-                          self.Y: [price, price]}
+        self.__srcline.data = {self.X: [-self.__X_AXIS_MAX, self.__X_AXIS_MAX],
+                               self.Y: [price, price]}
 
     def update_yrange(self, yrng):
         self.__plt.y_range.update(start=yrng[0], end=yrng[1])
