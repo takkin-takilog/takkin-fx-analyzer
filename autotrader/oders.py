@@ -69,6 +69,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
         self.__plt.xaxis.axis_label = "Count Percent[%]"
         self.__plt.yaxis.axis_label = "Price"
         self.__plt.toolbar_location = None
+        self.__plt.yaxis.visible = False  # y軸を非表示にする
 
         # 水平バー（順張り）
         self.__srchbarf = ColumnDataSource({self.YPR: [],
