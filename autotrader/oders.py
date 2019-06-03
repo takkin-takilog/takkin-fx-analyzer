@@ -167,6 +167,14 @@ class OpenBooksAbs(metaclass=ABCMeta):
         """
         return self.__plt
 
+    def clear(self):
+        self.__srchbarf.data = {self.YPR: [],
+                                self.XCP: []}
+        self.__srchbarc.data = {self.YPR: [],
+                                self.XCP: []}
+        self.__srcline.data = {self.X: [],
+                               self.Y: []}
+
 
 class OpenOrders(OpenBooksAbs):
 

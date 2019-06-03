@@ -202,7 +202,9 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
+        self.__opord.clear()
         self.__opord.update_yrange(yrng)
+        self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
     def __sel_gran_callback(self, attr, old, new):
@@ -228,7 +230,9 @@ class Viewer(object):
         except Exception as err:
             print("----- ExceptionError: {}".format(err))
 
+        self.__opord.clear()
         self.__opord.update_yrange(yrng)
+        self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
     def __callback_tap(self, event):

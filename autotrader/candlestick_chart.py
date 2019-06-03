@@ -309,21 +309,27 @@ class CandleStick(object):
             minute_ = 0
         elif gran == OandaGrn.H12:
             freq_ = pd.offsets.Hour(12)
+            hour_ = (hour_ // 12) * 12
             minute_ = 0
         elif gran == OandaGrn.H8:
             freq_ = pd.offsets.Hour(8)
+            hour_ = (hour_ // 8) * 8
             minute_ = 0
         elif gran == OandaGrn.H6:
             freq_ = pd.offsets.Hour(6)
+            hour_ = (hour_ // 6) * 6
             minute_ = 0
         elif gran == OandaGrn.H4:
             freq_ = pd.offsets.Hour(4)
+            hour_ = (hour_ // 4) * 4
             minute_ = 0
         elif gran == OandaGrn.H3:
             freq_ = pd.offsets.Hour(3)
+            hour_ = (hour_ // 3) * 3
             minute_ = 0
         elif gran == OandaGrn.H2:
             freq_ = pd.offsets.Hour(2)
+            hour_ = (hour_ // 2) * 2
             minute_ = 0
         elif gran == OandaGrn.H1 or \
                 gran == OandaGrn.M30 or \
