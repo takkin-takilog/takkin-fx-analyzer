@@ -27,8 +27,6 @@ class OpenBooksAbs(metaclass=ABCMeta):
         引数[Args]:
             None
         """
-        self.__ORD_BOOK = "orderBook"
-
         self.__BG_COLOR = "#2E2E2E"
         self.__BAR_F_COLOR = "#00A4BD"
         self.__BAR_C_COLOR = "#FF8400"
@@ -126,6 +124,14 @@ class OpenBooksAbs(metaclass=ABCMeta):
                       self.__LONG,
                       self.__SHORT]
         df = df.set_index(self.__PRICE).sort_index(ascending=False)
+
+        # =========== Debug ================================
+        dt_ = iob.response[label][self.__TIME]
+        import datetime
+        aaa = datetime.datetime.strptime(dt_, self.__DT_FMT)
+        time_ = pd.to_datetime(aaa)
+        print("Order Get Time: {}" .format(time_))
+        # ==================================================
 
         # 現在価格をフェッチ[fetch current price]
         price = float(iob.response[label][self.__CUR_PRICE])

@@ -167,6 +167,7 @@ class CandleStick(object):
         self.__plt_main.xaxis.major_label_orientation = pi / 4
         self.__plt_main.grid.grid_line_alpha = 0.3
         self.__plt_main.x_range = Range1d()
+        self.__plt_main.y_range = Range1d()
 
         # Range chart figure
         self.__plt_rang = figure(plot_height=70,
