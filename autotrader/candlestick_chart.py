@@ -57,12 +57,16 @@ class CandleGlyph(GlyphVbarAbs):
                              line_color=self.__COLOR)
 
         self.__pltmain = pltmain
-        self.__pltmain.add_glyph(self.__src, self.__glyseg)
+        self.__ren = self.__pltmain.add_glyph(self.__src, self.__glyseg)
         self.__pltmain.add_glyph(self.__src, self.__glvbar)
 
         self.__pltrng = pltrng
         self.__pltrng.add_glyph(self.__src, self.__glyseg)
         self.__pltrng.add_glyph(self.__src, self.__glvbar)
+
+    @property
+    def render(self):
+        return self.__ren
 
     def update(self, df, gran):
         """"データを設定する[set glyph date]
@@ -186,14 +190,6 @@ class CandleStick(object):
         self.__plt_rang.xaxis.major_label_orientation = pi / 4
         self.__plt_rang.grid.grid_line_alpha = 0.3
 
-        hover = HoverTool()
-        hover.formatters = {CandleGlyph.XDT: "datetime"}
-        hover.tooltips = [(_TIME, "@" + CandleGlyph.XDT + "{%F}"),
-                          (_HIGH, "@" + CandleGlyph.YHI),
-                          (_OPEN, "@" + CandleGlyph.YOP),
-                          (_CLOSE, "@" + CandleGlyph.YCL),
-                          (_LOW, "@" + CandleGlyph.YLO)]
-        self.__plt_main.add_tools(hover)
         self.__idxmin = -1
         self.__idxmindt = -1
 
@@ -212,13 +208,17 @@ class CandleStick(object):
                                     self.__plt_rang,
                                     self.__CND_EQU_COLOR)
 
-        """
-        ch = CrosshairTool()
-        ch.dimensions = "height"
-        ch.line_color = self.__CH_COLOR
-        ch.line_alpha = 0.7
-        self.__plt_main.add_tools(ch)
-        """
+        hover = HoverTool()
+        hover.formatters = {CandleGlyph.XDT: "datetime"}
+        hover.tooltips = [(_TIME, "@" + CandleGlyph.XDT + "{%F}"),
+                          (_HIGH, "@" + CandleGlyph.YHI),
+                          (_OPEN, "@" + CandleGlyph.YOP),
+                          (_CLOSE, "@" + CandleGlyph.YCL),
+                          (_LOW, "@" + CandleGlyph.YLO)]
+        hover.renderers = [self.__glyinc.render,
+                           self.__glydec.render,
+                           self.__glyequ.render]
+        self.__plt_main.add_tools(hover)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, gmtstr, gmtend):

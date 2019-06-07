@@ -1,5 +1,6 @@
 from abc import ABCMeta
 from bokeh.models import ColumnDataSource
+from bokeh.models import HoverTool
 from bokeh.models.glyphs import HBar, Line
 from bokeh.plotting import figure
 from oandapyV20 import API
@@ -78,8 +79,8 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                height=0.03,
                                fill_color=self.__BAR_F_COLOR,
                                line_alpha=0)
-        self.__plt.add_glyph(self.__srchbarf,
-                             self.__glyhbarf)
+        renf = self.__plt.add_glyph(self.__srchbarf,
+                                    self.__glyhbarf)
 
         # 水平バー（逆張り）
         self.__srchbarc = ColumnDataSource({self.YPR: [],
@@ -90,7 +91,8 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                height=0.03,
                                fill_color=self.__BAR_C_COLOR,
                                line_alpha=0)
-        self.__plt.add_glyph(self.__srchbarc, self.__glyhbarc)
+        renc = self.__plt.add_glyph(self.__srchbarc,
+                                    self.__glyhbarc)
 
         # 水平ライン
         self.__srcline = ColumnDataSource({self.X: [],
@@ -100,6 +102,13 @@ class OpenBooksAbs(metaclass=ABCMeta):
                               line_color=self.__CURPRI_COLOR,
                               line_width=1)
         self.__plt.add_glyph(self.__srcline, self.__glyline)
+
+        # Tool
+        hover = HoverTool()
+        hover.tooltips = [("price", "@" + self.YPR),
+                          ("percent", "@" + self.XCP + " %")]
+        hover.renderers = [renf, renc]
+        self.__plt.add_tools(hover)
 
     def get_params(self, dt_):
 
@@ -124,14 +133,6 @@ class OpenBooksAbs(metaclass=ABCMeta):
                       self.__LONG,
                       self.__SHORT]
         df = df.set_index(self.__PRICE).sort_index(ascending=False)
-
-        # =========== Debug ================================
-        dt_ = iob.response[label][self.__TIME]
-        import datetime
-        aaa = datetime.datetime.strptime(dt_, self.__DT_FMT)
-        time_ = pd.to_datetime(aaa)
-        print("Order Get Time: {}" .format(time_))
-        # ==================================================
 
         # 現在価格をフェッチ[fetch current price]
         price = float(iob.response[label][self.__CUR_PRICE])
