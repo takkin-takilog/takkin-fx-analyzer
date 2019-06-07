@@ -1,6 +1,6 @@
 from bokeh.io import show
 from bokeh.layouts import gridplot, row
-from bokeh.models.widgets import Select, TextInput
+from bokeh.models.widgets import Select
 from bokeh import events
 from datetime import datetime, timedelta
 from oandapyV20.exceptions import V20Error
@@ -104,9 +104,6 @@ class Viewer(object):
                                     value=gran_def,
                                     options=GRAN_OPS)
         self.__widsel_gran.on_change("value", self.__sel_gran_callback)
-
-        self.__text_debug01 = TextInput(value="default", title="Label:")
-        self.__text_debug02 = TextInput(value="default", title="Label:")
 
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
@@ -237,25 +234,14 @@ class Viewer(object):
 
     def __callback_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
-
-        date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
-        str_ = str(date) + ":" + str(event.y)
-        self.__text_debug01.value = "Tap: " + str_
-
         # fetch Open Order and Position
         dtmmin = self.__cs.orders_fetch_datetime
         self.__opord.fetch(self.__inst, dtmmin)
         self.__oppos.fetch(self.__inst, dtmmin)
         self.__cs.draw_orders_fix_vline()
 
-    def __callback_press(self, event):
-        date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
-        str_ = str(date) + ":" + str(event.y)
-        self.__text_debug01.value = "Press: " + str_
-
     def __callback_mousemove(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
-        self.__text_debug02.value = "MouseMove: " + str(date)
         self.__cs.draw_orders_cand_vline(date)
 
     def get_layout(self):
@@ -274,7 +260,6 @@ class Viewer(object):
         oppos = self.__oppos.widget
 
         chart.on_event(events.Tap, self.__callback_tap)
-        chart.on_event(events.Press, self.__callback_press)
         chart.on_event(events.MouseMove, self.__callback_mousemove)
 
         chartlay = gridplot(
@@ -287,8 +272,7 @@ class Viewer(object):
         layout = gridplot(
             [
                 [wbox1],
-                [chartlay],
-                [row(children=[self.__text_debug01, self.__text_debug02])]
+                [chartlay]
             ],
             merge_tools=False)
 

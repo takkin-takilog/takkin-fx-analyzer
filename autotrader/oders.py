@@ -33,7 +33,8 @@ class OpenBooksAbs(metaclass=ABCMeta):
         self.__BAR_C_COLOR = "#FF8400"
         self.__CURPRI_COLOR = "#7DA900"
 
-        self.__CUTTH = 50  # 現レートから上下何本残すか
+        self.__HEIGHT = 0.8
+        self.__CUTTH = 100  # 現レートから上下何本残すか
         self.__X_AXIS_MAX = 2.5  # X軸レンジ
 
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00Z"
@@ -151,6 +152,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
         df_fol = pd.concat([srhi, -srlo])
         self.__srchbarf.data = {self.YPR: df_fol.index.tolist(),
                                 self.XCP: df_fol.tolist()}
+        self.__glyhbarf.height = width * self.__HEIGHT
 
         # 逆張り側DataFrame
         srhi = df[self.__SHORT][(df.index > price)]
@@ -158,6 +160,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
         df_con = pd.concat([-srhi, srlo])
         self.__srchbarc.data = {self.YPR: df_con.index.tolist(),
                                 self.XCP: df_con.tolist()}
+        self.__glyhbarc.height = width * self.__HEIGHT
 
         # 現在価格ライン
         self.__srcline.data = {self.X: [-self.__X_AXIS_MAX, self.__X_AXIS_MAX],
