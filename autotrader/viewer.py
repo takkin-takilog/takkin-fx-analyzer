@@ -43,13 +43,13 @@ class Viewer(object):
     GRAN_D = "日足"
     GRAN_W = "週足"
 
-    def __init__(self, inst_def=INST_USDJPY, gran_def=GRAN_H1):
+    def __init__(self, inst_def=INST_USDJPY, gran_def=GRAN_D):
         """"コンストラクタ[Constructor]
         引数[Args]:
             inst_def (str) : 通貨ペア[instrument]
             gran_def (str) : ローソク足の時間足[granularity of a candlestick]
         """
-        self.__DISP_NUM = 100
+        self.__DISP_NUM = 300
 
         # 辞書登録：通貨ペア
         self.__INST_DICT = {

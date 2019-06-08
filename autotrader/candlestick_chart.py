@@ -145,7 +145,7 @@ class CandleStick(object):
         self.__CND_EQU_COLOR = "#FFFF00"
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
-        self.__WIDE_SCALE = 0.2
+        self.__INIT_WIDE = 0.5
         self.__YRANGE_MARGIN = 0.1
 
         self.__ORDLINE_CND_COLOR = "yellow"
@@ -282,7 +282,7 @@ class CandleStick(object):
         self.__glyordcnd.clear()
         self.__glyordfix.clear()
 
-        len_ = int(len(df) * self.__WIDE_SCALE)
+        len_ = int(len(df) * self.__INIT_WIDE)
         self.__plt_main.x_range.update(
             start=df.index[-len_], end=OandaGrn.offset(df.index[-1], gran))
 
