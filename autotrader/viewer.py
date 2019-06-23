@@ -1,10 +1,10 @@
 from bokeh.io import show
-from bokeh.layouts import gridplot, row
+from bokeh.layouts import gridplot, row, layout
 from bokeh.models.widgets import Select
 from bokeh import events
 from datetime import datetime, timedelta
 from oandapyV20.exceptions import V20Error
-from autotrader.candlestick_chart import CandleStick
+from autotrader.candlestick import CandleStick
 from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
@@ -83,28 +83,41 @@ class Viewer(object):
             self.GRAN_W: OandaGrn.W
         }
 
+        # モード種類リスト
+        self.__MODE_LIST = [
+            "オープンオーダー ＆ ポジション",
+            "テクニカル指標"
+        ]
+
         # Widgetセレクト（通貨ペア）
-        INST_OPS = [
+        INST_OPT = [
             self.INST_USDJPY, self.INST_EURJPY, self.INST_EURUSD
         ]
-        self.__widsel_inst = Select(title="通貨ペア:",
-                                    value=inst_def,
-                                    options=INST_OPS)
-        self.__widsel_inst.on_change("value", self.__sel_inst_callback)
+        self.__wse_inst = Select(title="通貨ペア:",
+                                 value=inst_def,
+                                 options=INST_OPT)
+        self.__wse_inst.on_change("value", self.__cb_sel_inst)
 
         # Widgetセレクト（期間）
-        GRAN_OPS = [
+        GRAN_OPT = [
             self.GRAN_W, self.GRAN_D, self.GRAN_H12, self.GRAN_H8,
             self.GRAN_H6, self.GRAN_H4, self.GRAN_H2, self.GRAN_H1,
             self.GRAN_M30, self.GRAN_M15, self.GRAN_M10, self.GRAN_M5,
             self.GRAN_M1
         ]
 
-        self.__widsel_gran = Select(title="期間:",
-                                    value=gran_def,
-                                    options=GRAN_OPS)
-        self.__widsel_gran.on_change("value", self.__sel_gran_callback)
+        self.__wse_gran = Select(title="期間:",
+                                 value=gran_def,
+                                 options=GRAN_OPT)
+        self.__wse_gran.on_change("value", self.__cb_sel_gran)
 
+        # Widgetセレクト（表示モード）
+        self.__wse_mode = Select(title="期間:",
+                                 value=self.__MODE_LIST[0],
+                                 options=self.__MODE_LIST)
+        self.__wse_mode.on_change("value", self.__cb_sel_mode)
+
+        # 初期設定
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
@@ -179,7 +192,7 @@ class Viewer(object):
 
         return dtmstr, dtmend
 
-    def __sel_inst_callback(self, attr, old, new):
+    def __cb_sel_inst(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -204,7 +217,7 @@ class Viewer(object):
         self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
-    def __sel_gran_callback(self, attr, old, new):
+    def __cb_sel_gran(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -232,7 +245,23 @@ class Viewer(object):
         self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
-    def __callback_tap(self, event):
+    def __cb_sel_mode(self, attr, old, new):
+        """Widgetセレクト（モード）コールバックメソッド
+        引数[Args]:
+            attr (str) : An attribute name on this object
+            old (str) : Old value
+            new (str) : New value
+        戻り値[Returns]:
+            なし[None]
+        """
+        print("nwe = {}" .format(new))
+        print("attr = {}" .format(attr))
+        if new == self.__MODE_LIST[0]:
+            self.__set_layout_main()
+        elif new == self.__MODE_LIST[1]:
+            self.__set_layout_opbk()
+
+    def __cb_chart_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
         # fetch Open Order and Position
         dtmmin = self.__cs.orders_fetch_datetime
@@ -240,7 +269,7 @@ class Viewer(object):
         self.__oppos.fetch(self.__inst, dtmmin)
         self.__cs.draw_orders_fix_vline()
 
-    def __callback_mousemove(self, event):
+    def __cb_chart_mousemove(self, event):
         date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
         self.__cs.draw_orders_cand_vline(date)
 
@@ -251,32 +280,35 @@ class Viewer(object):
         戻り値[Returns]:
             layout (layout) : レイアウト[layout]
         """
-        w1 = self.__widsel_inst
-        w2 = self.__widsel_gran
+        w1 = self.__wse_inst
+        w2 = self.__wse_gran
+        w3 = self.__wse_mode
 
-        wbox1 = row(children=[w1, w2])
-        chart, rang = self.__cs.get_widget()
+        wbox1 = row(children=[w1, w2, w3])
+
+        chart = self.__cs.fig_main
+        rang_ = self.__cs.fig_range
         opord = self.__opord.widget
         oppos = self.__oppos.widget
-
-        chart.on_event(events.Tap, self.__callback_tap)
-        chart.on_event(events.MouseMove, self.__callback_mousemove)
 
         chartlay = gridplot(
             [
                 [opord, oppos, chart],
-                [None, None, rang],
+                [None, None, rang_],
             ],
             merge_tools=False)
 
-        layout = gridplot(
+        self.__layout = layout(
             [
                 [wbox1],
                 [chartlay]
-            ],
-            merge_tools=False)
+            ])
 
-        return(layout)
+
+        chart.on_event(events.Tap, self.__cb_chart_tap)
+        chart.on_event(events.MouseMove, self.__cb_chart_mousemove)
+
+        return(self.__layout)
 
     def view(self):
         """描写する[view]
@@ -286,3 +318,33 @@ class Viewer(object):
             None
         """
         show(self.get_layout())
+
+    def __set_layout_main(self):
+
+        chart = self.__cs.fig_main
+        rang_ = self.__cs.fig_range
+        opord = self.__opord.widget
+        oppos = self.__oppos.widget
+
+        chartlay = gridplot(
+            [
+                [opord, oppos, chart],
+                [None, None, rang_],
+            ],
+            merge_tools=False)
+
+        self.__layout.children[1] = chartlay
+
+    def __set_layout_opbk(self):
+
+        chart = self.__cs.fig_main
+        rang_ = self.__cs.fig_range
+
+        chartlay = gridplot(
+            [
+                [chart],
+                [rang_],
+            ],
+            merge_tools=False)
+
+        self.__layout.children[1] = chartlay

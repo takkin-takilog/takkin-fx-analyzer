@@ -5,24 +5,25 @@ from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar, Line
 from oandapyV20 import API
 from retrying import retry
+from datetime import datetime, timedelta
 from autotrader.bokeh_common import GlyphVbarAbs
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
-from datetime import datetime, timedelta
-from comtypes.npsupport import numpy as np
 from autotrader.utils import DateTimeManager
+#from autotrader.technical import MovingAverage
+from autotrader.oanda_account import ACCESS_TOKEN
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
-import autotrader.oanda_account as oa
+import numpy as np
 
 
 # Pandas data label
-_TIME = "time"
-_VOLUME = "volume"
-_OPEN = "open"
-_HIGH = "high"
-_LOW = "low"
-_CLOSE = "close"
+LBL_TIME = "time"
+LBL_VOLUME = "volume"
+LBL_OPEN = "open"
+LBL_HIGH = "high"
+LBL_LOW = "low"
+LBL_CLOSE = "close"
 
 
 class CandleGlyph(GlyphVbarAbs):
@@ -78,10 +79,10 @@ class CandleGlyph(GlyphVbarAbs):
         """
         self.__src.data = {
             self.XDT: df.index.tolist(),
-            self.YHI: df[_HIGH].tolist(),
-            self.YLO: df[_LOW].tolist(),
-            self.YOP: df[_OPEN].tolist(),
-            self.YCL: df[_CLOSE].tolist()
+            self.YHI: df[LBL_HIGH].tolist(),
+            self.YLO: df[LBL_LOW].tolist(),
+            self.YOP: df[LBL_OPEN].tolist(),
+            self.YCL: df[LBL_CLOSE].tolist()
         }
 
         self.__glvbar.width = self.get_width(gran)
@@ -154,7 +155,7 @@ class CandleStick(object):
         # self.__CH_COLOR = "#FFFF00"  # Crosshair line color
 
         self.__yrng = [0, 0]  # [min, max]
-        self.__api = API(access_token=oa.ACCESS_TOKEN,
+        self.__api = API(access_token=ACCESS_TOKEN,
                          environment=OandaEnv.PRACTICE)
 
         tools_ = ToolType.gen_str(ToolType.WHEEL_ZOOM,
@@ -210,15 +211,18 @@ class CandleStick(object):
 
         hover = HoverTool()
         hover.formatters = {CandleGlyph.XDT: "datetime"}
-        hover.tooltips = [(_TIME, "@" + CandleGlyph.XDT + "{%F}"),
-                          (_HIGH, "@" + CandleGlyph.YHI),
-                          (_OPEN, "@" + CandleGlyph.YOP),
-                          (_CLOSE, "@" + CandleGlyph.YCL),
-                          (_LOW, "@" + CandleGlyph.YLO)]
+        hover.tooltips = [(LBL_TIME, "@" + CandleGlyph.XDT + "{%F}"),
+                          (LBL_HIGH, "@" + CandleGlyph.YHI),
+                          (LBL_OPEN, "@" + CandleGlyph.YOP),
+                          (LBL_CLOSE, "@" + CandleGlyph.YCL),
+                          (LBL_LOW, "@" + CandleGlyph.YLO)]
         hover.renderers = [self.__glyinc.render,
                            self.__glydec.render,
                            self.__glyequ.render]
         self.__plt_main.add_tools(hover)
+
+        # 移動平均線
+        #self.__ma = MovingAverage()
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, gmtstr, gmtend):
@@ -261,19 +265,19 @@ class CandleStick(object):
 
         # convert List to pandas data frame
         df = pd.DataFrame(data)
-        df.columns = [_TIME,
-                      _VOLUME,
-                      _OPEN,
-                      _HIGH,
-                      _LOW,
-                      _CLOSE]
-        df = df.set_index(_TIME)
+        df.columns = [LBL_TIME,
+                      LBL_VOLUME,
+                      LBL_OPEN,
+                      LBL_HIGH,
+                      LBL_LOW,
+                      LBL_CLOSE]
+        df = df.set_index(LBL_TIME)
         # date型を整形する
         df.index = pd.to_datetime(df.index)
 
-        incflg = df[_CLOSE] > df[_OPEN]
-        decflg = df[_OPEN] > df[_CLOSE]
-        equflg = df[_CLOSE] == df[_OPEN]
+        incflg = df[LBL_CLOSE] > df[LBL_OPEN]
+        decflg = df[LBL_OPEN] > df[LBL_CLOSE]
+        equflg = df[LBL_CLOSE] == df[LBL_OPEN]
 
         self.__glyinc.update(df[incflg], gran)
         self.__glydec.update(df[decflg], gran)
@@ -288,8 +292,8 @@ class CandleStick(object):
 
         self.__range_tool.x_range = self.__plt_main.x_range
 
-        min_ = df[_LOW].min()
-        max_ = df[_HIGH].max()
+        min_ = df[LBL_LOW].min()
+        max_ = df[LBL_HIGH].max()
         mar = self.__YRANGE_MARGIN * (max_ - min_)
         str_ = min_ - mar
         end_ = max_ + mar
@@ -298,6 +302,9 @@ class CandleStick(object):
 
         self.__add_orders_vline(gran, gmtstr, gmtend)
         self.__plt_main.y_range.update(start=str_, end=end_)
+
+        # 移動平均線
+        #self.__ma.update(df)
 
         return yrng
 
@@ -385,12 +392,10 @@ class CandleStick(object):
     def orders_fetch_datetime(self):
         return DateTimeManager(self.__idxmindt)
 
-    def get_widget(self):
-        """"ウィジェットを取得する[get widget]
-        引数[Args]:
-            None
-        戻り値[Returns]:
-            self.__plt_main (figure) : メインfigure[main figure]
-            self.__plt_rang (figure) : レンジfigure[range figure]
-        """
-        return self.__plt_main, self.__plt_rang
+    @property
+    def fig_main(self):
+        return self.__plt_main
+
+    @property
+    def fig_range(self):
+        return self.__plt_rang
