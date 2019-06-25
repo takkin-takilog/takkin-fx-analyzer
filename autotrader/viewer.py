@@ -1,5 +1,5 @@
 from bokeh.io import show
-from bokeh.layouts import gridplot, row, layout
+from bokeh.layouts import gridplot, row, column, layout
 from bokeh.models.widgets import Select
 from bokeh import events
 from datetime import datetime, timedelta
@@ -8,6 +8,7 @@ from autotrader.candlestick import CandleStick
 from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
+from autotrader.technical import MovingAverage
 
 
 class Viewer(object):
@@ -96,7 +97,7 @@ class Viewer(object):
         self.__wse_inst = Select(title="通貨ペア:",
                                  value=inst_def,
                                  options=INST_OPT)
-        self.__wse_inst.on_change("value", self.__cb_sel_inst)
+        self.__wse_inst.on_change("value", self.__cb_wse_inst)
 
         # Widgetセレクト（期間）
         GRAN_OPT = [
@@ -109,13 +110,27 @@ class Viewer(object):
         self.__wse_gran = Select(title="期間:",
                                  value=gran_def,
                                  options=GRAN_OPT)
-        self.__wse_gran.on_change("value", self.__cb_sel_gran)
+        self.__wse_gran.on_change("value", self.__cb_wse_gran)
 
         # Widgetセレクト（表示モード）
         self.__wse_mode = Select(title="期間:",
                                  value=self.__MODE_LIST[0],
                                  options=self.__MODE_LIST)
-        self.__wse_mode.on_change("value", self.__cb_sel_mode)
+        self.__wse_mode.on_change("value", self.__cb_wse_mode)
+
+        # Widgetセレクト（テクニカル指標）
+        TECH_OPT = [
+            "単純移動平均",
+            "MACD",
+            "ボリンジャーバンド",
+        ]
+        self.__wse_tech = Select(title="テクニカル指標",
+                                 value=TECH_OPT[0],
+                                 options=TECH_OPT)
+        self.__wse_tech.on_change("value", self.__cb_wse_tech)
+
+        # テクニカル指標
+        self.__ma = MovingAverage()
 
         # 初期設定
         self.__inst = self.__INST_DICT[inst_def]
@@ -192,7 +207,7 @@ class Viewer(object):
 
         return dtmstr, dtmend
 
-    def __cb_sel_inst(self, attr, old, new):
+    def __cb_wse_inst(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -217,7 +232,7 @@ class Viewer(object):
         self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
-    def __cb_sel_gran(self, attr, old, new):
+    def __cb_wse_gran(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -245,7 +260,7 @@ class Viewer(object):
         self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
-    def __cb_sel_mode(self, attr, old, new):
+    def __cb_wse_mode(self, attr, old, new):
         """Widgetセレクト（モード）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -254,12 +269,13 @@ class Viewer(object):
         戻り値[Returns]:
             なし[None]
         """
-        print("nwe = {}" .format(new))
-        print("attr = {}" .format(attr))
         if new == self.__MODE_LIST[0]:
             self.__set_layout_main()
         elif new == self.__MODE_LIST[1]:
             self.__set_layout_opbk()
+
+    def __cb_wse_tech(self, attr, old, new):
+        pass
 
     def __cb_chart_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
@@ -304,7 +320,6 @@ class Viewer(object):
                 [chartlay]
             ])
 
-
         chart.on_event(events.Tap, self.__cb_chart_tap)
         chart.on_event(events.MouseMove, self.__cb_chart_mousemove)
 
@@ -339,11 +354,15 @@ class Viewer(object):
 
         chart = self.__cs.fig_main
         rang_ = self.__cs.fig_range
+        tech = self.__wse_tech
+
+        slds = column(children=self.__ma.widget_)
+        ma = column(children=[tech, slds])
 
         chartlay = gridplot(
             [
-                [chart],
-                [rang_],
+                [ma, chart],
+                [None, rang_],
             ],
             merge_tools=False)
 

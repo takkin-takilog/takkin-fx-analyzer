@@ -10,7 +10,6 @@ from autotrader.bokeh_common import GlyphVbarAbs
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
 from autotrader.utils import DateTimeManager
-#from autotrader.technical import MovingAverage
 from autotrader.oanda_account import ACCESS_TOKEN
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
