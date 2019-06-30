@@ -167,6 +167,7 @@ class CandleStick(object):
                                  x_axis_type=AxisTyp.X_DATETIME,
                                  tools=tools_,
                                  background_fill_color=self.__BG_COLOR,
+                                 sizing_mode="stretch_width",
                                  title="Candlestick Chart")
         self.__plt_main.xaxis.major_label_orientation = pi / 4
         self.__plt_main.grid.grid_line_alpha = 0.3
@@ -179,6 +180,7 @@ class CandleStick(object):
                                  y_range=self.__plt_main.y_range,
                                  x_axis_type=AxisTyp.X_DATETIME,
                                  background_fill_color=self.__BG_COLOR,
+                                 sizing_mode="stretch_width",
                                  toolbar_location=None)
         self.__plt_rang.yaxis.visible = False
         self.__plt_rang.ygrid.visible = False
@@ -193,11 +195,13 @@ class CandleStick(object):
         self.__idxmin = -1
         self.__idxmindt = -1
 
+        # Open Orders & Positions vertical line
         self.__glyordcnd = OrdersVLineGlyph(self.__plt_main,
                                             self.__ORDLINE_CND_COLOR)
         self.__glyordfix = OrdersVLineGlyph(self.__plt_main,
                                             self.__ORDLINE_FIX_COLOR)
 
+        # Candle stick figure
         self.__glyinc = CandleGlyph(self.__plt_main,
                                     self.__plt_rang,
                                     self.__CND_INC_COLOR)
@@ -386,6 +390,10 @@ class CandleStick(object):
         dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
                  OrdersVLineGlyph.YPR: self.__yrng}
         self.__glyordfix.update(dict_)
+
+    def clear_orders_vline(self):
+        self.__glyordcnd.clear()
+        self.__glyordfix.clear()
 
     @property
     def orders_fetch_datetime(self):

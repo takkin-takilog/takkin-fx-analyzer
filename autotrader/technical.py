@@ -1,5 +1,5 @@
 from autotrader.candlestick import LBL_CLOSE
-from bokeh.models.widgets import Slider
+from bokeh.models.widgets import Slider, Button
 import pandas as pd
 
 
@@ -29,6 +29,9 @@ class MovingAverage(object):
         self.__sld_l = Slider(start=1, end=100, value=75,
                               step=1, title="SMA L")
 
+        self.__btn_ok = Button(label="OK", button_type="success")
+        self.__btn_cncl = Button(label="cancel", button_type="default")
+
     def update(self, df):
         """"コンストラクタ[Constructor]
         引数[Args]:
@@ -46,16 +49,24 @@ class MovingAverage(object):
         return [self.__sld_s, self.__sld_m, self.__sld_l]
 
     @property
-    def aaas(self):
+    def widsld_s(self):
         return self.__sld_s
 
     @property
-    def aaam(self):
+    def widsld_m(self):
         return self.__sld_m
 
     @property
-    def aaal(self):
+    def widsld_l(self):
         return self.__sld_l
+
+    @property
+    def widbtn_ok(self):
+        return self.__btn_ok
+
+    @property
+    def widbtn_cncl(self):
+        return self.__btn_cncl
 
 
 if __name__ == "__main__":

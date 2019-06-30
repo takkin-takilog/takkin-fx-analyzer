@@ -1,5 +1,5 @@
 from bokeh.io import show
-from bokeh.layouts import gridplot, row, column, layout
+from bokeh.layouts import gridplot, row, column, layout, widgetbox
 from bokeh.models.widgets import Select
 from bokeh import events
 from datetime import datetime, timedelta
@@ -113,10 +113,11 @@ class Viewer(object):
         self.__wse_gran.on_change("value", self.__cb_wse_gran)
 
         # Widgetセレクト（表示モード）
-        self.__wse_mode = Select(title="期間:",
+        self.__wse_mode = Select(title="表示モード:",
                                  value=self.__MODE_LIST[0],
                                  options=self.__MODE_LIST)
         self.__wse_mode.on_change("value", self.__cb_wse_mode)
+        self.__mode = self.__MODE_LIST[0]
 
         # Widgetセレクト（テクニカル指標）
         TECH_OPT = [
@@ -271,8 +272,13 @@ class Viewer(object):
         """
         if new == self.__MODE_LIST[0]:
             self.__set_layout_main()
+            self.__mode = self.__MODE_LIST[0]
         elif new == self.__MODE_LIST[1]:
             self.__set_layout_opbk()
+            self.__mode = self.__MODE_LIST[1]
+            self.__cs.clear_orders_vline()
+            self.__opord.clear()
+            self.__oppos.clear()
 
     def __cb_wse_tech(self, attr, old, new):
         pass
@@ -280,14 +286,17 @@ class Viewer(object):
     def __cb_chart_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
         # fetch Open Order and Position
-        dtmmin = self.__cs.orders_fetch_datetime
-        self.__opord.fetch(self.__inst, dtmmin)
-        self.__oppos.fetch(self.__inst, dtmmin)
-        self.__cs.draw_orders_fix_vline()
+        if self.__mode == self.__MODE_LIST[0]:
+            dtmmin = self.__cs.orders_fetch_datetime
+            self.__opord.fetch(self.__inst, dtmmin)
+            self.__oppos.fetch(self.__inst, dtmmin)
+            self.__cs.draw_orders_fix_vline()
 
     def __cb_chart_mousemove(self, event):
-        date = datetime.fromtimestamp(int(event.x) / 1000) - timedelta(hours=9)
-        self.__cs.draw_orders_cand_vline(date)
+        if self.__mode == self.__MODE_LIST[0]:
+            date = datetime.fromtimestamp(
+                int(event.x) / 1000) - timedelta(hours=9)
+            self.__cs.draw_orders_cand_vline(date)
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -300,25 +309,30 @@ class Viewer(object):
         w2 = self.__wse_gran
         w3 = self.__wse_mode
 
-        wbox1 = row(children=[w1, w2, w3])
+        widsel1 = row(children=[w1, w2], width=300)
+        widsel2 = row(children=[w3], width=1000)
 
         chart = self.__cs.fig_main
         rang_ = self.__cs.fig_range
         opord = self.__opord.widget
         oppos = self.__oppos.widget
 
+        op_ = row(children=[opord, oppos], max_width=300, sizing_mode="stretch_width")
+
         chartlay = gridplot(
             [
-                [opord, oppos, chart],
-                [None, None, rang_],
+                [op_, chart],
+                [None, rang_],
             ],
-            merge_tools=False)
+            merge_tools=False,
+            sizing_mode="scale_width"
+            )
 
         self.__layout = layout(
             [
-                [wbox1],
+                [widsel1, widsel2],
                 [chartlay]
-            ])
+            ],sizing_mode='scale_width')
 
         chart.on_event(events.Tap, self.__cb_chart_tap)
         chart.on_event(events.MouseMove, self.__cb_chart_mousemove)
@@ -354,16 +368,33 @@ class Viewer(object):
 
         chart = self.__cs.fig_main
         rang_ = self.__cs.fig_range
+
+        chart_ = column(children=[chart, rang_])
+
+
         tech = self.__wse_tech
 
+        """
         slds = column(children=self.__ma.widget_)
-        ma = column(children=[tech, slds])
+        okb = layout(children=[self.__ma.ok_button])
+        ma = column(children=[tech, slds, okb])
+        """
 
-        chartlay = gridplot(
+        para = column(children=[self.__ma.widsld_l,
+                                self.__ma.widsld_m,
+                                self.__ma.widsld_s
+                                ])
+
+        btn = row(children=[self.__ma.widbtn_cncl,
+                            self.__ma.widbtn_ok
+                            ], width=200)
+
+        layo = column(children=[tech, para])
+        aaa = column(children=[layo, btn])
+
+        chartlay = layout(
             [
-                [ma, chart],
-                [None, rang_],
-            ],
-            merge_tools=False)
+                [aaa, chart_]
+            ])
 
         self.__layout.children[1] = chartlay
