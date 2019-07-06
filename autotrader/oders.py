@@ -60,6 +60,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
 
         self.__plt = figure(plot_height=400,
                             plot_width=200,
+                            sizing_mode='fixed',
                             x_range=(-self.__X_AXIS_MAX, self.__X_AXIS_MAX),
                             y_range=yrng,
                             tools=tools_,

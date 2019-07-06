@@ -1,5 +1,5 @@
 from bokeh.io import show
-from bokeh.layouts import gridplot, row, column, layout, widgetbox
+from bokeh.layouts import gridplot, row, column, layout
 from bokeh.models.widgets import Select
 from bokeh import events
 from datetime import datetime, timedelta
@@ -127,7 +127,8 @@ class Viewer(object):
         ]
         self.__wse_tech = Select(title="テクニカル指標",
                                  value=TECH_OPT[0],
-                                 options=TECH_OPT)
+                                 options=TECH_OPT,
+                                 width=200)
         self.__wse_tech.on_change("value", self.__cb_wse_tech)
 
         # テクニカル指標
@@ -274,7 +275,7 @@ class Viewer(object):
             self.__set_layout_main()
             self.__mode = self.__MODE_LIST[0]
         elif new == self.__MODE_LIST[1]:
-            self.__set_layout_opbk()
+            self.__set_layout_tech()
             self.__mode = self.__MODE_LIST[1]
             self.__cs.clear_orders_vline()
             self.__opord.clear()
@@ -298,6 +299,21 @@ class Viewer(object):
                 int(event.x) / 1000) - timedelta(hours=9)
             self.__cs.draw_orders_cand_vline(date)
 
+    def __chart_layout(self):
+        opord = self.__opord.widget
+        oppos = self.__oppos.widget
+        opbk = row(children=[opord, oppos], sizing_mode='fixed')
+
+        chrt = self.__cs.fig_main
+        rang = self.__cs.fig_range
+        chgp = gridplot(
+            [
+                [opbk, chrt],
+                [None, rang],
+            ], sizing_mode='stretch_width', merge_tools=False)
+
+        return chgp
+
     def get_layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
@@ -312,30 +328,14 @@ class Viewer(object):
         widsel1 = row(children=[w1, w2], width=300)
         widsel2 = row(children=[w3], width=1000)
 
-        chart = self.__cs.fig_main
-        rang_ = self.__cs.fig_range
-        opord = self.__opord.widget
-        oppos = self.__oppos.widget
-
-        op_ = row(children=[opord, oppos], max_width=300, sizing_mode="stretch_width")
-
-        chartlay = gridplot(
-            [
-                [op_, chart],
-                [None, rang_],
-            ],
-            merge_tools=False,
-            sizing_mode="scale_width"
-            )
-
+        chgp = self.__chart_layout()
+        wid = row(children=[widsel1, widsel2], sizing_mode='stretch_width')
         self.__layout = layout(
-            [
-                [widsel1, widsel2],
-                [chartlay]
-            ],sizing_mode='scale_width')
+            children=[wid, chgp], sizing_mode='stretch_width')
 
-        chart.on_event(events.Tap, self.__cb_chart_tap)
-        chart.on_event(events.MouseMove, self.__cb_chart_mousemove)
+        self.__cs.fig_main.on_event(events.Tap, self.__cb_chart_tap)
+        self.__cs.fig_main.on_event(
+            events.MouseMove, self.__cb_chart_mousemove)
 
         return(self.__layout)
 
@@ -349,52 +349,27 @@ class Viewer(object):
         show(self.get_layout())
 
     def __set_layout_main(self):
+        chgp = self.__chart_layout()
+        self.__layout.children[1] = chgp
 
-        chart = self.__cs.fig_main
-        rang_ = self.__cs.fig_range
-        opord = self.__opord.widget
-        oppos = self.__oppos.widget
+    def __set_layout_tech(self):
 
-        chartlay = gridplot(
-            [
-                [opord, oppos, chart],
-                [None, None, rang_],
-            ],
-            merge_tools=False)
+        chrt = self.__cs.fig_main
+        rang = self.__cs.fig_range
 
-        self.__layout.children[1] = chartlay
-
-    def __set_layout_opbk(self):
-
-        chart = self.__cs.fig_main
-        rang_ = self.__cs.fig_range
-
-        chart_ = column(children=[chart, rang_])
-
+        chrtset = column(children=[chrt, rang], sizing_mode='stretch_width')
 
         tech = self.__wse_tech
-
-        """
-        slds = column(children=self.__ma.widget_)
-        okb = layout(children=[self.__ma.ok_button])
-        ma = column(children=[tech, slds, okb])
-        """
-
         para = column(children=[self.__ma.widsld_l,
                                 self.__ma.widsld_m,
                                 self.__ma.widsld_s
                                 ])
-
         btn = row(children=[self.__ma.widbtn_cncl,
                             self.__ma.widbtn_ok
                             ], width=200)
+        techpara = column(children=[tech, para, btn], sizing_mode='fixed')
 
-        layo = column(children=[tech, para])
-        aaa = column(children=[layo, btn])
-
-        chartlay = layout(
-            [
-                [aaa, chart_]
-            ])
+        chartlay = row(children=[techpara, chrtset],
+                       sizing_mode='stretch_width')
 
         self.__layout.children[1] = chartlay
