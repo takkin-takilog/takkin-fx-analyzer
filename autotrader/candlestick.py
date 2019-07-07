@@ -308,22 +308,26 @@ class CandleStick(object):
         self.__plt_main.y_range.update(start=str_, end=end_)
 
         # 単純移動平均線
-        self.__sma.update_sho(df, cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_SHO))
-        self.__sma.update_mid(df, cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_MID))
-        self.__sma.update_lon(df, cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_LON))
+        if cfg.get_conf(cfg.ITEM_SMA) == 1:
+            self.__sma.update_sho(df, cfg.get_conf(cfg.ITEM_SHO))
+            self.__sma.update_mid(df, cfg.get_conf(cfg.ITEM_MID))
+            self.__sma.update_lon(df, cfg.get_conf(cfg.ITEM_LON))
 
         self.__df = df
 
         return yrng
 
-    def update_sho(self, new):
+    def update_sma_sho(self, new):
         self.__sma.update_sho(self.__df, new)
 
-    def update_mid(self, new):
+    def update_sma_mid(self, new):
         self.__sma.update_mid(self.__df, new)
 
-    def update_lon(self, new):
+    def update_sma_lon(self, new):
         self.__sma.update_lon(self.__df, new)
+
+    def clear_sma(self):
+        self.__sma.clear()
 
     def __add_orders_vline(self, gran, gmtstr, gmtend):
         hour_ = gmtstr.tokyo.hour

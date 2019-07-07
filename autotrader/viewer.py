@@ -8,7 +8,7 @@ from autotrader.candlestick import CandleStick
 from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
-from bokeh.models.widgets import Slider, Button
+from bokeh.models.widgets import Slider
 import autotrader.config as cfg
 
 
@@ -136,27 +136,26 @@ class Viewer(object):
         self.__wse_tech.on_change("value", self.__cb_wse_tech)
 
         # Checkbox Group
-        self.__ckbxgr_tech = CheckboxGroup(labels=TECH_OPT, active=[0, 1])
+        active_ = cfg.get_conf_act()
+        self.__ckbxgr_tech = CheckboxGroup(labels=TECH_OPT, active=active_)
+        self.__ckbxgr_tech.on_change("active", self.__cb_ckbxgr_tech)
 
         # ----------テクニカル指標----------
         # 単純移動平均
-        defsho = cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_SHO)
+        defsho = cfg.get_conf(cfg.ITEM_SHO)
         self.__sldtecma_s = Slider(start=1, end=100, value=defsho,
                                    step=1, title="SMA S")
         self.__sldtecma_s.on_change('value', self.__cb_sldtecma_s)
 
-        defmid = cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_MID)
+        defmid = cfg.get_conf(cfg.ITEM_MID)
         self.__sldtecma_m = Slider(start=1, end=100, value=defmid,
                                    step=1, title="SMA M")
         self.__sldtecma_m.on_change('value', self.__cb_sldtecma_m)
 
-        deflon = cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_LON)
+        deflon = cfg.get_conf(cfg.ITEM_LON)
         self.__sldtecma_l = Slider(start=1, end=100, value=deflon,
                                    step=1, title="SMA L")
         self.__sldtecma_l.on_change('value', self.__cb_sldtecma_l)
-
-        self.__btntecma_ok = Button(label="OK", button_type="success")
-        self.__btntecma_cncl = Button(label="cancel", button_type="default")
 
         # 初期設定
         self.__inst = self.__INST_DICT[inst_def]
@@ -328,19 +327,32 @@ class Viewer(object):
                 int(event.x) / 1000) - timedelta(hours=9)
             self.__cs.draw_orders_cand_vline(date)
 
+    def __cb_ckbxgr_tech(self, attr, old, new):
+        if (0 in new):
+            self.__cs.update_sma_sho(self.__sldtecma_s.value)
+            self.__cs.update_sma_mid(self.__sldtecma_m.value)
+            self.__cs.update_sma_lon(self.__sldtecma_l.value)
+        else:
+            self.__cs.clear_sma()
+        cfg.set_conf_act(new)
+        cfg.write()
+
     def __cb_sldtecma_s(self, attr, old, new):
-        self.__cs.update_sho(new)
-        cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_SHO, new)
+        if cfg.get_conf(cfg.ITEM_SMA) == 1:
+            self.__cs.update_sho(new)
+        cfg.set_conf(cfg.ITEM_SHO, new)
         cfg.write()
 
     def __cb_sldtecma_m(self, attr, old, new):
-        self.__cs.update_mid(new)
-        cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_MID, new)
+        if cfg.get_conf(cfg.ITEM_SMA) == 1:
+            self.__cs.update_mid(new)
+        cfg.set_conf(cfg.ITEM_MID, new)
         cfg.write()
 
     def __cb_sldtecma_l(self, attr, old, new):
-        self.__cs.update_lon(new)
-        cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_LON, new)
+        if cfg.get_conf(cfg.ITEM_SMA) == 1:
+            self.__cs.update_lon(new)
+        cfg.set_conf(cfg.ITEM_LON, new)
         cfg.write()
 
     def __chart_layout(self):
@@ -409,11 +421,8 @@ class Viewer(object):
                                 self.__sldtecma_m,
                                 self.__sldtecma_s
                                 ])
-        btn = row(children=[self.__btntecma_cncl,
-                            self.__btntecma_ok
-                            ], width=200)
         techpara = column(
-            children=[cbgt, tech, para, btn], sizing_mode='fixed')
+            children=[cbgt, tech, para], sizing_mode='fixed')
 
         chartlay = row(children=[techpara, chrtset],
                        sizing_mode='stretch_width')
