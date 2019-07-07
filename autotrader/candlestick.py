@@ -10,11 +10,11 @@ from autotrader.bokeh_common import GlyphVbarAbs
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
 from autotrader.utils import DateTimeManager
-from autotrader.oanda_account import ACCESS_TOKEN
 from autotrader.technical import SimpleMovingAverage
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import numpy as np
+import autotrader.config as cfg
 
 
 # Pandas data label
@@ -131,7 +131,7 @@ class OrdersVLineGlyph(object):
         self.__src.data = dict_
 
 
-class CandleStick(SimpleMovingAverage):
+class CandleStick(object):
     """ CandleStick
             - ローソク足定義クラス[Candle stick definition class]
     """
@@ -141,6 +141,7 @@ class CandleStick(SimpleMovingAverage):
         引数[Args]:
             None
         """
+        from autotrader.oanda_account import ACCESS_TOKEN
         self.__CND_INC_COLOR = "#E73B3A"
         self.__CND_DEC_COLOR = "#03C103"
         self.__CND_EQU_COLOR = "#FFFF00"
@@ -225,6 +226,8 @@ class CandleStick(SimpleMovingAverage):
                            self.__glyequ.render]
         self.__plt_main.add_tools(hover)
 
+        self.__sma = SimpleMovingAverage(self.__plt_main)
+
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, gmtstr, gmtend):
         """"ローソク足情報を取得する[fetch candles]
@@ -304,10 +307,23 @@ class CandleStick(SimpleMovingAverage):
         self.__add_orders_vline(gran, gmtstr, gmtend)
         self.__plt_main.y_range.update(start=str_, end=end_)
 
-        # 移動平均線
-        #self.__ma.update(df)
+        # 単純移動平均線
+        self.__sma.update_sho(df, cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_SHO))
+        self.__sma.update_mid(df, cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_MID))
+        self.__sma.update_lon(df, cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_LON))
+
+        self.__df = df
 
         return yrng
+
+    def update_sho(self, new):
+        self.__sma.update_sho(self.__df, new)
+
+    def update_mid(self, new):
+        self.__sma.update_mid(self.__df, new)
+
+    def update_lon(self, new):
+        self.__sma.update_lon(self.__df, new)
 
     def __add_orders_vline(self, gran, gmtstr, gmtend):
         hour_ = gmtstr.tokyo.hour

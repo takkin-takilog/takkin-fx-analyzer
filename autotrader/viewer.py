@@ -329,14 +329,17 @@ class Viewer(object):
             self.__cs.draw_orders_cand_vline(date)
 
     def __cb_sldtecma_s(self, attr, old, new):
+        self.__cs.update_sho(new)
         cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_SHO, new)
         cfg.write()
 
     def __cb_sldtecma_m(self, attr, old, new):
+        self.__cs.update_mid(new)
         cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_MID, new)
         cfg.write()
 
     def __cb_sldtecma_l(self, attr, old, new):
+        self.__cs.update_lon(new)
         cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_LON, new)
         cfg.write()
 
