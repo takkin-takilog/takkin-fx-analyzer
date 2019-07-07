@@ -1,6 +1,6 @@
 from bokeh.io import show
 from bokeh.layouts import gridplot, row, column, layout
-from bokeh.models.widgets import Select
+from bokeh.models.widgets import Select, CheckboxGroup
 from bokeh import events
 from datetime import datetime, timedelta
 from oandapyV20.exceptions import V20Error
@@ -8,7 +8,8 @@ from autotrader.candlestick import CandleStick
 from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
-from autotrader.technical import MovingAverage
+from bokeh.models.widgets import Slider, Button
+import autotrader.config as cfg
 
 
 class Viewer(object):
@@ -51,6 +52,9 @@ class Viewer(object):
             gran_def (str) : ローソク足の時間足[granularity of a candlestick]
         """
         self.__DISP_NUM = 300
+
+        # コンフィグファイル読み込み
+        cfg.read()
 
         # 辞書登録：通貨ペア
         self.__INST_DICT = {
@@ -131,8 +135,28 @@ class Viewer(object):
                                  width=200)
         self.__wse_tech.on_change("value", self.__cb_wse_tech)
 
-        # テクニカル指標
-        self.__ma = MovingAverage()
+        # Checkbox Group
+        self.__ckbxgr_tech = CheckboxGroup(labels=TECH_OPT, active=[0, 1])
+
+        # ----------テクニカル指標----------
+        # 単純移動平均
+        defsho = cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_SHO)
+        self.__sldtecma_s = Slider(start=1, end=100, value=defsho,
+                                   step=1, title="SMA S")
+        self.__sldtecma_s.on_change('value', self.__cb_sldtecma_s)
+
+        defmid = cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_MID)
+        self.__sldtecma_m = Slider(start=1, end=100, value=defmid,
+                                   step=1, title="SMA M")
+        self.__sldtecma_m.on_change('value', self.__cb_sldtecma_m)
+
+        deflon = cfg.get_conf(cfg.SEC_SMA, cfg.ITEM_LON)
+        self.__sldtecma_l = Slider(start=1, end=100, value=deflon,
+                                   step=1, title="SMA L")
+        self.__sldtecma_l.on_change('value', self.__cb_sldtecma_l)
+
+        self.__btntecma_ok = Button(label="OK", button_type="success")
+        self.__btntecma_cncl = Button(label="cancel", button_type="default")
 
         # 初期設定
         self.__inst = self.__INST_DICT[inst_def]
@@ -155,6 +179,11 @@ class Viewer(object):
 
         self.__opord = OpenOrders(yrng)
         self.__oppos = OpenPositions(yrng)
+
+    def __del__(self):
+        """"デストラクタ[Destructor]
+        """
+        print("デストラクタ")
 
     def __get_period(self, gran, num):
         """"チャートを描写する期間を取得する[get period of chart]
@@ -299,6 +328,18 @@ class Viewer(object):
                 int(event.x) / 1000) - timedelta(hours=9)
             self.__cs.draw_orders_cand_vline(date)
 
+    def __cb_sldtecma_s(self, attr, old, new):
+        cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_SHO, new)
+        cfg.write()
+
+    def __cb_sldtecma_m(self, attr, old, new):
+        cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_MID, new)
+        cfg.write()
+
+    def __cb_sldtecma_l(self, attr, old, new):
+        cfg.set_conf(cfg.SEC_SMA, cfg.ITEM_LON, new)
+        cfg.write()
+
     def __chart_layout(self):
         opord = self.__opord.widget
         oppos = self.__oppos.widget
@@ -359,15 +400,17 @@ class Viewer(object):
 
         chrtset = column(children=[chrt, rang], sizing_mode='stretch_width')
 
+        cbgt = self.__ckbxgr_tech
         tech = self.__wse_tech
-        para = column(children=[self.__ma.widsld_l,
-                                self.__ma.widsld_m,
-                                self.__ma.widsld_s
+        para = column(children=[self.__sldtecma_l,
+                                self.__sldtecma_m,
+                                self.__sldtecma_s
                                 ])
-        btn = row(children=[self.__ma.widbtn_cncl,
-                            self.__ma.widbtn_ok
+        btn = row(children=[self.__btntecma_cncl,
+                            self.__btntecma_ok
                             ], width=200)
-        techpara = column(children=[tech, para, btn], sizing_mode='fixed')
+        techpara = column(
+            children=[cbgt, tech, para, btn], sizing_mode='fixed')
 
         chartlay = row(children=[techpara, chrtset],
                        sizing_mode='stretch_width')

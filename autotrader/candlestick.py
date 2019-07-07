@@ -11,6 +11,7 @@ from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
 from autotrader.utils import DateTimeManager
 from autotrader.oanda_account import ACCESS_TOKEN
+from autotrader.technical import SimpleMovingAverage
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import numpy as np
@@ -130,7 +131,7 @@ class OrdersVLineGlyph(object):
         self.__src.data = dict_
 
 
-class CandleStick(object):
+class CandleStick(SimpleMovingAverage):
     """ CandleStick
             - ローソク足定義クラス[Candle stick definition class]
     """
@@ -223,9 +224,6 @@ class CandleStick(object):
                            self.__glydec.render,
                            self.__glyequ.render]
         self.__plt_main.add_tools(hover)
-
-        # 移動平均線
-        #self.__ma = MovingAverage()
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, gmtstr, gmtend):
