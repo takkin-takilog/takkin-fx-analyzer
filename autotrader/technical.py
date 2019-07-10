@@ -7,50 +7,40 @@ class SimpleMovingAverage(object):
     """ SimpleMovingAverage
             - 単純移動平均線クラス[moving average class]
     """
-    SMACOL_S = "SMA-S"
-    SMACOL_M = "SMA-M"
-    SMACOL_L = "SMA-L"
-
-    XDT = "xdt"
-    YPR = "ypr"
 
     def __init__(self, plt):
         """"コンストラクタ[Constructor]
         引数[Args]:
             None
         """
-        print("SimpleMovingAverage")
-        """
-        self.__plt = plt
-        self.__plt.line(df.index, df[self.SMACOL_S], line_width=2,
-                        line_color="pink", legend=self.SMACOL_S)
-        """
+        self.__XDT = "xdt"
+        self.__YPR = "ypr"
 
-        self.__srcs = ColumnDataSource({self.XDT: [],
-                                        self.YPR: []})
-        self.__srcm = ColumnDataSource({self.XDT: [],
-                                        self.YPR: []})
-        self.__srcl = ColumnDataSource({self.XDT: [],
-                                        self.YPR: []})
+        self.__srcs = ColumnDataSource({self.__XDT: [],
+                                        self.__YPR: []})
+        self.__srcm = ColumnDataSource({self.__XDT: [],
+                                        self.__YPR: []})
+        self.__srcl = ColumnDataSource({self.__XDT: [],
+                                        self.__YPR: []})
 
-        glvline = Line(x=self.XDT,
-                       y=self.YPR,
+        glvline = Line(x=self.__XDT,
+                       y=self.__YPR,
                        line_color="pink",
                        line_dash="solid",
                        line_width=1,
                        line_alpha=1.0)
         plt.add_glyph(self.__srcs, glvline)
 
-        glvline = Line(x=self.XDT,
-                       y=self.YPR,
+        glvline = Line(x=self.__XDT,
+                       y=self.__YPR,
                        line_color="yellow",
                        line_dash="solid",
                        line_width=1,
                        line_alpha=1.0)
         plt.add_glyph(self.__srcm, glvline)
 
-        glvline = Line(x=self.XDT,
-                       y=self.YPR,
+        glvline = Line(x=self.__XDT,
+                       y=self.__YPR,
                        line_color="orange",
                        line_dash="solid",
                        line_width=1,
@@ -59,34 +49,37 @@ class SimpleMovingAverage(object):
 
     def update_sho(self, df, window_):
         from autotrader.candlestick import LBL_CLOSE
-        df[self.SMACOL_S] = df[LBL_CLOSE].rolling(
+        SMACOL_S = "SMA-S"
+        df[SMACOL_S] = df[LBL_CLOSE].rolling(
             window=window_).mean()
         self.__srcs.data = {
-            self.XDT: df.index.tolist(),
-            self.YPR: df[self.SMACOL_S].tolist(),
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[SMACOL_S].tolist(),
         }
 
     def update_mid(self, df, window_):
         from autotrader.candlestick import LBL_CLOSE
-        df[self.SMACOL_M] = df[LBL_CLOSE].rolling(
+        SMACOL_M = "SMA-M"
+        df[SMACOL_M] = df[LBL_CLOSE].rolling(
             window=window_).mean()
         self.__srcm.data = {
-            self.XDT: df.index.tolist(),
-            self.YPR: df[self.SMACOL_M].tolist(),
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[SMACOL_M].tolist(),
         }
 
     def update_lon(self, df, window_):
         from autotrader.candlestick import LBL_CLOSE
-        df[self.SMACOL_L] = df[LBL_CLOSE].rolling(
+        SMACOL_L = "SMA-L"
+        df[SMACOL_L] = df[LBL_CLOSE].rolling(
             window=window_).mean()
         self.__srcl.data = {
-            self.XDT: df.index.tolist(),
-            self.YPR: df[self.SMACOL_L].tolist(),
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[SMACOL_L].tolist(),
         }
 
     def clear(self):
-        dict_ = {self.XDT: [],
-                 self.YPR: []}
+        dict_ = {self.__XDT: [],
+                 self.__YPR: []}
         self.__srcs.data = dict_
         self.__srcm.data = dict_
         self.__srcl.data = dict_

@@ -339,19 +339,19 @@ class Viewer(object):
 
     def __cb_sldtecma_s(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA) == 1:
-            self.__cs.update_sho(new)
+            self.__cs.update_sma_sho(new)
         cfg.set_conf(cfg.ITEM_SHO, new)
         cfg.write()
 
     def __cb_sldtecma_m(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA) == 1:
-            self.__cs.update_mid(new)
+            self.__cs.update_sma_mid(new)
         cfg.set_conf(cfg.ITEM_MID, new)
         cfg.write()
 
     def __cb_sldtecma_l(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA) == 1:
-            self.__cs.update_lon(new)
+            self.__cs.update_sma_lon(new)
         cfg.set_conf(cfg.ITEM_LON, new)
         cfg.write()
 
