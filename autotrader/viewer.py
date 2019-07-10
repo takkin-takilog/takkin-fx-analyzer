@@ -130,9 +130,6 @@ class Viewer(object):
                             "ボリンジャーバンド": self.__cb_func_bb
                             }
         TECH_OPT = list(self.__tech_dict.keys())
-        print(TECH_OPT)
-
-
         self.__wse_tech = Select(title="テクニカル指標",
                                  value=TECH_OPT[0],
                                  options=TECH_OPT,
@@ -162,10 +159,11 @@ class Viewer(object):
         self.__sldtecma_l.on_change('value', self.__cb_sldtecma_l)
 
         # ===== ボリンジャーバンド =====
-        defsho = cfg.get_conf(cfg.ITEM_SHO)
-        self.__sldtecma_s = Slider(start=1, end=100, value=defsho,
-                                   step=1, title="SMA S")
-        self.__sldtecma_s.on_change('value', self.__cb_sldtecma_s)
+        defprd = cfg.get_conf(cfg.ITEM_BB_PRD)
+        print("defprd={}" .format(defprd))
+        self.__sldtecbb = Slider(start=1, end=100, value=defprd,
+                                 step=1, title="期間")
+        self.__sldtecbb.on_change('value', self.__cb_sldtecbb)
 
         # ---------- 初期設定 ----------
         self.__inst = self.__INST_DICT[inst_def]
@@ -344,6 +342,16 @@ class Viewer(object):
             self.__cs.update_sma_lon(self.__sldtecma_l.value)
         else:
             self.__cs.clear_sma()
+
+        if (1 in new):
+            pass
+        else:
+            pass
+
+        if (2 in new):
+            self.__cs.update_bb(self.__sldtecbb.value)
+        else:
+            self.__cs.clear_bb()
         cfg.set_conf_act(new)
         cfg.write()
 
@@ -363,6 +371,12 @@ class Viewer(object):
         if cfg.get_conf(cfg.ITEM_SMA) == 1:
             self.__cs.update_sma_lon(new)
         cfg.set_conf(cfg.ITEM_LON, new)
+        cfg.write()
+
+    def __cb_sldtecbb(self, attr, old, new):
+        if cfg.get_conf(cfg.ITEM_BB) == 1:
+            self.__cs.update_bb(new)
+        cfg.set_conf(cfg.ITEM_BB_PRD, new)
         cfg.write()
 
     def __chart_layout(self):
@@ -430,19 +444,11 @@ class Viewer(object):
         self.__test(para)
 
     def __set_techlay_macd(self):
-        para = column(children=[self.__sldtecma_l,
-                                self.__sldtecma_m,
-                                self.__sldtecma_s
-                                ])
-
-        self.__test(para)
+        pass
+        #self.__test(para)
 
     def __set_techlay_bb(self):
-        para = column(children=[self.__sldtecma_l,
-                                self.__sldtecma_m,
-                                self.__sldtecma_s
-                                ])
-
+        para = column(children=[self.__sldtecbb])
         self.__test(para)
 
     def __test(self, para):
@@ -462,8 +468,6 @@ class Viewer(object):
                        sizing_mode='stretch_width')
 
         self.__layout.children[1] = chartlay
-
-
 
     def __cb_func_sma(self):
         self.__set_techlay_sma()
