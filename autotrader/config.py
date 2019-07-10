@@ -11,12 +11,15 @@ ITEM_BB = 'bb'
 ITEM_SHO = 'short'
 ITEM_MID = 'middle'
 ITEM_LON = 'long'
+# ボリンジャーバンド
+ITEM_BB_PRD = 'period'
 
 _INI_FILE = 'config.ini'
 
 _SEC_ACT = 'activate'
 _SEC_SMA = 'sma'
-_SEC_LIST = [_SEC_ACT, _SEC_SMA]
+_SEC_BB = 'bb'
+_SEC_LIST = [_SEC_ACT, _SEC_SMA, _SEC_BB]
 
 _config_def = {
     # アクティベート
@@ -26,7 +29,9 @@ _config_def = {
     # 単純移動平均
     ITEM_SHO: '5',
     ITEM_MID: '20',
-    ITEM_LON: '75'
+    ITEM_LON: '75',
+    # ボリンジャーバンド
+    ITEM_BB_PRD: '20',
 }
 _cfg = configparser.ConfigParser(_config_def)
 _config = {}
@@ -42,12 +47,16 @@ def read():
         if not _cfg.has_section(item):
             _cfg.add_section(item)
 
+    # アクティベート
     _config[ITEM_SMA] = _cfg.getint(_SEC_ACT, ITEM_SMA)
     _config[ITEM_MACD] = _cfg.getint(_SEC_ACT, ITEM_MACD)
     _config[ITEM_BB] = _cfg.getint(_SEC_ACT, ITEM_BB)
+    # 単純移動平均
     _config[ITEM_SHO] = _cfg.getint(_SEC_SMA, ITEM_SHO)
     _config[ITEM_MID] = _cfg.getint(_SEC_SMA, ITEM_MID)
     _config[ITEM_LON] = _cfg.getint(_SEC_SMA, ITEM_LON)
+    # ボリンジャーバンド
+    _config[ITEM_BB_PRD] = _cfg.getint(_SEC_BB, ITEM_BB_PRD)
 
 
 def write():
@@ -60,6 +69,7 @@ def write():
     _cfg.set(_SEC_SMA, ITEM_SHO, str(_config[ITEM_SHO]))
     _cfg.set(_SEC_SMA, ITEM_MID, str(_config[ITEM_MID]))
     _cfg.set(_SEC_SMA, ITEM_LON, str(_config[ITEM_LON]))
+    _cfg.set(_SEC_BB, ITEM_BB_PRD, str(_config[ITEM_BB_PRD]))
     with open(_INI_FILE, 'w') as f:
         _cfg.write(f)
 

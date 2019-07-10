@@ -124,11 +124,15 @@ class Viewer(object):
         self.__mode = self.__MODE_LIST[0]
 
         # Widgetセレクト（テクニカル指標）
-        TECH_OPT = [
-            "単純移動平均",
-            "MACD",
-            "ボリンジャーバンド",
-        ]
+
+        self.__tech_dict = {"単純移動平均": self.__cb_func_sma,
+                            "MACD": self.__cb_func_macd,
+                            "ボリンジャーバンド": self.__cb_func_bb
+                            }
+        TECH_OPT = list(self.__tech_dict.keys())
+        print(TECH_OPT)
+
+
         self.__wse_tech = Select(title="テクニカル指標",
                                  value=TECH_OPT[0],
                                  options=TECH_OPT,
@@ -140,8 +144,8 @@ class Viewer(object):
         self.__ckbxgr_tech = CheckboxGroup(labels=TECH_OPT, active=active_)
         self.__ckbxgr_tech.on_change("active", self.__cb_ckbxgr_tech)
 
-        # ----------テクニカル指標----------
-        # 単純移動平均
+        # ---------- テクニカル指標 ----------
+        # ===== 単純移動平均 =====
         defsho = cfg.get_conf(cfg.ITEM_SHO)
         self.__sldtecma_s = Slider(start=1, end=100, value=defsho,
                                    step=1, title="SMA S")
@@ -157,7 +161,13 @@ class Viewer(object):
                                    step=1, title="SMA L")
         self.__sldtecma_l.on_change('value', self.__cb_sldtecma_l)
 
-        # 初期設定
+        # ===== ボリンジャーバンド =====
+        defsho = cfg.get_conf(cfg.ITEM_SHO)
+        self.__sldtecma_s = Slider(start=1, end=100, value=defsho,
+                                   step=1, title="SMA S")
+        self.__sldtecma_s.on_change('value', self.__cb_sldtecma_s)
+
+        # ---------- 初期設定 ----------
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
@@ -310,7 +320,7 @@ class Viewer(object):
             self.__oppos.clear()
 
     def __cb_wse_tech(self, attr, old, new):
-        pass
+        self.__tech_dict[new]()
 
     def __cb_chart_tap(self, event):
         # NOTE: read timestamp is Not mutches disp one.
@@ -409,6 +419,33 @@ class Viewer(object):
         self.__layout.children[1] = chgp
 
     def __set_layout_tech(self):
+        self.__set_techlay_sma()
+
+    def __set_techlay_sma(self):
+        para = column(children=[self.__sldtecma_l,
+                                self.__sldtecma_m,
+                                self.__sldtecma_s
+                                ])
+
+        self.__test(para)
+
+    def __set_techlay_macd(self):
+        para = column(children=[self.__sldtecma_l,
+                                self.__sldtecma_m,
+                                self.__sldtecma_s
+                                ])
+
+        self.__test(para)
+
+    def __set_techlay_bb(self):
+        para = column(children=[self.__sldtecma_l,
+                                self.__sldtecma_m,
+                                self.__sldtecma_s
+                                ])
+
+        self.__test(para)
+
+    def __test(self, para):
 
         chrt = self.__cs.fig_main
         rang = self.__cs.fig_range
@@ -417,10 +454,7 @@ class Viewer(object):
 
         cbgt = self.__ckbxgr_tech
         tech = self.__wse_tech
-        para = column(children=[self.__sldtecma_l,
-                                self.__sldtecma_m,
-                                self.__sldtecma_s
-                                ])
+
         techpara = column(
             children=[cbgt, tech, para], sizing_mode='fixed')
 
@@ -428,3 +462,14 @@ class Viewer(object):
                        sizing_mode='stretch_width')
 
         self.__layout.children[1] = chartlay
+
+
+
+    def __cb_func_sma(self):
+        self.__set_techlay_sma()
+
+    def __cb_func_macd(self):
+        self.__set_techlay_macd()
+
+    def __cb_func_bb(self):
+        self.__set_techlay_bb()
