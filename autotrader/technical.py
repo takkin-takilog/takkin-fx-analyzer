@@ -1,6 +1,9 @@
+from math import pi
 import pandas as pd
 from bokeh.models.glyphs import Line
 from bokeh.models import ColumnDataSource
+from bokeh.plotting import figure
+from autotrader.bokeh_common import AxisTyp
 
 
 class SimpleMovingAverage(object):
@@ -80,6 +83,34 @@ class SimpleMovingAverage(object):
         self.__srcs.data = dict_
         self.__srcm.data = dict_
         self.__srcl.data = dict_
+
+
+class MACD(object):
+    """ MACD
+            - MACDクラス[MACD class]
+    """
+    LBL_MACD = "MACD"
+    LBL_SIGN = "SIGN"
+
+    def __init__(self, plt_):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            None
+        """
+        self.__XDT = "xdt"
+        self.__YPR = "ypr"
+
+        # Main chart figure
+        self.__plt = figure(plot_height=300,
+                            x_axis_type=AxisTyp.X_DATETIME,
+                            x_range=plt_.x_range,
+                            background_fill_color=plt_.background_fill_color,
+                            sizing_mode=plt_.sizing_mode,
+                            title="MACD")
+        self.__plt.xaxis.major_label_orientation = pi / 4
+        self.__plt.grid.grid_line_alpha = 0.3
+
+        print("MACD Active")
 
 
 class BollingerBands(object):

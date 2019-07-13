@@ -10,7 +10,7 @@ from autotrader.bokeh_common import GlyphVbarAbs
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.bokeh_common import ToolType, AxisTyp
 from autotrader.utils import DateTimeManager
-from autotrader.technical import SimpleMovingAverage, BollingerBands
+from autotrader.technical import SimpleMovingAverage, MACD, BollingerBands
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import numpy as np
@@ -227,6 +227,7 @@ class CandleStick(object):
         self.__plt_main.add_tools(hover)
 
         self.__sma = SimpleMovingAverage(self.__plt_main)
+        self.__macd = MACD(self.__plt_main)
         self.__bb = BollingerBands(self.__plt_main)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
@@ -309,11 +310,11 @@ class CandleStick(object):
         self.__plt_main.y_range.update(start=str_, end=end_)
 
         # 単純移動平均線
-        if cfg.get_conf(cfg.ITEM_SMA) == 1:
-            self.__sma.update_sho(df, cfg.get_conf(cfg.ITEM_SHO))
-            self.__sma.update_mid(df, cfg.get_conf(cfg.ITEM_MID))
-            self.__sma.update_lon(df, cfg.get_conf(cfg.ITEM_LON))
-        if cfg.get_conf(cfg.ITEM_BB) == 1:
+        if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
+            self.__sma.update_sho(df, cfg.get_conf(cfg.ITEM_SMA_SHO))
+            self.__sma.update_mid(df, cfg.get_conf(cfg.ITEM_SMA_MID))
+            self.__sma.update_lon(df, cfg.get_conf(cfg.ITEM_SMA_LON))
+        if cfg.get_conf(cfg.ITEM_BB_ACT) == 1:
             self.__bb.update(df, cfg.get_conf(cfg.ITEM_BB_PRD))
 
         self.__df = df

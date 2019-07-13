@@ -143,24 +143,23 @@ class Viewer(object):
 
         # ---------- テクニカル指標 ----------
         # ===== 単純移動平均 =====
-        defsho = cfg.get_conf(cfg.ITEM_SHO)
+        defsho = cfg.get_conf(cfg.ITEM_SMA_SHO)
         self.__sldtecma_s = Slider(start=1, end=100, value=defsho,
                                    step=1, title="SMA S")
         self.__sldtecma_s.on_change('value', self.__cb_sldtecma_s)
 
-        defmid = cfg.get_conf(cfg.ITEM_MID)
+        defmid = cfg.get_conf(cfg.ITEM_SMA_MID)
         self.__sldtecma_m = Slider(start=1, end=100, value=defmid,
                                    step=1, title="SMA M")
         self.__sldtecma_m.on_change('value', self.__cb_sldtecma_m)
 
-        deflon = cfg.get_conf(cfg.ITEM_LON)
+        deflon = cfg.get_conf(cfg.ITEM_SMA_LON)
         self.__sldtecma_l = Slider(start=1, end=100, value=deflon,
                                    step=1, title="SMA L")
         self.__sldtecma_l.on_change('value', self.__cb_sldtecma_l)
 
         # ===== ボリンジャーバンド =====
         defprd = cfg.get_conf(cfg.ITEM_BB_PRD)
-        print("defprd={}" .format(defprd))
         self.__sldtecbb = Slider(start=1, end=100, value=defprd,
                                  step=1, title="期間")
         self.__sldtecbb.on_change('value', self.__cb_sldtecbb)
@@ -356,25 +355,25 @@ class Viewer(object):
         cfg.write()
 
     def __cb_sldtecma_s(self, attr, old, new):
-        if cfg.get_conf(cfg.ITEM_SMA) == 1:
+        if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_sho(new)
-        cfg.set_conf(cfg.ITEM_SHO, new)
+        cfg.set_conf(cfg.ITEM_SMA_SHO, new)
         cfg.write()
 
     def __cb_sldtecma_m(self, attr, old, new):
-        if cfg.get_conf(cfg.ITEM_SMA) == 1:
+        if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_mid(new)
-        cfg.set_conf(cfg.ITEM_MID, new)
+        cfg.set_conf(cfg.ITEM_SMA_MID, new)
         cfg.write()
 
     def __cb_sldtecma_l(self, attr, old, new):
-        if cfg.get_conf(cfg.ITEM_SMA) == 1:
+        if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_lon(new)
-        cfg.set_conf(cfg.ITEM_LON, new)
+        cfg.set_conf(cfg.ITEM_SMA_LON, new)
         cfg.write()
 
     def __cb_sldtecbb(self, attr, old, new):
-        if cfg.get_conf(cfg.ITEM_BB) == 1:
+        if cfg.get_conf(cfg.ITEM_BB_ACT) == 1:
             self.__cs.update_bb(new)
         cfg.set_conf(cfg.ITEM_BB_PRD, new)
         cfg.write()
