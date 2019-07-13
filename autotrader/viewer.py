@@ -144,19 +144,35 @@ class Viewer(object):
         # ---------- テクニカル指標 ----------
         # ===== 単純移動平均 =====
         defsho = cfg.get_conf(cfg.ITEM_SMA_SHO)
-        self.__sldtecma_s = Slider(start=1, end=100, value=defsho,
-                                   step=1, title="SMA S")
-        self.__sldtecma_s.on_change('value', self.__cb_sldtecma_s)
+        self.__sldtecsma_s = Slider(start=1, end=100, value=defsho,
+                                    step=1, title="SMA S")
+        self.__sldtecsma_s.on_change('value', self.__cb_sldtecsma_s)
 
         defmid = cfg.get_conf(cfg.ITEM_SMA_MID)
-        self.__sldtecma_m = Slider(start=1, end=100, value=defmid,
-                                   step=1, title="SMA M")
-        self.__sldtecma_m.on_change('value', self.__cb_sldtecma_m)
+        self.__sldtecsma_m = Slider(start=1, end=100, value=defmid,
+                                    step=1, title="SMA M")
+        self.__sldtecsma_m.on_change('value', self.__cb_sldtecsma_m)
 
         deflon = cfg.get_conf(cfg.ITEM_SMA_LON)
-        self.__sldtecma_l = Slider(start=1, end=100, value=deflon,
-                                   step=1, title="SMA L")
-        self.__sldtecma_l.on_change('value', self.__cb_sldtecma_l)
+        self.__sldtecsma_l = Slider(start=1, end=100, value=deflon,
+                                    step=1, title="SMA L")
+        self.__sldtecsma_l.on_change('value', self.__cb_sldtecsma_l)
+
+        # ===== MACD =====
+        defsho = cfg.get_conf(cfg.ITEM_MACD_SHO)
+        self.__sldtecmacd_sh = Slider(start=1, end=100, value=defsho,
+                                      step=1, title="短期")
+        self.__sldtecmacd_sh.on_change('value', self.__cb_sldtecmacd_sh)
+
+        deflon = cfg.get_conf(cfg.ITEM_MACD_LON)
+        self.__sldtecmacd_lo = Slider(start=1, end=100, value=deflon,
+                                      step=1, title="長期")
+        self.__sldtecmacd_lo.on_change('value', self.__cb_sldtecmacd_lo)
+
+        defsig = cfg.get_conf(cfg.ITEM_MACD_SIG)
+        self.__sldtecmacd_si = Slider(start=1, end=100, value=defsig,
+                                      step=1, title="シグナル")
+        self.__sldtecmacd_si.on_change('value', self.__cb_sldtecmacd_si)
 
         # ===== ボリンジャーバンド =====
         defprd = cfg.get_conf(cfg.ITEM_BB_PRD)
@@ -310,7 +326,7 @@ class Viewer(object):
             self.__set_layout_main()
             self.__mode = self.__MODE_LIST[0]
         elif new == self.__MODE_LIST[1]:
-            self.__set_layout_tech()
+            self.__set_deflayout_tech()
             self.__mode = self.__MODE_LIST[1]
             self.__cs.clear_orders_vline()
             self.__opord.clear()
@@ -336,16 +352,19 @@ class Viewer(object):
 
     def __cb_ckbxgr_tech(self, attr, old, new):
         if (0 in new):
-            self.__cs.update_sma_sho(self.__sldtecma_s.value)
-            self.__cs.update_sma_mid(self.__sldtecma_m.value)
-            self.__cs.update_sma_lon(self.__sldtecma_l.value)
+            self.__cs.update_sma_sho(self.__sldtecsma_s.value)
+            self.__cs.update_sma_mid(self.__sldtecsma_m.value)
+            self.__cs.update_sma_lon(self.__sldtecsma_l.value)
         else:
             self.__cs.clear_sma()
 
         if (1 in new):
-            pass
+            self.__cs.update_macd_sho(self.__sldtecmacd_sh.value)
+            self.__cs.update_macd_lon(self.__sldtecmacd_lo.value)
+            self.__cs.update_macd_sig(self.__sldtecmacd_si.value)
         else:
-            pass
+            self.__cs.clear_macd()
+        self.__switch_macdlay(1 in new)
 
         if (2 in new):
             self.__cs.update_bb(self.__sldtecbb.value)
@@ -354,22 +373,40 @@ class Viewer(object):
         cfg.set_conf_act(new)
         cfg.write()
 
-    def __cb_sldtecma_s(self, attr, old, new):
+    def __cb_sldtecsma_s(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_sho(new)
         cfg.set_conf(cfg.ITEM_SMA_SHO, new)
         cfg.write()
 
-    def __cb_sldtecma_m(self, attr, old, new):
+    def __cb_sldtecsma_m(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_mid(new)
         cfg.set_conf(cfg.ITEM_SMA_MID, new)
         cfg.write()
 
-    def __cb_sldtecma_l(self, attr, old, new):
+    def __cb_sldtecsma_l(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_lon(new)
         cfg.set_conf(cfg.ITEM_SMA_LON, new)
+        cfg.write()
+
+    def __cb_sldtecmacd_sh(self, attr, old, new):
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            self.__cs.update_macd_sho(new)
+        cfg.set_conf(cfg.ITEM_MACD_SHO, new)
+        cfg.write()
+
+    def __cb_sldtecmacd_lo(self, attr, old, new):
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            self.__cs.update_macd_lon(new)
+        cfg.set_conf(cfg.ITEM_MACD_LON, new)
+        cfg.write()
+
+    def __cb_sldtecmacd_si(self, attr, old, new):
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            self.__cs.update_macd_sig(new)
+        cfg.set_conf(cfg.ITEM_MACD_SIG, new)
         cfg.write()
 
     def __cb_sldtecbb(self, attr, old, new):
@@ -385,11 +422,21 @@ class Viewer(object):
 
         chrt = self.__cs.fig_main
         rang = self.__cs.fig_range
-        chgp = gridplot(
-            [
-                [opbk, chrt],
-                [None, rang],
-            ], sizing_mode='stretch_width', merge_tools=False)
+
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            macd = self.__cs.macd_plt
+            chgp = gridplot(
+                [
+                    [None, rang],
+                    [opbk, chrt],
+                    [None, macd],
+                ], sizing_mode='stretch_width', merge_tools=False)
+        else:
+            chgp = gridplot(
+                [
+                    [None, rang],
+                    [opbk, chrt],
+                ], sizing_mode='stretch_width', merge_tools=False)
 
         return chgp
 
@@ -431,31 +478,28 @@ class Viewer(object):
         chgp = self.__chart_layout()
         self.__layout.children[1] = chgp
 
-    def __set_layout_tech(self):
+    def __set_deflayout_tech(self):
         self.__set_techlay_sma()
 
     def __set_techlay_sma(self):
-        para = column(children=[self.__sldtecma_l,
-                                self.__sldtecma_m,
-                                self.__sldtecma_s
+        para = column(children=[self.__sldtecsma_l,
+                                self.__sldtecsma_m,
+                                self.__sldtecsma_s
                                 ])
-
-        self.__test(para)
+        self.__switch_lay(para)
 
     def __set_techlay_macd(self):
-        pass
-        #self.__test(para)
+        para = column(children=[self.__sldtecmacd_sh,
+                                self.__sldtecmacd_lo,
+                                self.__sldtecmacd_si
+                                ])
+        self.__switch_lay(para)
 
     def __set_techlay_bb(self):
         para = column(children=[self.__sldtecbb])
-        self.__test(para)
+        self.__switch_lay(para)
 
-    def __test(self, para):
-
-        chrt = self.__cs.fig_main
-        rang = self.__cs.fig_range
-
-        chrtset = column(children=[chrt, rang], sizing_mode='stretch_width')
+    def __switch_lay(self, para):
 
         cbgt = self.__ckbxgr_tech
         tech = self.__wse_tech
@@ -463,10 +507,32 @@ class Viewer(object):
         techpara = column(
             children=[cbgt, tech, para], sizing_mode='fixed')
 
+        chrt = self.__cs.fig_main
+        rang = self.__cs.fig_range
+
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            macd = self.__cs.macd_plt
+            chrtset = column(children=[rang, chrt, macd],
+                             sizing_mode='stretch_width')
+        else:
+            chrtset = column(children=[rang, chrt],
+                             sizing_mode='stretch_width')
+
         chartlay = row(children=[techpara, chrtset],
                        sizing_mode='stretch_width')
 
         self.__layout.children[1] = chartlay
+
+    def __switch_macdlay(self, flg):
+        from bokeh.io import curdoc
+        macdlay = self.__layout.children[1].children[1].children
+        if flg:
+            macd = self.__cs.macd_plt
+            macdlay.append(macd)
+        else:
+            plotToRemove = curdoc().get_model_by_name('MACD')
+            if plotToRemove:
+                macdlay.remove(plotToRemove)
 
     def __cb_func_sma(self):
         self.__set_techlay_sma()

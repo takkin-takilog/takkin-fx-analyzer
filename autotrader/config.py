@@ -3,23 +3,28 @@ import os
 import sys
 
 # アクティベート
-ITEM_SMA_ACT = 'sma'
-ITEM_MACD_ACT = 'macd'
-ITEM_BB_ACT = 'bb'
+ITEM_SMA_ACT = 'sma_act'
+ITEM_MACD_ACT = 'macd_act'
+ITEM_BB_ACT = 'bb_act'
 
 # 単純移動平均
-ITEM_SMA_SHO = 'short'
-ITEM_SMA_MID = 'middle'
-ITEM_SMA_LON = 'long'
+ITEM_SMA_SHO = 'sma_short'
+ITEM_SMA_MID = 'sma_middle'
+ITEM_SMA_LON = 'sma_long'
+# MACD
+ITEM_MACD_SHO = 'macd_short'
+ITEM_MACD_LON = 'macd_long'
+ITEM_MACD_SIG = 'macd_signal'
 # ボリンジャーバンド
-ITEM_BB_PRD = 'period'
+ITEM_BB_PRD = 'bb_period'
 
 _INI_FILE = 'config.ini'
 
 _SEC_ACT = 'activate'
 _SEC_SMA = 'sma'
+_SEC_MACD = 'macd'
 _SEC_BB = 'bb'
-_SEC_LIST = [_SEC_ACT, _SEC_SMA, _SEC_BB]
+_SEC_LIST = [_SEC_ACT, _SEC_SMA, _SEC_MACD, _SEC_BB]
 
 _config_def = {
     # アクティベート
@@ -30,6 +35,10 @@ _config_def = {
     ITEM_SMA_SHO: '5',
     ITEM_SMA_MID: '20',
     ITEM_SMA_LON: '75',
+    # MACD
+    ITEM_MACD_SHO: '12',
+    ITEM_MACD_LON: '26',
+    ITEM_MACD_SIG: '9',
     # ボリンジャーバンド
     ITEM_BB_PRD: '20',
 }
@@ -55,6 +64,10 @@ def read():
     _config[ITEM_SMA_SHO] = _cfg.getint(_SEC_SMA, ITEM_SMA_SHO)
     _config[ITEM_SMA_MID] = _cfg.getint(_SEC_SMA, ITEM_SMA_MID)
     _config[ITEM_SMA_LON] = _cfg.getint(_SEC_SMA, ITEM_SMA_LON)
+    # MACD
+    _config[ITEM_MACD_SHO] = _cfg.getint(_SEC_MACD, ITEM_MACD_SHO)
+    _config[ITEM_MACD_LON] = _cfg.getint(_SEC_MACD, ITEM_MACD_LON)
+    _config[ITEM_MACD_SIG] = _cfg.getint(_SEC_MACD, ITEM_MACD_SIG)
     # ボリンジャーバンド
     _config[ITEM_BB_PRD] = _cfg.getint(_SEC_BB, ITEM_BB_PRD)
 
@@ -69,6 +82,9 @@ def write():
     _cfg.set(_SEC_SMA, ITEM_SMA_SHO, str(_config[ITEM_SMA_SHO]))
     _cfg.set(_SEC_SMA, ITEM_SMA_MID, str(_config[ITEM_SMA_MID]))
     _cfg.set(_SEC_SMA, ITEM_SMA_LON, str(_config[ITEM_SMA_LON]))
+    _cfg.set(_SEC_MACD, ITEM_MACD_SHO, str(_config[ITEM_MACD_SHO]))
+    _cfg.set(_SEC_MACD, ITEM_MACD_LON, str(_config[ITEM_MACD_LON]))
+    _cfg.set(_SEC_MACD, ITEM_MACD_SIG, str(_config[ITEM_MACD_SIG]))
     _cfg.set(_SEC_BB, ITEM_BB_PRD, str(_config[ITEM_BB_PRD]))
     with open(_INI_FILE, 'w') as f:
         _cfg.write(f)

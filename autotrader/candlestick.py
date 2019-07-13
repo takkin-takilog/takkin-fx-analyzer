@@ -177,21 +177,21 @@ class CandleStick(object):
         self.__plt_main.y_range = Range1d()
 
         # Range chart figure
-        self.__plt_rang = figure(plot_height=70,
+        self.__plt_rang = figure(plot_height=30,
                                  plot_width=self.__plt_main.plot_width,
                                  y_range=self.__plt_main.y_range,
                                  x_axis_type=AxisTyp.X_DATETIME,
                                  background_fill_color=self.__BG_COLOR,
                                  sizing_mode="stretch_width",
                                  toolbar_location=None)
+        self.__plt_rang.xaxis.visible = False
         self.__plt_rang.yaxis.visible = False
-        self.__plt_rang.ygrid.visible = False
         self.__plt_rang.xgrid.visible = False
+        self.__plt_rang.ygrid.visible = False
 
         self.__range_tool = RangeTool()
         self.__plt_rang.add_tools(self.__range_tool)
         self.__plt_rang.toolbar.active_multi = self.__range_tool
-        self.__plt_rang.xaxis.major_label_orientation = pi / 4
         self.__plt_rang.grid.grid_line_alpha = 0.3
 
         self.__idxmin = -1
@@ -314,12 +314,22 @@ class CandleStick(object):
             self.__sma.update_sho(df, cfg.get_conf(cfg.ITEM_SMA_SHO))
             self.__sma.update_mid(df, cfg.get_conf(cfg.ITEM_SMA_MID))
             self.__sma.update_lon(df, cfg.get_conf(cfg.ITEM_SMA_LON))
+        # MACD
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            self.__macd.update_sho(df, cfg.get_conf(cfg.ITEM_MACD_SHO))
+            self.__macd.update_lon(df, cfg.get_conf(cfg.ITEM_MACD_LON))
+            self.__macd.update_sig(df, cfg.get_conf(cfg.ITEM_MACD_SIG))
+        # ボリンジャーバンド
         if cfg.get_conf(cfg.ITEM_BB_ACT) == 1:
             self.__bb.update(df, cfg.get_conf(cfg.ITEM_BB_PRD))
 
         self.__df = df
 
         return yrng
+
+    @property
+    def macd_plt(self):
+        return self.__macd.plt
 
     def update_sma_sho(self, new):
         self.__sma.update_sho(self.__df, new)
@@ -332,6 +342,18 @@ class CandleStick(object):
 
     def clear_sma(self):
         self.__sma.clear()
+
+    def update_macd_sho(self, new):
+        self.__macd.update_sho(self.__df, new)
+
+    def update_macd_lon(self, new):
+        self.__macd.update_lon(self.__df, new)
+
+    def update_macd_sig(self, new):
+        self.__macd.update_sig(self.__df, new)
+
+    def clear_macd(self):
+        self.__macd.clear()
 
     def update_bb(self, new):
         self.__bb.update(self.__df, new)

@@ -4,6 +4,7 @@ from bokeh.models.glyphs import Line
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
 from autotrader.bokeh_common import AxisTyp
+import autotrader.config as cfg
 
 
 class SimpleMovingAverage(object):
@@ -101,7 +102,8 @@ class MACD(object):
         self.__YPR = "ypr"
 
         # Main chart figure
-        self.__plt = figure(plot_height=300,
+        self.__plt = figure(name = 'MACD',
+                            plot_height=200,
                             x_axis_type=AxisTyp.X_DATETIME,
                             x_range=plt_.x_range,
                             background_fill_color=plt_.background_fill_color,
@@ -110,7 +112,85 @@ class MACD(object):
         self.__plt.xaxis.major_label_orientation = pi / 4
         self.__plt.grid.grid_line_alpha = 0.3
 
-        print("MACD Active")
+        self.__srcm = ColumnDataSource({self.__XDT: [],
+                                        self.__YPR: []})
+        self.__srcs = ColumnDataSource({self.__XDT: [],
+                                        self.__YPR: []})
+
+        glvline = Line(x=self.__XDT,
+                       y=self.__YPR,
+                       line_color="red",
+                       line_dash="solid",
+                       line_width=1,
+                       line_alpha=1.0)
+        self.__plt.add_glyph(self.__srcm, glvline)
+
+        glvline = Line(x=self.__XDT,
+                       y=self.__YPR,
+                       line_color="cyan",
+                       line_dash="solid",
+                       line_width=1,
+                       line_alpha=1.0)
+        self.__plt.add_glyph(self.__srcs, glvline)
+
+    @property
+    def plt(self):
+        return self.__plt
+
+    def update_sho(self, df, window_):
+        from autotrader.config import ITEM_MACD_LON, ITEM_MACD_SIG
+        lon = cfg.get_conf(ITEM_MACD_LON)
+        sig = cfg.get_conf(ITEM_MACD_SIG)
+        self.__calcMACD(df, window_, lon, sig)
+        self.__srcm.data = {
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[self.LBL_MACD].tolist(),
+        }
+        self.__srcs.data = {
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[self.LBL_SIGN].tolist(),
+        }
+
+    def update_lon(self, df, window_):
+        from autotrader.config import ITEM_MACD_SHO, ITEM_MACD_SIG
+        sho = cfg.get_conf(ITEM_MACD_SHO)
+        sig = cfg.get_conf(ITEM_MACD_SIG)
+        self.__calcMACD(df, sho, window_, sig)
+        self.__srcm.data = {
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[self.LBL_MACD].tolist(),
+        }
+        self.__srcs.data = {
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[self.LBL_SIGN].tolist(),
+        }
+
+    def update_sig(self, df, window_):
+        from autotrader.config import ITEM_MACD_SHO, ITEM_MACD_LON
+        sho = cfg.get_conf(ITEM_MACD_SHO)
+        lon = cfg.get_conf(ITEM_MACD_LON)
+        self.__calcMACD(df, sho, lon, window_)
+        self.__srcm.data = {
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[self.LBL_MACD].tolist(),
+        }
+        self.__srcs.data = {
+            self.__XDT: df.index.tolist(),
+            self.__YPR: df[self.LBL_SIGN].tolist(),
+        }
+
+    def __calcMACD(self, df, sho, lon, sig):
+        from autotrader.candlestick import LBL_CLOSE
+        ema_s = df[LBL_CLOSE].ewm(span=sho).mean()
+        ema_l = df[LBL_CLOSE].ewm(span=lon).mean()
+        df[self.LBL_MACD] = (ema_s - ema_l)
+        df[self.LBL_SIGN] = df[self.LBL_MACD].ewm(span=sig).mean()
+
+    def clear(self):
+        dict_ = {self.__XDT: [],
+                 self.__YPR: []}
+        self.__srcm.data = dict_
+        self.__srcs.data = dict_
 
 
 class BollingerBands(object):
