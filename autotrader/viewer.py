@@ -8,7 +8,7 @@ from autotrader.candlestick import CandleStick
 from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
-from bokeh.models.widgets import Slider
+from bokeh.models.widgets import Slider, RadioGroup
 import autotrader.config as cfg
 
 
@@ -91,7 +91,8 @@ class Viewer(object):
         # モード種類リスト
         self.__MODE_LIST = [
             "オープンオーダー ＆ ポジション",
-            "テクニカル指標"
+            "テクニカル指標",
+            "為替データ取得期間"
         ]
 
         # Widgetセレクト（通貨ペア）
@@ -124,7 +125,6 @@ class Viewer(object):
         self.__mode = self.__MODE_LIST[0]
 
         # Widgetセレクト（テクニカル指標）
-
         self.__tech_dict = {"単純移動平均": self.__cb_func_sma,
                             "MACD": self.__cb_func_macd,
                             "ボリンジャーバンド": self.__cb_func_bb
@@ -140,6 +140,38 @@ class Viewer(object):
         active_ = cfg.get_conf_act()
         self.__ckbxgr_tech = CheckboxGroup(labels=TECH_OPT, active=active_)
         self.__ckbxgr_tech.on_change("active", self.__cb_ckbxgr_tech)
+
+        # ----- データ取得期間 ----
+        self.__rg_datarang = RadioGroup(labels=["最新", "日時指定"], active=0)
+        self.__rg_datarang.on_change("active", self.__cb_rg_datarang)
+
+        # Widgetセレクト（データ取得期間）
+        # 1.Year
+        curryear = datetime.today().year
+        pastyear = 2010
+        yaerlist = list(range(pastyear, curryear+1))
+        yaerlist.reverse()
+        yearlist = list(map(str, yaerlist))
+        self.__wse_datayear = Select(title="年",
+                                     value=yearlist[0],
+                                     options=yearlist)
+        self.__wse_datayear.visible = False
+
+        # 2.Month
+        monthlist = list(range(1, 13))
+        monthlist = list(map(str, monthlist))
+        self.__wse_datamonth = Select(title="月",
+                                      value=monthlist[0],
+                                      options=monthlist)
+        self.__wse_datamonth.visible = False
+
+        # 3.Day
+        daylist = list(range(1, 32))
+        daylist = list(map(str, daylist))
+        self.__wse_dataday = Select(title="日",
+                                    value=daylist[0],
+                                    options=daylist)
+        self.__wse_dataday.visible = False
 
         # ---------- テクニカル指標 ----------
         # ===== 単純移動平均 =====
@@ -331,6 +363,12 @@ class Viewer(object):
             self.__cs.clear_orders_vline()
             self.__opord.clear()
             self.__oppos.clear()
+        elif new == self.__MODE_LIST[2]:
+            self.__set_deflayout_datarang()
+            self.__mode = self.__MODE_LIST[2]
+            self.__cs.clear_orders_vline()
+            self.__opord.clear()
+            self.__oppos.clear()
 
     def __cb_wse_tech(self, attr, old, new):
         self.__tech_dict[new]()
@@ -372,6 +410,16 @@ class Viewer(object):
             self.__cs.clear_bb()
         cfg.set_conf_act(new)
         cfg.write()
+
+    def __cb_rg_datarang(self, attr, old, new):
+        if new == 0:
+            self.__wse_datayear.visible = False
+            self.__wse_datamonth.visible = False
+            self.__wse_dataday.visible = False
+        elif new == 1:
+            self.__wse_datayear.visible = True
+            self.__wse_datamonth.visible = True
+            self.__wse_dataday.visible = True
 
     def __cb_sldtecsma_s(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
@@ -481,25 +529,51 @@ class Viewer(object):
     def __set_deflayout_tech(self):
         self.__set_techlay_sma()
 
+    def __set_deflayout_datarang(self):
+
+        rg = self.__rg_datarang
+        slyear = self.__wse_datayear
+        slmonth = self.__wse_datamonth
+        slday = self.__wse_dataday
+
+        techpara = column(
+            children=[rg, slyear, slmonth, slday], sizing_mode='fixed')
+
+        chrt = self.__cs.fig_main
+        rang = self.__cs.fig_range
+
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            macd = self.__cs.macd_plt
+            chrtset = column(children=[rang, chrt, macd],
+                             sizing_mode='stretch_width')
+        else:
+            chrtset = column(children=[rang, chrt],
+                             sizing_mode='stretch_width')
+
+        chartlay = row(children=[techpara, chrtset],
+                       sizing_mode='stretch_width')
+
+        self.__layout.children[1] = chartlay
+
     def __set_techlay_sma(self):
         para = column(children=[self.__sldtecsma_l,
                                 self.__sldtecsma_m,
                                 self.__sldtecsma_s
                                 ])
-        self.__switch_lay(para)
+        self.__switch_techlay(para)
 
     def __set_techlay_macd(self):
         para = column(children=[self.__sldtecmacd_sh,
                                 self.__sldtecmacd_lo,
                                 self.__sldtecmacd_si
                                 ])
-        self.__switch_lay(para)
+        self.__switch_techlay(para)
 
     def __set_techlay_bb(self):
         para = column(children=[self.__sldtecbb])
-        self.__switch_lay(para)
+        self.__switch_techlay(para)
 
-    def __switch_lay(self, para):
+    def __switch_techlay(self, para):
 
         cbgt = self.__ckbxgr_tech
         tech = self.__wse_tech
