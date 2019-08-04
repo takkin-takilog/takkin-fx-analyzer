@@ -8,7 +8,7 @@ from autotrader.candlestick import CandleStick
 from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
-from bokeh.models.widgets import Slider, RadioGroup
+from bokeh.models.widgets import Slider, RadioGroup, Button
 import autotrader.config as cfg
 
 
@@ -149,7 +149,7 @@ class Viewer(object):
         # 1.Year
         curryear = datetime.today().year
         pastyear = 2010
-        yaerlist = list(range(pastyear, curryear+1))
+        yaerlist = list(range(pastyear, curryear + 1))
         yaerlist.reverse()
         yearlist = list(map(str, yaerlist))
         self.__wse_datayear = Select(title="年",
@@ -160,18 +160,43 @@ class Viewer(object):
         # 2.Month
         monthlist = list(range(1, 13))
         monthlist = list(map(str, monthlist))
+        currmonth = datetime.today().month
         self.__wse_datamonth = Select(title="月",
-                                      value=monthlist[0],
+                                      value=str(currmonth),
                                       options=monthlist)
         self.__wse_datamonth.visible = False
 
         # 3.Day
         daylist = list(range(1, 32))
         daylist = list(map(str, daylist))
+        currday = datetime.today().day
         self.__wse_dataday = Select(title="日",
-                                    value=daylist[0],
+                                    value=str(currday),
                                     options=daylist)
         self.__wse_dataday.visible = False
+
+        # 4.Hour
+        hourlist = list(range(0, 24))
+        hourlist = list(map(str, hourlist))
+        currhour = datetime.today().hour
+        self.__wse_datahour = Select(title="時",
+                                     value=str(currhour),
+                                     options=hourlist)
+        self.__wse_datahour.visible = False
+
+        # 5.Minute
+        minlist = list(range(0, 60))
+        minlist = list(map(str, minlist))
+        currmin = datetime.today().minute
+        self.__wse_datamin = Select(title="分",
+                                    value=str(currmin),
+                                    options=minlist)
+        self.__wse_datamin.visible = False
+
+        # 実行
+        self.__but_datarang = Button(label="実行", button_type="success")
+        self.__but_datarang.on_click(self.__cb_but_datarang)
+        self.__but_datarang.visible = False
 
         # ---------- テクニカル指標 ----------
         # ===== 単純移動平均 =====
@@ -345,6 +370,10 @@ class Viewer(object):
         self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
+        # 日時指定モードの場合
+        if self.__rg_datarang.active == 1:
+            self.__change_visible()
+
     def __cb_wse_mode(self, attr, old, new):
         """Widgetセレクト（モード）コールバックメソッド
         引数[Args]:
@@ -416,10 +445,47 @@ class Viewer(object):
             self.__wse_datayear.visible = False
             self.__wse_datamonth.visible = False
             self.__wse_dataday.visible = False
+            self.__wse_datahour.visible = False
+            self.__wse_datamin.visible = False
+            self.__but_datarang.visible = False
         elif new == 1:
-            self.__wse_datayear.visible = True
-            self.__wse_datamonth.visible = True
-            self.__wse_dataday.visible = True
+            self.__change_visible()
+            self.__but_datarang.visible = True
+
+    def __cb_but_datarang(self):
+        print("clicked!!!!!!!!!!!!!!!!!!!")
+
+    def __change_visible(self):
+
+        self.__wse_datayear.visible = True
+        self.__wse_datamonth.visible = True
+        self.__wse_dataday.visible = True
+
+        if self.__gran == OandaGrn.D:
+            self.__wse_datahour.visible = False
+            self.__wse_datamin.visible = False
+        elif (self.__gran == OandaGrn.H12
+              or self.__gran == OandaGrn.H8
+              or self.__gran == OandaGrn.H6
+              or self.__gran == OandaGrn.H4
+              or self.__gran == OandaGrn.H3
+              or self.__gran == OandaGrn.H2
+              or self.__gran == OandaGrn.H1):
+            self.__wse_datahour.visible = True
+            self.__wse_datamin.visible = False
+        elif (self.__gran == OandaGrn.M30
+              or self.__gran == OandaGrn.M15
+              or self.__gran == OandaGrn.M10
+              or self.__gran == OandaGrn.M5
+              or self.__gran == OandaGrn.M4
+              or self.__gran == OandaGrn.M3
+              or self.__gran == OandaGrn.M2
+              or self.__gran == OandaGrn.M1):
+            self.__wse_datahour.visible = True
+            self.__wse_datamin.visible = True
+        else:
+            self.__wse_datahour.visible = True
+            self.__wse_datamin.visible = True
 
     def __cb_sldtecsma_s(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
@@ -535,9 +601,13 @@ class Viewer(object):
         slyear = self.__wse_datayear
         slmonth = self.__wse_datamonth
         slday = self.__wse_dataday
+        slhour = self.__wse_datahour
+        slmin = self.__wse_datamin
+        buexe = self.__but_datarang
 
         techpara = column(
-            children=[rg, slyear, slmonth, slday], sizing_mode='fixed')
+            children=[rg, slyear, slmonth, slday, slhour, slmin, buexe],
+            sizing_mode='fixed')
 
         chrt = self.__cs.fig_main
         rang = self.__cs.fig_range
