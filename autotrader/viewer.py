@@ -51,8 +51,6 @@ class Viewer(object):
             inst_def (str) : 通貨ペア[instrument]
             gran_def (str) : ローソク足の時間足[granularity of a candlestick]
         """
-        self.__DISP_NUM = 300
-
         # コンフィグファイル読み込み
         cfg.read()
 
@@ -99,10 +97,11 @@ class Viewer(object):
         INST_OPT = [
             self.INST_USDJPY, self.INST_EURJPY, self.INST_EURUSD
         ]
-        self.__wse_inst = Select(title="通貨ペア:",
-                                 value=inst_def,
-                                 options=INST_OPT)
-        self.__wse_inst.on_change("value", self.__cb_wse_inst)
+        self.__sl_inst = Select(title="通貨ペア:",
+                                value=inst_def,
+                                options=INST_OPT,
+                                default_size=200)
+        self.__sl_inst.on_change("value", self.__cb_sl_inst)
 
         # Widgetセレクト（期間）
         GRAN_OPT = [
@@ -112,16 +111,29 @@ class Viewer(object):
             self.GRAN_M1
         ]
 
-        self.__wse_gran = Select(title="期間:",
-                                 value=gran_def,
-                                 options=GRAN_OPT)
-        self.__wse_gran.on_change("value", self.__cb_wse_gran)
+        self.__sl_gran = Select(title="期間:",
+                                value=gran_def,
+                                options=GRAN_OPT,
+                                default_size=200)
+        self.__sl_gran.on_change("value", self.__cb_sl_gran)
+
+        # Widgetセレクト（ローソク足取得本数）
+        CSNUM_OPT = [
+            100, 200, 300, 400, 500, 600
+        ]
+        csnum_optstr = list(map(str, CSNUM_OPT))
+        self.__sl_csnum = Select(title="取得本数:",
+                                 value=str(CSNUM_OPT[2]),
+                                 options=csnum_optstr,
+                                 default_size=200)
+        self.__sl_csnum.on_change("value", self.__cb_sl_csnum)
+        self.__csnum = CSNUM_OPT[2]
 
         # Widgetセレクト（表示モード）
-        self.__wse_mode = Select(title="表示モード:",
-                                 value=self.__MODE_LIST[0],
-                                 options=self.__MODE_LIST)
-        self.__wse_mode.on_change("value", self.__cb_wse_mode)
+        self.__sl_mode = Select(title="表示モード:",
+                                value=self.__MODE_LIST[0],
+                                options=self.__MODE_LIST)
+        self.__sl_mode.on_change("value", self.__cb_sl_mode)
         self.__mode = self.__MODE_LIST[0]
 
         # Widgetセレクト（テクニカル指標）
@@ -130,11 +142,11 @@ class Viewer(object):
                             "ボリンジャーバンド": self.__cb_func_bb
                             }
         TECH_OPT = list(self.__tech_dict.keys())
-        self.__wse_tech = Select(title="テクニカル指標",
-                                 value=TECH_OPT[0],
-                                 options=TECH_OPT,
-                                 width=200)
-        self.__wse_tech.on_change("value", self.__cb_wse_tech)
+        self.__sl_tech = Select(title="テクニカル指標",
+                                value=TECH_OPT[0],
+                                options=TECH_OPT,
+                                width=200)
+        self.__sl_tech.on_change("value", self.__cb_sl_tech)
 
         # Checkbox Group
         active_ = cfg.get_conf_act()
@@ -152,46 +164,46 @@ class Viewer(object):
         yaerlist = list(range(pastyear, curryear + 1))
         yaerlist.reverse()
         yearlist = list(map(str, yaerlist))
-        self.__wse_datayear = Select(title="年",
-                                     value=yearlist[0],
-                                     options=yearlist)
-        self.__wse_datayear.visible = False
+        self.__sl_datayear = Select(title="年",
+                                    value=yearlist[0],
+                                    options=yearlist)
+        self.__sl_datayear.visible = False
 
         # 2.Month
         monthlist = list(range(1, 13))
         monthlist = list(map(str, monthlist))
         currmonth = datetime.today().month
-        self.__wse_datamonth = Select(title="月",
-                                      value=str(currmonth),
-                                      options=monthlist)
-        self.__wse_datamonth.visible = False
+        self.__sl_datamonth = Select(title="月",
+                                     value=str(currmonth),
+                                     options=monthlist)
+        self.__sl_datamonth.visible = False
 
         # 3.Day
         daylist = list(range(1, 32))
         daylist = list(map(str, daylist))
         currday = datetime.today().day
-        self.__wse_dataday = Select(title="日",
-                                    value=str(currday),
-                                    options=daylist)
-        self.__wse_dataday.visible = False
+        self.__sl_dataday = Select(title="日",
+                                   value=str(currday),
+                                   options=daylist)
+        self.__sl_dataday.visible = False
 
         # 4.Hour
         hourlist = list(range(0, 24))
         hourlist = list(map(str, hourlist))
         currhour = datetime.today().hour
-        self.__wse_datahour = Select(title="時",
-                                     value=str(currhour),
-                                     options=hourlist)
-        self.__wse_datahour.visible = False
+        self.__sl_datahour = Select(title="時",
+                                    value=str(currhour),
+                                    options=hourlist)
+        self.__sl_datahour.visible = False
 
         # 5.Minute
         minlist = list(range(0, 60))
         minlist = list(map(str, minlist))
         currmin = datetime.today().minute
-        self.__wse_datamin = Select(title="分",
-                                    value=str(currmin),
-                                    options=minlist)
-        self.__wse_datamin.visible = False
+        self.__sl_datamin = Select(title="分",
+                                   value=str(currmin),
+                                   options=minlist)
+        self.__sl_datamin.visible = False
 
         # 実行
         self.__but_datarang = Button(label="実行", button_type="success")
@@ -241,7 +253,7 @@ class Viewer(object):
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
-        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__DISP_NUM)
+        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__csnum)
         self.__gmtstr = gmtstr_
         self.__gmtend = gmtend_
 
@@ -317,7 +329,7 @@ class Viewer(object):
 
         return dtmstr, dtmend
 
-    def __cb_wse_inst(self, attr, old, new):
+    def __cb_sl_inst(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -327,22 +339,9 @@ class Viewer(object):
             None
         """
         self.__inst = self.__INST_DICT[new]
-        try:
-            yrng = self.__cs.fetch(self.__gran, self.__inst,
-                                   self.__gmtstr, self.__gmtend)
-        except V20Error as v20err:
-            print("-----V20Error: {}".format(v20err))
-        except ConnectionError as cerr:
-            print("----- ConnectionError: {}".format(cerr))
-        except Exception as err:
-            print("----- ExceptionError: {}".format(err))
+        self.__update_chart()
 
-        self.__opord.clear()
-        self.__opord.update_yrange(yrng)
-        self.__oppos.clear()
-        self.__oppos.update_yrange(yrng)
-
-    def __cb_wse_gran(self, attr, old, new):
+    def __cb_sl_gran(self, attr, old, new):
         """Widgetセレクト（期間）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -352,9 +351,27 @@ class Viewer(object):
             なし[None]
         """
         self.__gran = self.__GRAN_DICT[new]
-        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__DISP_NUM)
+        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__csnum)
         self.__gmtstr = gmtstr_
         self.__gmtend = gmtend_
+
+        self.__update_chart()
+
+        # 日時指定モードの場合
+        if self.__rg_datarang.active == 1:
+            self.__change_visible()
+
+    def __cb_sl_csnum(self, attr, old, new):
+        self.__csnum = int(new)
+
+        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__csnum)
+        self.__gmtstr = gmtstr_
+        self.__gmtend = gmtend_
+
+        self.__update_chart()
+
+    def __update_chart(self):
+
         try:
             yrng = self.__cs.fetch(self.__gran, self.__inst,
                                    self.__gmtstr, self.__gmtend)
@@ -370,11 +387,7 @@ class Viewer(object):
         self.__oppos.clear()
         self.__oppos.update_yrange(yrng)
 
-        # 日時指定モードの場合
-        if self.__rg_datarang.active == 1:
-            self.__change_visible()
-
-    def __cb_wse_mode(self, attr, old, new):
+    def __cb_sl_mode(self, attr, old, new):
         """Widgetセレクト（モード）コールバックメソッド
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -399,7 +412,7 @@ class Viewer(object):
             self.__opord.clear()
             self.__oppos.clear()
 
-    def __cb_wse_tech(self, attr, old, new):
+    def __cb_sl_tech(self, attr, old, new):
         self.__tech_dict[new]()
 
     def __cb_chart_tap(self, event):
@@ -442,11 +455,11 @@ class Viewer(object):
 
     def __cb_rg_datarang(self, attr, old, new):
         if new == 0:
-            self.__wse_datayear.visible = False
-            self.__wse_datamonth.visible = False
-            self.__wse_dataday.visible = False
-            self.__wse_datahour.visible = False
-            self.__wse_datamin.visible = False
+            self.__sl_datayear.visible = False
+            self.__sl_datamonth.visible = False
+            self.__sl_dataday.visible = False
+            self.__sl_datahour.visible = False
+            self.__sl_datamin.visible = False
             self.__but_datarang.visible = False
         elif new == 1:
             self.__change_visible()
@@ -457,13 +470,13 @@ class Viewer(object):
 
     def __change_visible(self):
 
-        self.__wse_datayear.visible = True
-        self.__wse_datamonth.visible = True
-        self.__wse_dataday.visible = True
+        self.__sl_datayear.visible = True
+        self.__sl_datamonth.visible = True
+        self.__sl_dataday.visible = True
 
         if self.__gran == OandaGrn.D:
-            self.__wse_datahour.visible = False
-            self.__wse_datamin.visible = False
+            self.__sl_datahour.visible = False
+            self.__sl_datamin.visible = False
         elif (self.__gran == OandaGrn.H12
               or self.__gran == OandaGrn.H8
               or self.__gran == OandaGrn.H6
@@ -471,8 +484,8 @@ class Viewer(object):
               or self.__gran == OandaGrn.H3
               or self.__gran == OandaGrn.H2
               or self.__gran == OandaGrn.H1):
-            self.__wse_datahour.visible = True
-            self.__wse_datamin.visible = False
+            self.__sl_datahour.visible = True
+            self.__sl_datamin.visible = False
         elif (self.__gran == OandaGrn.M30
               or self.__gran == OandaGrn.M15
               or self.__gran == OandaGrn.M10
@@ -481,11 +494,11 @@ class Viewer(object):
               or self.__gran == OandaGrn.M3
               or self.__gran == OandaGrn.M2
               or self.__gran == OandaGrn.M1):
-            self.__wse_datahour.visible = True
-            self.__wse_datamin.visible = True
+            self.__sl_datahour.visible = True
+            self.__sl_datamin.visible = True
         else:
-            self.__wse_datahour.visible = True
-            self.__wse_datamin.visible = True
+            self.__sl_datahour.visible = True
+            self.__sl_datamin.visible = True
 
     def __cb_sldtecsma_s(self, attr, old, new):
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
@@ -561,12 +574,13 @@ class Viewer(object):
         戻り値[Returns]:
             layout (layout) : レイアウト[layout]
         """
-        w1 = self.__wse_inst
-        w2 = self.__wse_gran
-        w3 = self.__wse_mode
+        wslin = self.__sl_inst
+        wslgr = self.__sl_gran
+        wslcs = self.__sl_csnum
+        wslmo = self.__sl_mode
 
-        widsel1 = row(children=[w1, w2], width=300)
-        widsel2 = row(children=[w3], width=1000)
+        widsel1 = row(children=[wslin, wslgr, wslcs], width=300)
+        widsel2 = row(children=[wslmo], width=1000)
 
         chgp = self.__chart_layout()
         wid = row(children=[widsel1, widsel2], sizing_mode='stretch_width')
@@ -598,11 +612,11 @@ class Viewer(object):
     def __set_deflayout_datarang(self):
 
         rg = self.__rg_datarang
-        slyear = self.__wse_datayear
-        slmonth = self.__wse_datamonth
-        slday = self.__wse_dataday
-        slhour = self.__wse_datahour
-        slmin = self.__wse_datamin
+        slyear = self.__sl_datayear
+        slmonth = self.__sl_datamonth
+        slday = self.__sl_dataday
+        slhour = self.__sl_datahour
+        slmin = self.__sl_datamin
         buexe = self.__but_datarang
 
         techpara = column(
@@ -646,7 +660,7 @@ class Viewer(object):
     def __switch_techlay(self, para):
 
         cbgt = self.__ckbxgr_tech
-        tech = self.__wse_tech
+        tech = self.__sl_tech
 
         techpara = column(
             children=[cbgt, tech, para], sizing_mode='fixed')
