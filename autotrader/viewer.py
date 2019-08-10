@@ -206,9 +206,8 @@ class Viewer(object):
         self.__sl_datamin.visible = False
 
         # 実行
-        self.__but_datarang = Button(label="実行", button_type="success")
-        self.__but_datarang.on_click(self.__cb_but_datarang)
-        self.__but_datarang.visible = False
+        self.__bt_datarang = Button(label="実行", button_type="success")
+        self.__bt_datarang.on_click(self.__cb_but_datarang)
 
         # ---------- テクニカル指標 ----------
         # ===== 単純移動平均 =====
@@ -253,9 +252,7 @@ class Viewer(object):
         self.__inst = self.__INST_DICT[inst_def]
         self.__gran = self.__GRAN_DICT[gran_def]
 
-        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__csnum)
-        self.__gmtstr = gmtstr_
-        self.__gmtend = gmtend_
+        self.__set_datarang()
 
         self.__cs = CandleStick()
         try:
@@ -276,7 +273,7 @@ class Viewer(object):
         """
         print("デストラクタ")
 
-    def __get_period(self, gran, num):
+    def __get_latestrange(self, gran, num):
         """"チャートを描写する期間を取得する[get period of chart]
         引数[Args]:
             gran (str) : ローソク足の時間足[granularity of a candlestick]
@@ -329,6 +326,82 @@ class Viewer(object):
 
         return dtmstr, dtmend
 
+    def __get_selectrange(self, gran, num):
+
+        year_ = int(self.__sl_datayear.value)
+        month_ = int(self.__sl_datamonth.value)
+        day_ = int(self.__sl_dataday.value)
+        hour_ = int(self.__sl_datahour.value)
+        min_ = int(self.__sl_datamin.value)
+
+        if self.__gran == OandaGrn.D:
+            from_ = datetime(year=year_, month=month_, day=day_)
+        elif (self.__gran == OandaGrn.H12
+              or self.__gran == OandaGrn.H8
+              or self.__gran == OandaGrn.H6
+              or self.__gran == OandaGrn.H4
+              or self.__gran == OandaGrn.H3
+              or self.__gran == OandaGrn.H2
+              or self.__gran == OandaGrn.H1):
+            from_ = datetime(
+                year=year_, month=month_, day=day_, hour=hour_)
+        elif (self.__gran == OandaGrn.M30
+              or self.__gran == OandaGrn.M15
+              or self.__gran == OandaGrn.M10
+              or self.__gran == OandaGrn.M5
+              or self.__gran == OandaGrn.M4
+              or self.__gran == OandaGrn.M3
+              or self.__gran == OandaGrn.M2
+              or self.__gran == OandaGrn.M1):
+            from_ = datetime(year=year_, month=month_,
+                             day=day_, hour=hour_, minute=min_)
+        else:
+            from_ = datetime(year=year_, month=month_,
+                             day=day_, hour=hour_, minute=min_)
+
+        if gran == OandaGrn.D:
+            to_ = from_ + timedelta(days=num)
+        elif gran == OandaGrn.H12:
+            to_ = from_ + timedelta(hours=num * 12)
+        elif gran == OandaGrn.H8:
+            to_ = from_ + timedelta(hours=num * 8)
+        elif gran == OandaGrn.H6:
+            to_ = from_ + timedelta(hours=num * 6)
+        elif gran == OandaGrn.H4:
+            to_ = from_ + timedelta(hours=num * 4)
+        elif gran == OandaGrn.H3:
+            to_ = from_ + timedelta(hours=num * 3)
+        elif gran == OandaGrn.H2:
+            to_ = from_ + timedelta(hours=num * 2)
+        elif gran == OandaGrn.H1:
+            to_ = from_ + timedelta(hours=num)
+        elif gran == OandaGrn.M30:
+            to_ = from_ + timedelta(minutes=num * 30)
+        elif gran == OandaGrn.M15:
+            to_ = from_ + timedelta(minutes=num * 15)
+        elif gran == OandaGrn.M10:
+            to_ = from_ + timedelta(minutes=num * 10)
+        elif gran == OandaGrn.M5:
+            to_ = from_ + timedelta(minutes=num * 5)
+        elif gran == OandaGrn.M4:
+            to_ = from_ + timedelta(minutes=num * 4)
+        elif gran == OandaGrn.M3:
+            to_ = from_ + timedelta(minutes=num * 3)
+        elif gran == OandaGrn.M2:
+            to_ = from_ + timedelta(minutes=num * 2)
+        elif gran == OandaGrn.M1:
+            to_ = from_ + timedelta(minutes=num)
+
+        now_ = datetime.now()
+        if now_ < to_:
+            to_ = datetime(now_.year, now_.month, now_.day,
+                           now_.hour, now_.minute)
+
+        dtmstr = DateTimeManager(from_)
+        dtmend = DateTimeManager(to_)
+
+        return dtmstr, dtmend
+
     def __cb_sl_inst(self, attr, old, new):
         """Widgetセレクト（通貨ペア）コールバックメソッド
         引数[Args]:
@@ -351,10 +424,7 @@ class Viewer(object):
             なし[None]
         """
         self.__gran = self.__GRAN_DICT[new]
-        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__csnum)
-        self.__gmtstr = gmtstr_
-        self.__gmtend = gmtend_
-
+        self.__set_datarang()
         self.__update_chart()
 
         # 日時指定モードの場合
@@ -363,11 +433,7 @@ class Viewer(object):
 
     def __cb_sl_csnum(self, attr, old, new):
         self.__csnum = int(new)
-
-        gmtstr_, gmtend_ = self.__get_period(self.__gran, self.__csnum)
-        self.__gmtstr = gmtstr_
-        self.__gmtend = gmtend_
-
+        self.__set_datarang()
         self.__update_chart()
 
     def __update_chart(self):
@@ -460,13 +526,22 @@ class Viewer(object):
             self.__sl_dataday.visible = False
             self.__sl_datahour.visible = False
             self.__sl_datamin.visible = False
-            self.__but_datarang.visible = False
         elif new == 1:
             self.__change_visible()
-            self.__but_datarang.visible = True
 
     def __cb_but_datarang(self):
-        print("clicked!!!!!!!!!!!!!!!!!!!")
+        self.__set_datarang()
+        self.__update_chart()
+
+    def __set_datarang(self):
+        rg = self.__rg_datarang.active
+        if rg == 0:
+            str_, end_ = self.__get_latestrange(self.__gran, self.__csnum)
+        else:
+            str_, end_ = self.__get_selectrange(self.__gran, self.__csnum)
+
+        self.__gmtstr = str_
+        self.__gmtend = end_
 
     def __change_visible(self):
 
@@ -617,7 +692,7 @@ class Viewer(object):
         slday = self.__sl_dataday
         slhour = self.__sl_datahour
         slmin = self.__sl_datamin
-        buexe = self.__but_datarang
+        buexe = self.__bt_datarang
 
         techpara = column(
             children=[rg, slyear, slmonth, slday, slhour, slmin, buexe],
