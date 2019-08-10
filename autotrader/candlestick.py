@@ -148,7 +148,6 @@ class CandleStick(object):
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
         self.__INIT_WIDE = 0.5
         self.__YRANGE_MARGIN = 0.1
-        self.__LBL_ORIE = 0
 
         self.__ORDLINE_CND_COLOR = "yellow"
         self.__ORDLINE_FIX_COLOR = "cyan"
@@ -172,7 +171,6 @@ class CandleStick(object):
                                  sizing_mode="stretch_width",
                                  title="Candlestick Chart")
         self.__plt_main.xaxis.axis_label = "Date Time"
-        self.__plt_main.xaxis.major_label_orientation = self.__LBL_ORIE
         self.__plt_main.grid.grid_line_alpha = 0.3
         self.__plt_main.x_range = Range1d()
         self.__plt_main.y_range = Range1d()
