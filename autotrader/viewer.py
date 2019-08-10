@@ -283,8 +283,7 @@ class Viewer(object):
             dtmend (DateTimeManager) : 終了日時[end date]
         """
         # 現在時刻を取得
-        dtm = DateTimeManager(datetime.now())
-        now_ = dtm.tokyo
+        now_ = datetime.now()
         to_ = datetime(now_.year, now_.month, now_.day,
                        now_.hour, now_.minute, now_.second)
 

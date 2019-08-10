@@ -40,7 +40,7 @@ class CandleGlyph(GlyphVbarAbs):
         引数[Args]:
             None
         """
-        self.__WIDE_SCALE = 0.5
+        self.__WIDE_SCALE = 0.8
         self.__COLOR = color_
 
         super().__init__(self.__WIDE_SCALE)
@@ -50,7 +50,7 @@ class CandleGlyph(GlyphVbarAbs):
                                        self.YCL: []})
 
         self.__glyseg = Segment(x0=self.XDT, y0=self.YLO, x1=self.XDT,
-                                y1=self.YHI, line_color=self.__COLOR,
+                                y1=self.YHI, line_color="white",
                                 line_width=2)
         self.__glvbar = VBar(x=self.XDT, top=self.YOP, bottom=self.YCL,
                              fill_color=self.__COLOR, line_width=0,
@@ -176,6 +176,7 @@ class CandleStick(object):
         self.__plt_main.grid.grid_line_alpha = 0.3
         self.__plt_main.x_range = Range1d()
         self.__plt_main.y_range = Range1d()
+        self.__plt_main.toolbar_location = None
 
         # Range chart figure
         self.__plt_rang = figure(plot_height=30,

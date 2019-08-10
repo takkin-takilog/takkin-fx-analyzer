@@ -102,7 +102,7 @@ class MACD(object):
         self.__YPR = "ypr"
 
         # Main chart figure
-        self.__plt = figure(name = 'MACD',
+        self.__plt = figure(name='MACD',
                             plot_height=200,
                             x_axis_type=AxisTyp.X_DATETIME,
                             x_range=plt_.x_range,
@@ -111,6 +111,7 @@ class MACD(object):
                             title="MACD")
         self.__plt.xaxis.major_label_orientation = pi / 4
         self.__plt.grid.grid_line_alpha = 0.3
+        self.__plt.toolbar_location = None
 
         self.__srcm = ColumnDataSource({self.__XDT: [],
                                         self.__YPR: []})

@@ -34,7 +34,7 @@ class OpenBooksAbs(metaclass=ABCMeta):
         self.__CURPRI_COLOR = "#7DA900"
 
         self.__HEIGHT = 0.8
-        self.__CUTTH = 100  # 現レートから上下何本残すか
+        self.__CUTTH = 300  # 現レートから上下何本残すか
         self.__X_AXIS_MAX = 2.5  # X軸レンジ
 
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00Z"
