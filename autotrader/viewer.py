@@ -51,6 +51,9 @@ class Viewer(object):
             inst_def (str) : 通貨ペア[instrument]
             gran_def (str) : ローソク足の時間足[granularity of a candlestick]
         """
+        self.__STS_DATARANGE_LATEST = 0
+        self.__STS_DATARANGE_SELECT = 1
+
         # コンフィグファイル読み込み
         cfg.read()
 
@@ -156,6 +159,7 @@ class Viewer(object):
         # ----- データ取得期間 ----
         self.__rg_datarang = RadioGroup(labels=["最新", "日時指定"], active=0)
         self.__rg_datarang.on_change("active", self.__cb_rg_datarang)
+        self.__sts_datarang = self.__STS_DATARANGE_LATEST
 
         # Widgetセレクト（データ取得期間）
         # 1.Year
@@ -529,12 +533,17 @@ class Viewer(object):
             self.__change_visible()
 
     def __cb_but_datarang(self):
+        rg = self.__rg_datarang.active
+        if rg == 0:
+            self.__sts_datarang = self.__STS_DATARANGE_LATEST
+        else:
+            self.__sts_datarang = self.__STS_DATARANGE_SELECT
+
         self.__set_datarang()
         self.__update_chart()
 
     def __set_datarang(self):
-        rg = self.__rg_datarang.active
-        if rg == 0:
+        if self.__sts_datarang == self.__STS_DATARANGE_LATEST:
             str_, end_ = self.__get_latestrange(self.__gran, self.__csnum)
         else:
             str_, end_ = self.__get_selectrange(self.__gran, self.__csnum)
