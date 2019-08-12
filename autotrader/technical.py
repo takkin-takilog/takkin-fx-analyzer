@@ -182,10 +182,10 @@ class MACD(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.config import ITEM_MACD_LON, ITEM_MACD_SIG
-        lon = cfg.get_conf(ITEM_MACD_LON)
-        sig = cfg.get_conf(ITEM_MACD_SIG)
-        self.__calcMACD(df, window_, lon, sig)
+        from autotrader.config import ITEM_MACD_LNG, ITEM_MACD_SGN
+        lng = cfg.get_conf(ITEM_MACD_LNG)
+        sgn = cfg.get_conf(ITEM_MACD_SGN)
+        self.__calcMACD(df, window_, lng, sgn)
         self.__srcm.data = {
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_MACD].tolist(),
@@ -204,10 +204,10 @@ class MACD(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.config import ITEM_MACD_SHO, ITEM_MACD_SIG
-        sho = cfg.get_conf(ITEM_MACD_SHO)
-        sig = cfg.get_conf(ITEM_MACD_SIG)
-        self.__calcMACD(df, sho, window_, sig)
+        from autotrader.config import ITEM_MACD_SHR, ITEM_MACD_SGN
+        shr = cfg.get_conf(ITEM_MACD_SHR)
+        sgn = cfg.get_conf(ITEM_MACD_SGN)
+        self.__calcMACD(df, shr, window_, sgn)
         self.__srcm.data = {
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_MACD].tolist(),
@@ -226,10 +226,10 @@ class MACD(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.config import ITEM_MACD_SHO, ITEM_MACD_LON
-        sho = cfg.get_conf(ITEM_MACD_SHO)
-        lon = cfg.get_conf(ITEM_MACD_LON)
-        self.__calcMACD(df, sho, lon, window_)
+        from autotrader.config import ITEM_MACD_SHR, ITEM_MACD_LNG
+        shr = cfg.get_conf(ITEM_MACD_SHR)
+        lng = cfg.get_conf(ITEM_MACD_LNG)
+        self.__calcMACD(df, shr, lng, window_)
         self.__srcm.data = {
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_MACD].tolist(),
@@ -278,12 +278,12 @@ class BollingerBands(object):
             - ボリンジャーバンドクラス[bollinger bands class]
     """
     LBL_BB_BASE = "BB-Base"
-    LBL_BB_SIG1U = "BB-Sig*1-up"
-    LBL_BB_SIG1D = "BB-Sig*1-dw"
-    LBL_BB_SIG2U = "BB-Sig*2-up"
-    LBL_BB_SIG2D = "BB-Sig*2-dw"
-    LBL_BB_SIG3U = "BB-Sig*3-up"
-    LBL_BB_SIG3D = "BB-Sig*3-dw"
+    LBL_BB_SGN1U = "BB-Sgn*1-up"
+    LBL_BB_SGN1D = "BB-Sgn*1-dw"
+    LBL_BB_SGN2U = "BB-Sgn*2-up"
+    LBL_BB_SGN2D = "BB-Sgn*2-dw"
+    LBL_BB_SGN3U = "BB-Sgn*3-up"
+    LBL_BB_SGN3D = "BB-Sgn*3-dw"
 
     def __init__(self, plt):
         """"コンストラクタ[Constructor]
@@ -361,36 +361,36 @@ class BollingerBands(object):
         base = df[self.LBL_BB_BASE]
         sigma = df[LBL_CLOSE].rolling(window=window_).std(ddof=0)
 
-        df[self.LBL_BB_SIG1U] = base + sigma
-        df[self.LBL_BB_SIG1D] = base - sigma
-        df[self.LBL_BB_SIG2U] = base + sigma * 2
-        df[self.LBL_BB_SIG2D] = base - sigma * 2
-        df[self.LBL_BB_SIG3U] = base + sigma * 3
-        df[self.LBL_BB_SIG3D] = base - sigma * 3
+        df[self.LBL_BB_SGN1U] = base + sigma
+        df[self.LBL_BB_SGN1D] = base - sigma
+        df[self.LBL_BB_SGN2U] = base + sigma * 2
+        df[self.LBL_BB_SGN2D] = base - sigma * 2
+        df[self.LBL_BB_SGN3U] = base + sigma * 3
+        df[self.LBL_BB_SGN3D] = base - sigma * 3
 
         self.__srcu1.data = {
             self.__XDT: df.index.tolist(),
-            self.__YPR: df[self.LBL_BB_SIG1U].tolist(),
+            self.__YPR: df[self.LBL_BB_SGN1U].tolist(),
         }
         self.__srcd1.data = {
             self.__XDT: df.index.tolist(),
-            self.__YPR: df[self.LBL_BB_SIG1D].tolist(),
+            self.__YPR: df[self.LBL_BB_SGN1D].tolist(),
         }
         self.__srcu2.data = {
             self.__XDT: df.index.tolist(),
-            self.__YPR: df[self.LBL_BB_SIG2U].tolist(),
+            self.__YPR: df[self.LBL_BB_SGN2U].tolist(),
         }
         self.__srcd2.data = {
             self.__XDT: df.index.tolist(),
-            self.__YPR: df[self.LBL_BB_SIG2D].tolist(),
+            self.__YPR: df[self.LBL_BB_SGN2D].tolist(),
         }
         self.__srcu3.data = {
             self.__XDT: df.index.tolist(),
-            self.__YPR: df[self.LBL_BB_SIG3U].tolist(),
+            self.__YPR: df[self.LBL_BB_SGN3U].tolist(),
         }
         self.__srcd3.data = {
             self.__XDT: df.index.tolist(),
-            self.__YPR: df[self.LBL_BB_SIG3D].tolist(),
+            self.__YPR: df[self.LBL_BB_SGN3D].tolist(),
         }
 
     def clear(self):

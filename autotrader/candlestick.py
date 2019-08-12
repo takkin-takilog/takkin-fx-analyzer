@@ -325,14 +325,14 @@ class CandleStick(object):
 
         # 単純移動平均線
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
-            self.__sma.update_shr(df, cfg.get_conf(cfg.ITEM_SMA_SHO))
-            self.__sma.update_mdl(df, cfg.get_conf(cfg.ITEM_SMA_MID))
-            self.__sma.update_lng(df, cfg.get_conf(cfg.ITEM_SMA_LON))
+            self.__sma.update_shr(df, cfg.get_conf(cfg.ITEM_SMA_SHR))
+            self.__sma.update_mdl(df, cfg.get_conf(cfg.ITEM_SMA_MDL))
+            self.__sma.update_lng(df, cfg.get_conf(cfg.ITEM_SMA_LNG))
         # MACD
         if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
-            self.__macd.update_shr(df, cfg.get_conf(cfg.ITEM_MACD_SHO))
-            self.__macd.update_lng(df, cfg.get_conf(cfg.ITEM_MACD_LON))
-            self.__macd.update_sgn(df, cfg.get_conf(cfg.ITEM_MACD_SIG))
+            self.__macd.update_shr(df, cfg.get_conf(cfg.ITEM_MACD_SHR))
+            self.__macd.update_lng(df, cfg.get_conf(cfg.ITEM_MACD_LNG))
+            self.__macd.update_sgn(df, cfg.get_conf(cfg.ITEM_MACD_SGN))
         # ボリンジャーバンド
         if cfg.get_conf(cfg.ITEM_BB_ACT) == 1:
             self.__bb.update(df, cfg.get_conf(cfg.ITEM_BB_PRD))

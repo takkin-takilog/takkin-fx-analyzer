@@ -217,34 +217,34 @@ class Viewer(object):
 
         # ---------- テクニカル指標[technical index] ----------
         # ●単純移動平均[Simple Moving Average]
-        defsho = cfg.get_conf(cfg.ITEM_SMA_SHO)
-        self.__sld_techsma_s = Slider(start=1, end=100, value=defsho,
+        defshr = cfg.get_conf(cfg.ITEM_SMA_SHR)
+        self.__sld_techsma_s = Slider(start=1, end=100, value=defshr,
                                       step=1, title="SMA S")
         self.__sld_techsma_s.on_change('value', self.__cb_sld_techsma_s)
 
-        defmid = cfg.get_conf(cfg.ITEM_SMA_MID)
-        self.__sld_techsma_m = Slider(start=1, end=100, value=defmid,
+        defmdl = cfg.get_conf(cfg.ITEM_SMA_MDL)
+        self.__sld_techsma_m = Slider(start=1, end=100, value=defmdl,
                                       step=1, title="SMA M")
         self.__sld_techsma_m.on_change('value', self.__cb_sld_techsma_m)
 
-        deflon = cfg.get_conf(cfg.ITEM_SMA_LON)
-        self.__sld_techsma_l = Slider(start=1, end=100, value=deflon,
+        deflng = cfg.get_conf(cfg.ITEM_SMA_LNG)
+        self.__sld_techsma_l = Slider(start=1, end=100, value=deflng,
                                       step=1, title="SMA L")
         self.__sld_techsma_l.on_change('value', self.__cb_sld_techsma_l)
 
         # ●MACD[Moving Average Convergence and Divergence]
-        defsho = cfg.get_conf(cfg.ITEM_MACD_SHO)
-        self.__sld_techmacd_shr = Slider(start=1, end=100, value=defsho,
+        defshr = cfg.get_conf(cfg.ITEM_MACD_SHR)
+        self.__sld_techmacd_shr = Slider(start=1, end=100, value=defshr,
                                          step=1, title="短期")
         self.__sld_techmacd_shr.on_change('value', self.__cb_sld_techmacd_shr)
 
-        deflon = cfg.get_conf(cfg.ITEM_MACD_LON)
-        self.__sld_techmacd_lng = Slider(start=1, end=100, value=deflon,
+        deflng = cfg.get_conf(cfg.ITEM_MACD_LNG)
+        self.__sld_techmacd_lng = Slider(start=1, end=100, value=deflng,
                                          step=1, title="長期")
         self.__sld_techmacd_lng.on_change('value', self.__cb_sld_techmacd_lng)
 
-        defsig = cfg.get_conf(cfg.ITEM_MACD_SIG)
-        self.__sld_techmacd_sgn = Slider(start=1, end=100, value=defsig,
+        defsgn = cfg.get_conf(cfg.ITEM_MACD_SGN)
+        self.__sld_techmacd_sgn = Slider(start=1, end=100, value=defsgn,
                                          step=1, title="シグナル")
         self.__sld_techmacd_sgn.on_change('value', self.__cb_sld_techmacd_sgn)
 
@@ -686,7 +686,7 @@ class Viewer(object):
         """
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_shr(new)
-        cfg.set_conf(cfg.ITEM_SMA_SHO, new)
+        cfg.set_conf(cfg.ITEM_SMA_SHR, new)
         cfg.write()
 
     def __cb_sld_techsma_m(self, attr, old, new):
@@ -701,7 +701,7 @@ class Viewer(object):
         """
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_mdl(new)
-        cfg.set_conf(cfg.ITEM_SMA_MID, new)
+        cfg.set_conf(cfg.ITEM_SMA_MDL, new)
         cfg.write()
 
     def __cb_sld_techsma_l(self, attr, old, new):
@@ -716,7 +716,7 @@ class Viewer(object):
         """
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
             self.__cs.update_sma_lng(new)
-        cfg.set_conf(cfg.ITEM_SMA_LON, new)
+        cfg.set_conf(cfg.ITEM_SMA_LNG, new)
         cfg.write()
 
     def __cb_sld_techmacd_shr(self, attr, old, new):
@@ -731,7 +731,7 @@ class Viewer(object):
         """
         if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
             self.__cs.update_macd_shr(new)
-        cfg.set_conf(cfg.ITEM_MACD_SHO, new)
+        cfg.set_conf(cfg.ITEM_MACD_SHR, new)
         cfg.write()
 
     def __cb_sld_techmacd_lng(self, attr, old, new):
@@ -746,7 +746,7 @@ class Viewer(object):
         """
         if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
             self.__cs.update_macd_lng(new)
-        cfg.set_conf(cfg.ITEM_MACD_LON, new)
+        cfg.set_conf(cfg.ITEM_MACD_LNG, new)
         cfg.write()
 
     def __cb_sld_techmacd_sgn(self, attr, old, new):
@@ -761,7 +761,7 @@ class Viewer(object):
         """
         if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
             self.__cs.update_macd_sgn(new)
-        cfg.set_conf(cfg.ITEM_MACD_SIG, new)
+        cfg.set_conf(cfg.ITEM_MACD_SGN, new)
         cfg.write()
 
     def __cb_sld_techbb(self, attr, old, new):

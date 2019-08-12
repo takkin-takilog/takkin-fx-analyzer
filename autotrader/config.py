@@ -8,13 +8,13 @@ ITEM_MACD_ACT = 'macd_act'
 ITEM_BB_ACT = 'bb_act'
 
 # 単純移動平均
-ITEM_SMA_SHO = 'sma_short'
-ITEM_SMA_MID = 'sma_middle'
-ITEM_SMA_LON = 'sma_long'
+ITEM_SMA_SHR = 'sma_short'
+ITEM_SMA_MDL = 'sma_middle'
+ITEM_SMA_LNG = 'sma_long'
 # MACD
-ITEM_MACD_SHO = 'macd_short'
-ITEM_MACD_LON = 'macd_long'
-ITEM_MACD_SIG = 'macd_signal'
+ITEM_MACD_SHR = 'macd_short'
+ITEM_MACD_LNG = 'macd_long'
+ITEM_MACD_SGN = 'macd_signal'
 # ボリンジャーバンド
 ITEM_BB_PRD = 'bb_period'
 
@@ -32,13 +32,13 @@ _config_def = {
     ITEM_MACD_ACT: '0',
     ITEM_BB_ACT: '0',
     # 単純移動平均
-    ITEM_SMA_SHO: '5',
-    ITEM_SMA_MID: '20',
-    ITEM_SMA_LON: '75',
+    ITEM_SMA_SHR: '5',
+    ITEM_SMA_MDL: '20',
+    ITEM_SMA_LNG: '75',
     # MACD
-    ITEM_MACD_SHO: '12',
-    ITEM_MACD_LON: '26',
-    ITEM_MACD_SIG: '9',
+    ITEM_MACD_SHR: '12',
+    ITEM_MACD_LNG: '26',
+    ITEM_MACD_SGN: '9',
     # ボリンジャーバンド
     ITEM_BB_PRD: '20',
 }
@@ -61,13 +61,13 @@ def read():
     _config[ITEM_MACD_ACT] = _cfg.getint(_SEC_ACT, ITEM_MACD_ACT)
     _config[ITEM_BB_ACT] = _cfg.getint(_SEC_ACT, ITEM_BB_ACT)
     # 単純移動平均
-    _config[ITEM_SMA_SHO] = _cfg.getint(_SEC_SMA, ITEM_SMA_SHO)
-    _config[ITEM_SMA_MID] = _cfg.getint(_SEC_SMA, ITEM_SMA_MID)
-    _config[ITEM_SMA_LON] = _cfg.getint(_SEC_SMA, ITEM_SMA_LON)
+    _config[ITEM_SMA_SHR] = _cfg.getint(_SEC_SMA, ITEM_SMA_SHR)
+    _config[ITEM_SMA_MDL] = _cfg.getint(_SEC_SMA, ITEM_SMA_MDL)
+    _config[ITEM_SMA_LNG] = _cfg.getint(_SEC_SMA, ITEM_SMA_LNG)
     # MACD
-    _config[ITEM_MACD_SHO] = _cfg.getint(_SEC_MACD, ITEM_MACD_SHO)
-    _config[ITEM_MACD_LON] = _cfg.getint(_SEC_MACD, ITEM_MACD_LON)
-    _config[ITEM_MACD_SIG] = _cfg.getint(_SEC_MACD, ITEM_MACD_SIG)
+    _config[ITEM_MACD_SHR] = _cfg.getint(_SEC_MACD, ITEM_MACD_SHR)
+    _config[ITEM_MACD_LNG] = _cfg.getint(_SEC_MACD, ITEM_MACD_LNG)
+    _config[ITEM_MACD_SGN] = _cfg.getint(_SEC_MACD, ITEM_MACD_SGN)
     # ボリンジャーバンド
     _config[ITEM_BB_PRD] = _cfg.getint(_SEC_BB, ITEM_BB_PRD)
 
@@ -79,12 +79,12 @@ def write():
     _cfg.set(_SEC_ACT, ITEM_SMA_ACT, str(_config[ITEM_SMA_ACT]))
     _cfg.set(_SEC_ACT, ITEM_MACD_ACT, str(_config[ITEM_MACD_ACT]))
     _cfg.set(_SEC_ACT, ITEM_BB_ACT, str(_config[ITEM_BB_ACT]))
-    _cfg.set(_SEC_SMA, ITEM_SMA_SHO, str(_config[ITEM_SMA_SHO]))
-    _cfg.set(_SEC_SMA, ITEM_SMA_MID, str(_config[ITEM_SMA_MID]))
-    _cfg.set(_SEC_SMA, ITEM_SMA_LON, str(_config[ITEM_SMA_LON]))
-    _cfg.set(_SEC_MACD, ITEM_MACD_SHO, str(_config[ITEM_MACD_SHO]))
-    _cfg.set(_SEC_MACD, ITEM_MACD_LON, str(_config[ITEM_MACD_LON]))
-    _cfg.set(_SEC_MACD, ITEM_MACD_SIG, str(_config[ITEM_MACD_SIG]))
+    _cfg.set(_SEC_SMA, ITEM_SMA_SHR, str(_config[ITEM_SMA_SHR]))
+    _cfg.set(_SEC_SMA, ITEM_SMA_MDL, str(_config[ITEM_SMA_MDL]))
+    _cfg.set(_SEC_SMA, ITEM_SMA_LNG, str(_config[ITEM_SMA_LNG]))
+    _cfg.set(_SEC_MACD, ITEM_MACD_SHR, str(_config[ITEM_MACD_SHR]))
+    _cfg.set(_SEC_MACD, ITEM_MACD_LNG, str(_config[ITEM_MACD_LNG]))
+    _cfg.set(_SEC_MACD, ITEM_MACD_SGN, str(_config[ITEM_MACD_SGN]))
     _cfg.set(_SEC_BB, ITEM_BB_PRD, str(_config[ITEM_BB_PRD]))
     with open(_INI_FILE, 'w') as f:
         _cfg.write(f)
@@ -132,9 +132,9 @@ if __name__ == "__main__":
     read()
     print(_config)
     print("1")
-    set_conf(ITEM_SMA_SHO, 3)
-    set_conf(ITEM_SMA_MID, 15)
-    set_conf(ITEM_SMA_LON, 60)
+    set_conf(ITEM_SMA_SHR, 3)
+    set_conf(ITEM_SMA_MDL, 15)
+    set_conf(ITEM_SMA_LNG, 60)
     print("2")
     print(_config)
     print("write")
