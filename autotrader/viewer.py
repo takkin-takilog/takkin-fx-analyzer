@@ -156,6 +156,7 @@ class Viewer(object):
         active_ = cfg.get_conf_act()
         self.__cbg_tech = CheckboxGroup(labels=TECH_OPT, active=active_)
         self.__cbg_tech.on_change("active", self.__cb_cbg_tech)
+        self.__tech_act = active_
 
         # Widget Radio Group:データ取得タイプ[Data fetch type]
         self.__rg_ftchtyp = RadioGroup(labels=["最新", "日時指定"], active=0)
@@ -556,29 +557,34 @@ class Viewer(object):
             なし[None]
         """
         # 単純移動平均[Simple Moving Average]
-        if (0 in new):
-            self.__cs.update_sma_shr(self.__sld_techsma_s.value)
-            self.__cs.update_sma_mdl(self.__sld_techsma_m.value)
-            self.__cs.update_sma_lng(self.__sld_techsma_l.value)
-        else:
-            self.__cs.clear_sma()
+        if not (0 in self.__tech_act) == (0 in new):
+            if (0 in new):
+                self.__cs.update_sma_shr(self.__sld_techsma_s.value)
+                self.__cs.update_sma_mdl(self.__sld_techsma_m.value)
+                self.__cs.update_sma_lng(self.__sld_techsma_l.value)
+            else:
+                self.__cs.clear_sma()
 
         # MACD[Moving Average Convergence and Divergence]
-        if (1 in new):
-            self.__cs.update_macd_shr(self.__sld_techmacd_shr.value)
-            self.__cs.update_macd_lng(self.__sld_techmacd_lng.value)
-            self.__cs.update_macd_sgn(self.__sld_techmacd_sgn.value)
-        else:
-            self.__cs.clear_macd()
-        self.__switch_visible_macd(1 in new)
+        if not (1 in self.__tech_act) == (1 in new):
+            if (1 in new):
+                self.__cs.update_macd_shr(self.__sld_techmacd_shr.value)
+                self.__cs.update_macd_lng(self.__sld_techmacd_lng.value)
+                self.__cs.update_macd_sgn(self.__sld_techmacd_sgn.value)
+            else:
+                self.__cs.clear_macd()
+            self.__switch_visible_macd(1 in new)
 
         # ボリンジャーバンド[Bollinger Bands]
-        if (2 in new):
-            self.__cs.update_bb(self.__sld_techbb.value)
-        else:
-            self.__cs.clear_bb()
+        if not (2 in self.__tech_act) == (2 in new):
+            if (2 in new):
+                self.__cs.update_bb(self.__sld_techbb.value)
+            else:
+                self.__cs.clear_bb()
+
         cfg.set_conf_act(new)
         cfg.write()
+        self.__tech_act = new
 
     def __cb_rg_ftchtyp(self, attr, old, new):
         """Widget Radio Group(データ取得タイプ)コールバックメソッド
