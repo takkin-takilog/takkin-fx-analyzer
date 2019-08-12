@@ -1,7 +1,7 @@
 from math import pi
 import pandas as pd
 from bokeh.models.glyphs import Line
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, Range1d
 from bokeh.plotting import figure
 from autotrader.bokeh_common import AxisTyp
 import autotrader.config as cfg
@@ -139,6 +139,7 @@ class MACD(object):
         self.__plt.xaxis.major_label_orientation = pi / 4
         self.__plt.grid.grid_line_alpha = 0.3
         self.__plt.toolbar_location = None
+        self.__plt.y_range = Range1d()
 
         self.__srcm = ColumnDataSource({self.__XDT: [],
                                         self.__YPR: []})
@@ -160,6 +161,8 @@ class MACD(object):
                        line_width=1,
                        line_alpha=1.0)
         self.__plt.add_glyph(self.__srcs, glvline)
+
+        self.__yrng = [0, 0]
 
     @property
     def plt(self):
@@ -191,6 +194,7 @@ class MACD(object):
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_SIGN].tolist(),
         }
+        self.__plt.y_range.update(start=self.__yrng[0], end=self.__yrng[1])
 
     def update_lng(self, df, window_):
         """"長期データを更新する[update long range data]
@@ -212,6 +216,7 @@ class MACD(object):
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_SIGN].tolist(),
         }
+        self.__plt.y_range.update(start=self.__yrng[0], end=self.__yrng[1])
 
     def update_sgn(self, df, window_):
         """"シグナルデータを更新する[update signal data]
@@ -233,6 +238,7 @@ class MACD(object):
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_SIGN].tolist(),
         }
+        self.__plt.y_range.update(start=self.__yrng[0], end=self.__yrng[1])
 
     def __calcMACD(self, df, shr, lng, sgn):
         """"MACDを計算する[calculate MACD]
@@ -249,6 +255,10 @@ class MACD(object):
         ema_l = df[LBL_CLOSE].ewm(span=lng).mean()
         df[self.LBL_MACD] = (ema_s - ema_l)
         df[self.LBL_SIGN] = df[self.LBL_MACD].ewm(span=sgn).mean()
+
+        min_ = df[self.LBL_MACD].min()
+        max_ = df[self.LBL_MACD].max()
+        self.__yrng = [min_, max_]
 
     def clear(self):
         """"データをクリアする[clear data]
