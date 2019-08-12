@@ -1,28 +1,27 @@
-from math import pi
 from bokeh.models import Range1d, RangeTool, ColumnDataSource
 from bokeh.models import HoverTool
 from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar, Line
 from oandapyV20 import API
 from retrying import retry
-from autotrader.bokeh_common import GlyphVbarAbs
-from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
-from autotrader.bokeh_common import ToolType, AxisTyp
 from datetime import datetime, timedelta
-from comtypes.npsupport import numpy as np
+from autotrader.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
+from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.utils import DateTimeManager
+from autotrader.technical import SimpleMovingAverage, MACD, BollingerBands
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
-import autotrader.oanda_account as oa
+import numpy as np
+import autotrader.config as cfg
 
 
 # Pandas data label
-_TIME = "time"
-_VOLUME = "volume"
-_OPEN = "open"
-_HIGH = "high"
-_LOW = "low"
-_CLOSE = "close"
+LBL_TIME = "time"
+LBL_VOLUME = "volume"
+LBL_OPEN = "open"
+LBL_HIGH = "high"
+LBL_LOW = "low"
+LBL_CLOSE = "close"
 
 
 class CandleGlyph(GlyphVbarAbs):
@@ -38,9 +37,11 @@ class CandleGlyph(GlyphVbarAbs):
     def __init__(self, pltmain, pltrng, color_):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            pltmain (figure) : メインフィギュアオブジェクト[main figure object]
+            pltrng (figure) : レンジフィギュアオブジェクト[range figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
         """
-        self.__WIDE_SCALE = 0.5
+        self.__WIDE_SCALE = 0.8
         self.__COLOR = color_
 
         super().__init__(self.__WIDE_SCALE)
@@ -50,7 +51,7 @@ class CandleGlyph(GlyphVbarAbs):
                                        self.YCL: []})
 
         self.__glyseg = Segment(x0=self.XDT, y0=self.YLO, x1=self.XDT,
-                                y1=self.YHI, line_color=self.__COLOR,
+                                y1=self.YHI, line_color="white",
                                 line_width=2)
         self.__glvbar = VBar(x=self.XDT, top=self.YOP, bottom=self.YCL,
                              fill_color=self.__COLOR, line_width=0,
@@ -66,6 +67,13 @@ class CandleGlyph(GlyphVbarAbs):
 
     @property
     def render(self):
+        """"メインフィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Main Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
         return self.__ren
 
     def update(self, df, gran):
@@ -74,14 +82,14 @@ class CandleGlyph(GlyphVbarAbs):
             df (pandas data frame) : pandasデータフレーム[pandas data frame]
             gran (str) : ローソク足の時間足[granularity of a candlestick]
         戻り値[Returns]:
-            None
+            なし[None]
         """
         self.__src.data = {
             self.XDT: df.index.tolist(),
-            self.YHI: df[_HIGH].tolist(),
-            self.YLO: df[_LOW].tolist(),
-            self.YOP: df[_OPEN].tolist(),
-            self.YCL: df[_CLOSE].tolist()
+            self.YHI: df[LBL_HIGH].tolist(),
+            self.YLO: df[LBL_LOW].tolist(),
+            self.YOP: df[LBL_OPEN].tolist(),
+            self.YCL: df[LBL_CLOSE].tolist()
         }
 
         self.__glvbar.width = self.get_width(gran)
@@ -97,7 +105,8 @@ class OrdersVLineGlyph(object):
     def __init__(self, plt, color_):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            plt (figure) : フィギュアオブジェクト[figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
         """
         self.__WIDETH = 1
         self.__COLOR = color_
@@ -115,16 +124,21 @@ class OrdersVLineGlyph(object):
         self.__plt.add_glyph(self.__src, self.__glvline)
 
     def update(self, dict_):
-        """"データを更新する[update glyph date]
+        """"データを更新する[update glyph data]
         引数[Args]:
-            df (pandas data frame) : pandasデータフレーム[pandas data frame]
-            gran (str) : ローソク足の時間足[granularity of a candlestick]
+            dict_ (dict) : 更新データ[update data]
         戻り値[Returns]:
-            None
+            なし[None]
         """
         self.__src.data = dict_
 
     def clear(self):
+        """"データをクリアする[clear glyph data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         dict_ = {self.XDT: [],
                  self.YPR: []}
         self.__src.data = dict_
@@ -138,8 +152,9 @@ class CandleStick(object):
     def __init__(self):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            なし[None]
         """
+        from autotrader.oanda_account import ACCESS_TOKEN
         self.__CND_INC_COLOR = "#E73B3A"
         self.__CND_DEC_COLOR = "#03C103"
         self.__CND_EQU_COLOR = "#FFFF00"
@@ -154,7 +169,7 @@ class CandleStick(object):
         # self.__CH_COLOR = "#FFFF00"  # Crosshair line color
 
         self.__yrng = [0, 0]  # [min, max]
-        self.__api = API(access_token=oa.ACCESS_TOKEN,
+        self.__api = API(access_token=ACCESS_TOKEN,
                          environment=OandaEnv.PRACTICE)
 
         tools_ = ToolType.gen_str(ToolType.WHEEL_ZOOM,
@@ -167,37 +182,42 @@ class CandleStick(object):
                                  x_axis_type=AxisTyp.X_DATETIME,
                                  tools=tools_,
                                  background_fill_color=self.__BG_COLOR,
+                                 sizing_mode="stretch_width",
                                  title="Candlestick Chart")
-        self.__plt_main.xaxis.major_label_orientation = pi / 4
+        self.__plt_main.xaxis.axis_label = "Date Time"
         self.__plt_main.grid.grid_line_alpha = 0.3
         self.__plt_main.x_range = Range1d()
         self.__plt_main.y_range = Range1d()
+        self.__plt_main.toolbar_location = None
 
         # Range chart figure
-        self.__plt_rang = figure(plot_height=70,
+        self.__plt_rang = figure(plot_height=30,
                                  plot_width=self.__plt_main.plot_width,
                                  y_range=self.__plt_main.y_range,
                                  x_axis_type=AxisTyp.X_DATETIME,
                                  background_fill_color=self.__BG_COLOR,
+                                 sizing_mode="stretch_width",
                                  toolbar_location=None)
+        self.__plt_rang.xaxis.visible = False
         self.__plt_rang.yaxis.visible = False
-        self.__plt_rang.ygrid.visible = False
         self.__plt_rang.xgrid.visible = False
+        self.__plt_rang.ygrid.visible = False
 
         self.__range_tool = RangeTool()
         self.__plt_rang.add_tools(self.__range_tool)
         self.__plt_rang.toolbar.active_multi = self.__range_tool
-        self.__plt_rang.xaxis.major_label_orientation = pi / 4
         self.__plt_rang.grid.grid_line_alpha = 0.3
 
         self.__idxmin = -1
         self.__idxmindt = -1
 
+        # Open Orders & Positions vertical line
         self.__glyordcnd = OrdersVLineGlyph(self.__plt_main,
                                             self.__ORDLINE_CND_COLOR)
         self.__glyordfix = OrdersVLineGlyph(self.__plt_main,
                                             self.__ORDLINE_FIX_COLOR)
 
+        # Candle stick figure
         self.__glyinc = CandleGlyph(self.__plt_main,
                                     self.__plt_rang,
                                     self.__CND_INC_COLOR)
@@ -210,15 +230,19 @@ class CandleStick(object):
 
         hover = HoverTool()
         hover.formatters = {CandleGlyph.XDT: "datetime"}
-        hover.tooltips = [(_TIME, "@" + CandleGlyph.XDT + "{%F}"),
-                          (_HIGH, "@" + CandleGlyph.YHI),
-                          (_OPEN, "@" + CandleGlyph.YOP),
-                          (_CLOSE, "@" + CandleGlyph.YCL),
-                          (_LOW, "@" + CandleGlyph.YLO)]
+        hover.tooltips = [(LBL_TIME, "@" + CandleGlyph.XDT + "{%F}"),
+                          (LBL_HIGH, "@" + CandleGlyph.YHI),
+                          (LBL_OPEN, "@" + CandleGlyph.YOP),
+                          (LBL_CLOSE, "@" + CandleGlyph.YCL),
+                          (LBL_LOW, "@" + CandleGlyph.YLO)]
         hover.renderers = [self.__glyinc.render,
                            self.__glydec.render,
                            self.__glyequ.render]
         self.__plt_main.add_tools(hover)
+
+        self.__sma = SimpleMovingAverage(self.__plt_main)
+        self.__macd = MACD(self.__plt_main)
+        self.__bb = BollingerBands(self.__plt_main)
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def fetch(self, gran, inst, gmtstr, gmtend):
@@ -261,19 +285,19 @@ class CandleStick(object):
 
         # convert List to pandas data frame
         df = pd.DataFrame(data)
-        df.columns = [_TIME,
-                      _VOLUME,
-                      _OPEN,
-                      _HIGH,
-                      _LOW,
-                      _CLOSE]
-        df = df.set_index(_TIME)
+        df.columns = [LBL_TIME,
+                      LBL_VOLUME,
+                      LBL_OPEN,
+                      LBL_HIGH,
+                      LBL_LOW,
+                      LBL_CLOSE]
+        df = df.set_index(LBL_TIME)
         # date型を整形する
         df.index = pd.to_datetime(df.index)
 
-        incflg = df[_CLOSE] > df[_OPEN]
-        decflg = df[_OPEN] > df[_CLOSE]
-        equflg = df[_CLOSE] == df[_OPEN]
+        incflg = df[LBL_CLOSE] > df[LBL_OPEN]
+        decflg = df[LBL_OPEN] > df[LBL_CLOSE]
+        equflg = df[LBL_CLOSE] == df[LBL_OPEN]
 
         self.__glyinc.update(df[incflg], gran)
         self.__glydec.update(df[decflg], gran)
@@ -288,8 +312,8 @@ class CandleStick(object):
 
         self.__range_tool.x_range = self.__plt_main.x_range
 
-        min_ = df[_LOW].min()
-        max_ = df[_HIGH].max()
+        min_ = df[LBL_LOW].min()
+        max_ = df[LBL_HIGH].max()
         mar = self.__YRANGE_MARGIN * (max_ - min_)
         str_ = min_ - mar
         end_ = max_ + mar
@@ -299,9 +323,134 @@ class CandleStick(object):
         self.__add_orders_vline(gran, gmtstr, gmtend)
         self.__plt_main.y_range.update(start=str_, end=end_)
 
+        # 単純移動平均線
+        if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
+            self.__sma.update_shr(df, cfg.get_conf(cfg.ITEM_SMA_SHR))
+            self.__sma.update_mdl(df, cfg.get_conf(cfg.ITEM_SMA_MDL))
+            self.__sma.update_lng(df, cfg.get_conf(cfg.ITEM_SMA_LNG))
+        # MACD
+        if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
+            self.__macd.update_shr(df, cfg.get_conf(cfg.ITEM_MACD_SHR))
+            self.__macd.update_lng(df, cfg.get_conf(cfg.ITEM_MACD_LNG))
+            self.__macd.update_sgn(df, cfg.get_conf(cfg.ITEM_MACD_SGN))
+        # ボリンジャーバンド
+        if cfg.get_conf(cfg.ITEM_BB_ACT) == 1:
+            self.__bb.update(df, cfg.get_conf(cfg.ITEM_BB_PRD))
+
+        self.__df = df
+
         return yrng
 
+    @property
+    def macd_plt(self):
+        """"MACDフィギュアオブジェクトを取得する[get MACD figure object]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            MACDフィギュアオブジェクト
+        """
+        return self.__macd.plt
+
+    def update_sma_shr(self, new):
+        """"単純移動平均（短期）を更新する[update Simple Moving Average(short range)]
+        引数[Args]:
+            new : 短期パラメータ[Short range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__sma.update_shr(self.__df, new)
+
+    def update_sma_mdl(self, new):
+        """"単純移動平均（中期）を更新する[update Simple Moving Average(middle range)]
+        引数[Args]:
+            new : 中期パラメータ[Middle range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__sma.update_mdl(self.__df, new)
+
+    def update_sma_lng(self, new):
+        """"単純移動平均（長期）を更新する[update Simple Moving Average(long range)]
+        引数[Args]:
+            new : 長期パラメータ[Long range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__sma.update_lng(self.__df, new)
+
+    def clear_sma(self):
+        """"単純移動平均線表示をクリアする[clear Simple Moving Average line]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__sma.clear()
+
+    def update_macd_shr(self, new):
+        """"MACD（短期）を更新する[update MACD(short range)]
+        引数[Args]:
+            new : 短期パラメータ[Short range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__macd.update_shr(self.__df, new)
+
+    def update_macd_lng(self, new):
+        """"MACD（長期）を更新する[update MACD(long range)]
+        引数[Args]:
+            new : 長期パラメータ[Long range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__macd.update_lng(self.__df, new)
+
+    def update_macd_sgn(self, new):
+        """"MACD（シグナル）を更新する[update MACD(signal)]
+        引数[Args]:
+            new : シグナルパラメータ[Signal parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__macd.update_sgn(self.__df, new)
+
+    def clear_macd(self):
+        """"MACD線表示をクリアする[clear MACD line]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__macd.clear()
+
+    def update_bb(self, new):
+        """"ボリンジャーバンドを更新する[update Bollinger Bands]
+        引数[Args]:
+            new : パラメータ[parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__bb.update(self.__df, new)
+
+    def clear_bb(self):
+        """"ボリンジャーバンド線表示をクリアする[clear Bollinger Bands line]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__bb.clear()
+
     def __add_orders_vline(self, gran, gmtstr, gmtend):
+        """"オープンオーダー＆ポジション垂線を追加する
+            [add open orders & positions's vertical line]
+        引数[Args]:
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+            gmtstr (DateTimeManager) : 開始日時[from date]
+            gmtend (DateTimeManager) : 終了日時[to date]
+        戻り値[Returns]:
+            なし[None]
+        """
         hour_ = gmtstr.tokyo.hour
         minute_ = gmtend.tokyo.minute
         if gran == OandaGrn.D:
@@ -364,6 +513,13 @@ class CandleStick(object):
                                     "unixtime": uti})
 
     def draw_orders_cand_vline(self, point):
+        """"オープンオーダー＆ポジション取得前の垂線を描写する
+            [draw candidacy vertical line of open orders & positions]
+        引数[Args]:
+            point (datetime) : 日時データ[datetime data]
+        戻り値[Returns]:
+            なし[None]
+        """
         idxmin = np.abs(self.__dtdf["unixtime"] - point.timestamp()).idxmin()
 
         if not self.__idxmin == idxmin:
@@ -375,22 +531,56 @@ class CandleStick(object):
             self.__idxmin = idxmin
 
     def draw_orders_fix_vline(self):
-
+        """"オープンオーダー＆ポジション取得済みの垂線を描写する
+            [draw fixed vertical line of open orders & positions]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         idxmindt = self.__idxmindt
         dict_ = {OrdersVLineGlyph.XDT: [idxmindt, idxmindt],
                  OrdersVLineGlyph.YPR: self.__yrng}
         self.__glyordfix.update(dict_)
 
+    def clear_orders_vline(self):
+        """"オープンオーダー＆ポジション垂線をクリアする
+            [clear vertical line of open orders & positions]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__glyordcnd.clear()
+        self.__glyordfix.clear()
+
     @property
     def orders_fetch_datetime(self):
+        """"オープンオーダー＆ポジション取得日時を取得する
+            [get open orders & positions fetch datetime]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            DateTimeManager
+        """
         return DateTimeManager(self.__idxmindt)
 
-    def get_widget(self):
-        """"ウィジェットを取得する[get widget]
+    @property
+    def fig_main(self):
+        """"メインフィギュアオブジェクトを取得する[get main figure object]
         引数[Args]:
-            None
+            なし[None]
         戻り値[Returns]:
-            self.__plt_main (figure) : メインfigure[main figure]
-            self.__plt_rang (figure) : レンジfigure[range figure]
+            メインフィギュアオブジェクト[main figure object]
         """
-        return self.__plt_main, self.__plt_rang
+        return self.__plt_main
+
+    @property
+    def fig_range(self):
+        """"レンジフィギュアオブジェクトを取得する[get range figure object]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            レンジフィギュアオブジェクト[range figure object]
+        """
+        return self.__plt_rang
