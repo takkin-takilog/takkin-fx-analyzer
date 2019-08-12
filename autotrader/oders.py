@@ -1,6 +1,5 @@
 from abc import ABCMeta
-from bokeh.models import ColumnDataSource
-from bokeh.models import HoverTool
+from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.models.glyphs import HBar, Line
 from bokeh.plotting import figure
 from oandapyV20 import API
@@ -26,7 +25,9 @@ class OpenBooksAbs(metaclass=ABCMeta):
     def __init__(self, title_, yrng):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            title_ (str) : フィギュアタイトル[figure title]
+            yrng (tuple) : Y軸の最小値、最大値 (min, max)
+                           [Y range min and max]
         """
         self.__BG_COLOR = "#2E2E2E"
         self.__BAR_F_COLOR = "#00A4BD"
@@ -113,14 +114,26 @@ class OpenBooksAbs(metaclass=ABCMeta):
         self.__plt.add_tools(hover)
 
     def get_params(self, dt_):
-
+        """"OANDA-APIリクエストのためのパラメータを取得する[Constructor]
+        引数[Args]:
+            dt_ (DateTimeManager) : 日時[Date time]
+        戻り値[Returns]:
+            params_ (dict) : パラメータ[Parameter]
+        """
         params_ = {
             "time": dt_.gmt.strftime(self.__DT_FMT),
         }
         return params_
 
     def fetch(self, label, iob):
-
+        """"オープンオーダー＆ポジション情報を取得する
+            [fetch open orders & positions]
+        引数[Args]:
+            label (str) : ラベル[label]
+            iob (InstrumentsOrderBook) : iob
+        戻り値[Returns]:
+            なし[None]
+        """
         self.__api.request(iob)
 
         self.__data = []
@@ -168,17 +181,32 @@ class OpenBooksAbs(metaclass=ABCMeta):
                                self.Y: [price, price]}
 
     def update_yrange(self, yrng):
+        """"ウィジェット取得[get widget]
+        引数[Args]:
+            yrng (tuple) : Y軸の最小値、最大値 (min, max)
+                           [Y range min and max]
+        戻り値[Returns]:
+            なし[None]
+        """
         self.__plt.y_range.update(start=yrng[0], end=yrng[1])
 
     @property
     def widget(self):
         """"ウィジェット取得[get widget]
         引数[Args]:
-            None
+            なし[None]
+        戻り値[Returns]:
+            plt (figure) : フィギュアオブジェクト[figure object]
         """
         return self.__plt
 
     def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         self.__srchbarf.data = {self.YPR: [],
                                 self.XCP: []}
         self.__srchbarc.data = {self.YPR: [],
@@ -192,7 +220,8 @@ class OpenOrders(OpenBooksAbs):
     def __init__(self, yrng):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            yrng (tuple) : Y軸の最小値、最大値 (min, max)
+                           [Y range min and max]
         """
         self.__LABEL = "orderBook"
         self.__TITLE = "Orders"
@@ -200,19 +229,37 @@ class OpenOrders(OpenBooksAbs):
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def fetch(self, inst, dt_):
-
+        """"オープンオーダー情報を取得する[fetch open orders]
+        引数[Args]:
+            inst (str) : 通貨ペア[instrument]
+            dt_ (DateTimeManager) : 日付[date time]
+        戻り値[Returns]:
+            なし[None]
+        """
         params_ = super().get_params(dt_)
 
-        # APIへ過去データをリクエスト
         iob = it.InstrumentsOrderBook(instrument=inst,
                                       params=params_)
         super().fetch(self.__LABEL, iob)
 
     def update_yrange(self, yrng):
+        """"Y軸範囲を更新する[update Y axis range]
+        引数[Args]:
+            yrng (tuple) : Y軸の最小値、最大値 (min, max)
+                           [Y range min and max]
+        戻り値[Returns]:
+            なし[None]
+        """
         super().update_yrange(yrng)
 
     @property
     def widget(self):
+        """"ウィジェットを取得する[get widget]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         return super().widget
 
 
@@ -221,7 +268,8 @@ class OpenPositions(OpenBooksAbs):
     def __init__(self, yrng):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            yrng (tuple) : Y軸の最小値、最大値 (min, max)
+                           [Y range min and max]
         """
         self.__LABEL = "positionBook"
         self.__TITLE = "Positions"
@@ -229,17 +277,35 @@ class OpenPositions(OpenBooksAbs):
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def fetch(self, inst, dt_):
-
+        """"オープンポジション情報を取得する[fetch openpositions]
+        引数[Args]:
+            inst (str) : 通貨ペア[instrument]
+            dt_ (DateTimeManager) : 日付[date time]
+        戻り値[Returns]:
+            なし[None]
+        """
         params_ = super().get_params(dt_)
 
-        # APIへ過去データをリクエスト
         iob = it.InstrumentsPositionBook(instrument=inst,
                                          params=params_)
         super().fetch(self.__LABEL, iob)
 
     def update_yrange(self, yrng):
+        """"Y軸範囲を更新する[update Y axis range]
+        引数[Args]:
+            yrng (tuple) : Y軸の最小値、最大値 (min, max)
+                           [Y range min and max]
+        戻り値[Returns]:
+            なし[None]
+        """
         super().update_yrange(yrng)
 
     @property
     def widget(self):
+        """"ウィジェットを取得する[get widget]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         return super().widget

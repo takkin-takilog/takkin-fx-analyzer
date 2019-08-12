@@ -11,4 +11,4 @@ else:
     """Bokehサーバー実行用"""
     document = curdoc()
     vi = _viewer.Viewer()
-    document.add_root(vi.get_layout())
+    document.add_root(vi.get_overall_layout())

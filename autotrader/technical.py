@@ -18,7 +18,7 @@ class SimpleMovingAverage(object):
     def __init__(self, plt):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            plt (figure) : フィギュアオブジェクト[figure object]
         """
         self.__XDT = "xdt"
         self.__YPR = "ypr"
@@ -54,7 +54,14 @@ class SimpleMovingAverage(object):
                        line_alpha=1.0)
         plt.add_glyph(self.__srcl, glvline)
 
-    def update_sho(self, df, window_):
+    def update_shr(self, df, window_):
+        """"短期データを更新する[update short range data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            window_ (int) : 短期パラメータ[short range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.candlestick import LBL_CLOSE
         df[self.LBL_SMA_S] = df[LBL_CLOSE].rolling(window=window_).mean()
         self.__srcs.data = {
@@ -62,7 +69,14 @@ class SimpleMovingAverage(object):
             self.__YPR: df[self.LBL_SMA_S].tolist(),
         }
 
-    def update_mid(self, df, window_):
+    def update_mdl(self, df, window_):
+        """"中期データを更新する[update middle range data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            window_ (int) : 中期パラメータ[middle range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.candlestick import LBL_CLOSE
         df[self.LBL_SMA_M] = df[LBL_CLOSE].rolling(window=window_).mean()
         self.__srcm.data = {
@@ -70,7 +84,14 @@ class SimpleMovingAverage(object):
             self.__YPR: df[self.LBL_SMA_M].tolist(),
         }
 
-    def update_lon(self, df, window_):
+    def update_lng(self, df, window_):
+        """"長期データを更新する[update long range data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            window_ (int) : 長期パラメータ[long range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.candlestick import LBL_CLOSE
         df[self.LBL_SMA_L] = df[LBL_CLOSE].rolling(window=window_).mean()
         self.__srcl.data = {
@@ -79,6 +100,12 @@ class SimpleMovingAverage(object):
         }
 
     def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         dict_ = {self.__XDT: [],
                  self.__YPR: []}
         self.__srcs.data = dict_
@@ -93,10 +120,10 @@ class MACD(object):
     LBL_MACD = "MACD"
     LBL_SIGN = "SIGN"
 
-    def __init__(self, plt_):
+    def __init__(self, plt):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            plt (figure) : フィギュアオブジェクト[figure object]
         """
         self.__XDT = "xdt"
         self.__YPR = "ypr"
@@ -105,9 +132,9 @@ class MACD(object):
         self.__plt = figure(name='MACD',
                             plot_height=200,
                             x_axis_type=AxisTyp.X_DATETIME,
-                            x_range=plt_.x_range,
-                            background_fill_color=plt_.background_fill_color,
-                            sizing_mode=plt_.sizing_mode,
+                            x_range=plt.x_range,
+                            background_fill_color=plt.background_fill_color,
+                            sizing_mode=plt.sizing_mode,
                             title="MACD")
         self.__plt.xaxis.major_label_orientation = pi / 4
         self.__plt.grid.grid_line_alpha = 0.3
@@ -136,9 +163,22 @@ class MACD(object):
 
     @property
     def plt(self):
+        """"フィギュアオブジェクトを取得する[get figure object]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            plt (figure) : フィギュアオブジェクト[figure object]
+        """
         return self.__plt
 
-    def update_sho(self, df, window_):
+    def update_shr(self, df, window_):
+        """"短期データを更新する[update short range data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            window_ (int) : 短期パラメータ[short range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.config import ITEM_MACD_LON, ITEM_MACD_SIG
         lon = cfg.get_conf(ITEM_MACD_LON)
         sig = cfg.get_conf(ITEM_MACD_SIG)
@@ -152,7 +192,14 @@ class MACD(object):
             self.__YPR: df[self.LBL_SIGN].tolist(),
         }
 
-    def update_lon(self, df, window_):
+    def update_lng(self, df, window_):
+        """"長期データを更新する[update long range data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            window_ (int) : 長期パラメータ[long range parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.config import ITEM_MACD_SHO, ITEM_MACD_SIG
         sho = cfg.get_conf(ITEM_MACD_SHO)
         sig = cfg.get_conf(ITEM_MACD_SIG)
@@ -166,7 +213,14 @@ class MACD(object):
             self.__YPR: df[self.LBL_SIGN].tolist(),
         }
 
-    def update_sig(self, df, window_):
+    def update_sgn(self, df, window_):
+        """"シグナルデータを更新する[update signal data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            window_ (int) : シグナルパラメータ[signal parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.config import ITEM_MACD_SHO, ITEM_MACD_LON
         sho = cfg.get_conf(ITEM_MACD_SHO)
         lon = cfg.get_conf(ITEM_MACD_LON)
@@ -180,14 +234,29 @@ class MACD(object):
             self.__YPR: df[self.LBL_SIGN].tolist(),
         }
 
-    def __calcMACD(self, df, sho, lon, sig):
+    def __calcMACD(self, df, shr, lng, sgn):
+        """"MACDを計算する[calculate MACD]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            shr (int) : 短期パラメータ[short range parameter]
+            lng (int) : 長期パラメータ[long range parameter]
+            sgn (int) : シグナルパラメータ[signal parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.candlestick import LBL_CLOSE
-        ema_s = df[LBL_CLOSE].ewm(span=sho).mean()
-        ema_l = df[LBL_CLOSE].ewm(span=lon).mean()
+        ema_s = df[LBL_CLOSE].ewm(span=shr).mean()
+        ema_l = df[LBL_CLOSE].ewm(span=lng).mean()
         df[self.LBL_MACD] = (ema_s - ema_l)
-        df[self.LBL_SIGN] = df[self.LBL_MACD].ewm(span=sig).mean()
+        df[self.LBL_SIGN] = df[self.LBL_MACD].ewm(span=sgn).mean()
 
     def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         dict_ = {self.__XDT: [],
                  self.__YPR: []}
         self.__srcm.data = dict_
@@ -209,7 +278,7 @@ class BollingerBands(object):
     def __init__(self, plt):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            None
+            plt (figure) : フィギュアオブジェクト[figure object]
         """
         self.__XDT = "xdt"
         self.__YPR = "ypr"
@@ -265,6 +334,13 @@ class BollingerBands(object):
         plt.add_glyph(self.__srcd3, glvline)
 
     def update(self, df, window_):
+        """"データを更新する[update data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+            window_ (int) : パラメータ[parameter]
+        戻り値[Returns]:
+            なし[None]
+        """
         from autotrader.candlestick import LBL_CLOSE
         df[self.LBL_BB_BASE] = df[LBL_CLOSE].rolling(window=window_).mean()
         self.__srcbs.data = {
@@ -308,6 +384,12 @@ class BollingerBands(object):
         }
 
     def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
         dict_ = {self.__XDT: [],
                  self.__YPR: []}
         self.__srcbs.data = dict_
