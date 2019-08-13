@@ -843,7 +843,7 @@ class Viewer(object):
         戻り値[Returns]:
             None
         """
-        show(self.get_layout())
+        show(self.get_overall_layout())
 
     def __switch_main_layout(self):
         """メインレイアウトに切り替える[switch main layout]
