@@ -1,4 +1,3 @@
-from bokeh.io import show
 from bokeh.layouts import gridplot, row, column, layout
 from bokeh.models.widgets import Select, CheckboxGroup
 from bokeh import events
@@ -107,7 +106,7 @@ class Viewer(object):
                                  default_size=200)
         self.__slc_inst.on_change("value", self.__cb_slc_inst)
 
-        # Widget Select:期間[Granularity]
+        # Widget Select:時間足[Granularity]
         GRAN_OPT = [
             self.GRAN_W, self.GRAN_D, self.GRAN_H12, self.GRAN_H8,
             self.GRAN_H6, self.GRAN_H4, self.GRAN_H2, self.GRAN_H1,
@@ -115,7 +114,7 @@ class Viewer(object):
             self.GRAN_M1
         ]
 
-        self.__slc_gran = Select(title="期間:",
+        self.__slc_gran = Select(title="時間足:",
                                  value=gran_def,
                                  options=GRAN_OPT,
                                  default_size=200)
@@ -427,7 +426,7 @@ class Viewer(object):
         self.__update_chart()
 
     def __cb_slc_gran(self, attr, old, new):
-        """Widget Select(期間)コールバックメソッド
+        """Widget Select(時間足)コールバックメソッド
            [Callback method of Widget Select(Granularity)]
         引数[Args]:
             attr (str) : An attribute name on this object
@@ -835,15 +834,6 @@ class Viewer(object):
                                     self.__cb_chart_mousemove)
 
         return(self.__layout)
-
-    def view(self):
-        """描写する[view]
-        引数[Args]:
-            None
-        戻り値[Returns]:
-            None
-        """
-        show(self.get_overall_layout())
 
     def __switch_main_layout(self):
         """メインレイアウトに切り替える[switch main layout]

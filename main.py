@@ -1,14 +1,12 @@
-
-import autotrader.viewer as _viewer
+import autotrader.tabs as tabs
 from bokeh.io import curdoc
+from bokeh.io import show
 
 if __name__ == "__main__":
     """eclipse実行用"""
     print("---------- Debug ----------")
-    vi = _viewer.Viewer()
-    vi.view()
+    show(tabs.get_rootmodel())
 else:
     """Bokehサーバー実行用"""
     document = curdoc()
-    vi = _viewer.Viewer()
-    document.add_root(vi.get_overall_layout())
+    document.add_root(tabs.get_rootmodel())
