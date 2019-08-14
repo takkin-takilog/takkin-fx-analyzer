@@ -1,7 +1,8 @@
 from autotrader.oanda_common import OandaGrn, OandaIns
 from bokeh.models.widgets import Select
-from bokeh.layouts import gridplot, row, column, layout
-from datetime import datetime, timedelta
+from bokeh.layouts import row, column, layout, widgetbox
+from datetime import datetime
+from autotrader.analysis.filling_gap import FillingGap
 
 
 class DateTimeWidget(object):
@@ -211,7 +212,7 @@ class Analyzer(object):
         self.__slc_inst = Select(title="通貨ペア:",
                                  value=inst_def,
                                  options=INST_OPT,
-                                 default_size=200)
+                                 default_size=180)
         self.__slc_inst.on_change("value", self.__cb_slc_inst)
 
         # Widget Select:時間足[Granularity]
@@ -225,7 +226,7 @@ class Analyzer(object):
         self.__slc_gran = Select(title="時間足:",
                                  value=gran_def,
                                  options=GRAN_OPT,
-                                 default_size=200)
+                                 default_size=180)
         self.__slc_gran.on_change("value", self.__cb_slc_gran)
 
         # ---------- 初期設定[Initial Settings] ----------
@@ -235,6 +236,9 @@ class Analyzer(object):
         self.__dtwdg_str = DateTimeWidget("開始", self.__gran)
         self.__dtwdg_end = DateTimeWidget("終了", self.__gran)
 
+        # 窓埋め解析
+        self.__anafg = FillingGap()
+
     def get_overall_layout(self):
         """全体レイアウトを取得する[get overall layout]
         引数[Args]:
@@ -242,17 +246,30 @@ class Analyzer(object):
         戻り値[Returns]:
             layout (layout) : レイアウト[layout]
         """
-        wslin = self.__slc_inst
-        wslgr = self.__slc_gran
-
         dtwdg_str = self.__dtwdg_str.get_layout()
         dtwdg_end = self.__dtwdg_end.get_layout()
+        dtwdg = row(children=[dtwdg_str, dtwdg_end])
+        wslin = self.__slc_inst
+        wslgr = self.__slc_gran
+        wdgbx1 = widgetbox(children=[wslin, wslgr, dtwdg], sizing_mode="fixed")
 
-        wdg1 = column(children=[wslin, wslgr])
-        wdg2 = row(children=[dtwdg_str, dtwdg_end])
+        from bokeh.models import Panel, Tabs
+        from bokeh.plotting import figure
 
-        slclay = column(children=[wdg1, wdg2], sizing_mode="fixed")
-        self.__layout = layout(children=[slclay], sizing_mode="stretch_width")
+        layfg = self.__anafg.get_layout()
+
+        tab1 = Panel(child=layfg, title="窓埋め")
+
+        p2 = figure(plot_width=300, plot_height=300,
+                    sizing_mode="stretch_width")
+        p2.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5],
+                line_width=3, color="navy", alpha=0.5)
+        tab2 = Panel(child=p2, title="サンプル")
+
+        tabs = Tabs(tabs=[tab1, tab2], sizing_mode="stretch_width")
+
+        self.__layout = layout(children=[[wdgbx1, tabs]],
+                               sizing_mode="stretch_width")
         return(self.__layout)
 
     def __cb_slc_inst(self, attr, old, new):
