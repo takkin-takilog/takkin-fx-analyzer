@@ -1,7 +1,7 @@
 from autotrader.oanda_common import OandaGrn, OandaIns
 from bokeh.models.widgets import Select
 from bokeh.layouts import row, column, layout, widgetbox
-from datetime import datetime
+from datetime import datetime, timedelta
 from autotrader.analysis.filling_gap import FillingGap
 
 
@@ -10,10 +10,10 @@ class DateTimeWidget(object):
             - 日時Widgetクラス[DateTime widget class]
     """
 
-    def __init__(self, srt_, gran, dt_=datetime.today()):
+    def __init__(self, str_, gran, dt_=datetime.today()):
         """"コンストラクタ[Constructor]
         引数[Args]:
-            srt_ (str) : 識別用文字列[identification character]
+            str_ (str) : 識別用文字列[identification character]
             gran (str) : ローソク足の時間足[Granularity of a candlestick]
             st (Datetime) : デフォルト表示日付[Default datetime]
         """
@@ -25,7 +25,7 @@ class DateTimeWidget(object):
         yaerlist = list(range(pastyear, curryear + 1))
         yaerlist.reverse()
         yearlist = list(map(str, yaerlist))
-        self.__slc_year = Select(title="年（" + srt_ + "）",
+        self.__slc_year = Select(title="年（" + str_ + "）",
                                  value=yearlist[0],
                                  options=yearlist,
                                  default_size=defsize)
@@ -34,7 +34,7 @@ class DateTimeWidget(object):
         monthlist = list(range(1, 13))
         monthlist = list(map(str, monthlist))
         currmonth = dt_.month
-        self.__slc_month = Select(title="月（" + srt_ + "）",
+        self.__slc_month = Select(title="月（" + str_ + "）",
                                   value=str(currmonth),
                                   options=monthlist,
                                   default_size=defsize)
@@ -43,7 +43,7 @@ class DateTimeWidget(object):
         daylist = list(range(1, 32))
         daylist = list(map(str, daylist))
         currday = dt_.day
-        self.__slc_day = Select(title="日（" + srt_ + "）",
+        self.__slc_day = Select(title="日（" + str_ + "）",
                                 value=str(currday),
                                 options=daylist,
                                 default_size=defsize)
@@ -52,7 +52,7 @@ class DateTimeWidget(object):
         hourlist = list(range(0, 24))
         hourlist = list(map(str, hourlist))
         currhour = dt_.hour
-        self.__slc_hour = Select(title="時（" + srt_ + "）",
+        self.__slc_hour = Select(title="時（" + str_ + "）",
                                  value=str(currhour),
                                  options=hourlist,
                                  default_size=defsize)
@@ -61,7 +61,7 @@ class DateTimeWidget(object):
         minlist = list(range(0, 60))
         minlist = list(map(str, minlist))
         currmin = dt_.minute
-        self.__slc_min = Select(title="分（" + srt_ + "）",
+        self.__slc_min = Select(title="分（" + str_ + "）",
                                 value=str(currmin),
                                 options=minlist,
                                 default_size=defsize)
@@ -120,7 +120,11 @@ class DateTimeWidget(object):
             dt = datetime(year=year_, month=month_,
                           day=day_, hour=hour_, minute=min_)
 
-        return dt
+        self.__dt = dt
+
+    @property
+    def datetime(self):
+        return self.__dt
 
     def get_layout(self):
         slyear = self.__slc_year
@@ -134,166 +138,186 @@ class DateTimeWidget(object):
         return layout
 
 
-class Analyzer(object):
-    """ Analyzer
-            - 解析クラス[Analyzer class]
+def get_overall_layout():
+    """全体レイアウトを取得する[get overall layout]
+    引数[Args]:
+        None
+    戻り値[Returns]:
+        layout (layout) : レイアウト[layout]
     """
+    dtwdg_str = _dtwdg_str.get_layout()
+    dtwdg_end = _dtwdg_end.get_layout()
+    dtwdg = row(children=[dtwdg_str, dtwdg_end])
+    wslin = _slc_inst
+    wslgr = _slc_gran
+    wdgbx1 = widgetbox(children=[wslin, wslgr, dtwdg], sizing_mode="fixed")
 
-    def __init__(self):
-        """"コンストラクタ[Constructor]
-        引数[Args]:
-            なし[None]
-        """
-        # 通貨ペア名定義[define currency pair(instrument)]
-        self.__INST_USDJPY = "USD-JPY"
-        self.__INST_EURJPY = "EUR-JPY"
-        self.__INST_EURUSD = "EUR-USD"
+    from bokeh.models import Panel, Tabs
+    from bokeh.plotting import figure
 
-        # 時間足名定義[define time scale(granularity)]
-        self.__GRAN_S5 = "５秒間足"
-        self.__GRAN_S10 = "１０秒間足"
-        self.__GRAN_S15 = "１５秒間足"
-        self.__GRAN_S30 = "３０秒間足"
-        self.__GRAN_M1 = "１分間足"
-        self.__GRAN_M2 = "２分間足"
-        self.__GRAN_M3 = "３分間足"
-        self.__GRAN_M4 = "４分間足"
-        self.__GRAN_M5 = "５分間足"
-        self.__GRAN_M10 = "１０分間足"
-        self.__GRAN_M15 = "１５分間足"
-        self.__GRAN_M30 = "３０分間足"
-        self.__GRAN_H1 = "１時間足"
-        self.__GRAN_H2 = "２時間足"
-        self.__GRAN_H3 = "３時間足"
-        self.__GRAN_H4 = "４時間足"
-        self.__GRAN_H6 = "６時間足"
-        self.__GRAN_H8 = "８時間足"
-        self.__GRAN_H12 = "１２時間足"
-        self.__GRAN_D = "日足"
-        self.__GRAN_W = "週足"
+    layfg = _anafg.get_layout()
 
-        # 辞書登録：通貨ペア[set dictionary:Instrument]
-        self.__INST_DICT = {
-            self.__INST_USDJPY: OandaIns.USD_JPY,
-            self.__INST_EURJPY: OandaIns.EUR_JPY,
-            self.__INST_EURUSD: OandaIns.EUR_USD
-        }
+    tab1 = Panel(child=layfg, title="窓埋め")
 
-        # 辞書登録：時間足[set dictionary:Granularity]
-        self.__GRAN_DICT = {
-            self.__GRAN_S5: OandaGrn.S5,
-            self.__GRAN_S10: OandaGrn.S10,
-            self.__GRAN_S15: OandaGrn.S15,
-            self.__GRAN_S30: OandaGrn.S30,
-            self.__GRAN_M1: OandaGrn.M1,
-            self.__GRAN_M2: OandaGrn.M2,
-            self.__GRAN_M3: OandaGrn.M3,
-            self.__GRAN_M4: OandaGrn.M4,
-            self.__GRAN_M5: OandaGrn.M5,
-            self.__GRAN_M10: OandaGrn.M10,
-            self.__GRAN_M15: OandaGrn.M15,
-            self.__GRAN_M30: OandaGrn.M30,
-            self.__GRAN_H1: OandaGrn.H1,
-            self.__GRAN_H2: OandaGrn.H2,
-            self.__GRAN_H3: OandaGrn.H3,
-            self.__GRAN_H4: OandaGrn.H4,
-            self.__GRAN_H6: OandaGrn.H6,
-            self.__GRAN_H8: OandaGrn.H8,
-            self.__GRAN_H12: OandaGrn.H12,
-            self.__GRAN_D: OandaGrn.D,
-            self.__GRAN_W: OandaGrn.W
-        }
+    p2 = figure(plot_width=300, plot_height=300,
+                sizing_mode="stretch_width")
+    p2.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5],
+            line_width=3, color="navy", alpha=0.5)
+    tab2 = Panel(child=p2, title="サンプル")
 
-        # Widget Select:通貨ペア[Instrument]
-        INST_OPT = [
-            self.__INST_USDJPY, self.__INST_EURJPY, self.__INST_EURUSD
-        ]
-        inst_def = self.__INST_USDJPY
-        self.__slc_inst = Select(title="通貨ペア:",
-                                 value=inst_def,
-                                 options=INST_OPT,
-                                 default_size=180)
-        self.__slc_inst.on_change("value", self.__cb_slc_inst)
+    tabs = Tabs(tabs=[tab1, tab2], sizing_mode="stretch_width")
 
-        # Widget Select:時間足[Granularity]
-        GRAN_OPT = [
-            self.__GRAN_W, self.__GRAN_D, self.__GRAN_H12, self.__GRAN_H8,
-            self.__GRAN_H6, self.__GRAN_H4, self.__GRAN_H2, self.__GRAN_H1,
-            self.__GRAN_M30, self.__GRAN_M15, self.__GRAN_M10, self.__GRAN_M5,
-            self.__GRAN_M1
-        ]
-        gran_def = self.__GRAN_D
-        self.__slc_gran = Select(title="時間足:",
-                                 value=gran_def,
-                                 options=GRAN_OPT,
-                                 default_size=180)
-        self.__slc_gran.on_change("value", self.__cb_slc_gran)
+    _layout = layout(children=[[wdgbx1, tabs]],
+                     sizing_mode="stretch_width")
+    return(_layout)
 
-        # ---------- 初期設定[Initial Settings] ----------
-        self.__inst = self.__INST_DICT[inst_def]
-        self.__gran = self.__GRAN_DICT[gran_def]
 
-        self.__dtwdg_str = DateTimeWidget("開始", self.__gran)
-        self.__dtwdg_end = DateTimeWidget("終了", self.__gran)
+def datetime_str():
+    """解析開始日時を取得する[get start datetime]
+    引数[Args]:
+        None
+    戻り値[Returns]:
+        layout (layout) : レイアウト[layout]
+    """
+    global _dtwdg_str
+    return _dtwdg_str.datetime
 
-        # 窓埋め解析
-        self.__anafg = FillingGap()
 
-    def get_overall_layout(self):
-        """全体レイアウトを取得する[get overall layout]
-        引数[Args]:
-            None
-        戻り値[Returns]:
-            layout (layout) : レイアウト[layout]
-        """
-        dtwdg_str = self.__dtwdg_str.get_layout()
-        dtwdg_end = self.__dtwdg_end.get_layout()
-        dtwdg = row(children=[dtwdg_str, dtwdg_end])
-        wslin = self.__slc_inst
-        wslgr = self.__slc_gran
-        wdgbx1 = widgetbox(children=[wslin, wslgr, dtwdg], sizing_mode="fixed")
+def datetime_end():
+    """解析終了日時を取得する[get end datetime]
+    引数[Args]:
+        None
+    戻り値[Returns]:
+        layout (layout) : レイアウト[layout]
+    """
+    global _dtwdg_end
+    return _dtwdg_end.datetime
 
-        from bokeh.models import Panel, Tabs
-        from bokeh.plotting import figure
 
-        layfg = self.__anafg.get_layout()
+def _cb_slc_inst(attr, old, new):
+    """Widget Select(通貨ペア)コールバックメソッド
+       [Callback method of Widget Select(Instrument)]
+    引数[Args]:
+        attr (str) : An attribute name on this object
+        old (str) : Old strings
+        new (str) : New strings
+    戻り値[Returns]:
+        なし[None]
+    """
+    global _inst
+    print("inst: {}" .format(_inst))
+    _inst = _INST_DICT[new]
 
-        tab1 = Panel(child=layfg, title="窓埋め")
 
-        p2 = figure(plot_width=300, plot_height=300,
-                    sizing_mode="stretch_width")
-        p2.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5],
-                line_width=3, color="navy", alpha=0.5)
-        tab2 = Panel(child=p2, title="サンプル")
+def _cb_slc_gran(attr, old, new):
+    """Widget Select(時間足)コールバックメソッド
+       [Callback method of Widget Select(Granularity)]
+    引数[Args]:
+        attr (str) : An attribute name on this object
+        old (str) : Old strings
+        new (str) : New strings
+    戻り値[Returns]:
+        なし[None]
+    """
+    global _gran
+    print("gran: {}" .format(_gran))
+    _gran = _GRAN_DICT[new]
+    _dtwdg_str.update_vsibledata(_gran)
+    _dtwdg_end.update_vsibledata(_gran)
 
-        tabs = Tabs(tabs=[tab1, tab2], sizing_mode="stretch_width")
 
-        self.__layout = layout(children=[[wdgbx1, tabs]],
-                               sizing_mode="stretch_width")
-        return(self.__layout)
+# 通貨ペア名定義[define currency pair(instrument)]
+_INST_USDJPY = "USD-JPY"
+_INST_EURJPY = "EUR-JPY"
+_INST_EURUSD = "EUR-USD"
 
-    def __cb_slc_inst(self, attr, old, new):
-        """Widget Select(通貨ペア)コールバックメソッド
-           [Callback method of Widget Select(Instrument)]
-        引数[Args]:
-            attr (str) : An attribute name on this object
-            old (str) : Old strings
-            new (str) : New strings
-        戻り値[Returns]:
-            なし[None]
-        """
-        self.__inst = self.__INST_DICT[new]
+# 時間足名定義[define time scale(granularity)]
+_GRAN_S5 = "５秒間足"
+_GRAN_S10 = "１０秒間足"
+_GRAN_S15 = "１５秒間足"
+_GRAN_S30 = "３０秒間足"
+_GRAN_M1 = "１分間足"
+_GRAN_M2 = "２分間足"
+_GRAN_M3 = "３分間足"
+_GRAN_M4 = "４分間足"
+_GRAN_M5 = "５分間足"
+_GRAN_M10 = "１０分間足"
+_GRAN_M15 = "１５分間足"
+_GRAN_M30 = "３０分間足"
+_GRAN_H1 = "１時間足"
+_GRAN_H2 = "２時間足"
+_GRAN_H3 = "３時間足"
+_GRAN_H4 = "４時間足"
+_GRAN_H6 = "６時間足"
+_GRAN_H8 = "８時間足"
+_GRAN_H12 = "１２時間足"
+_GRAN_D = "日足"
+_GRAN_W = "週足"
 
-    def __cb_slc_gran(self, attr, old, new):
-        """Widget Select(時間足)コールバックメソッド
-           [Callback method of Widget Select(Granularity)]
-        引数[Args]:
-            attr (str) : An attribute name on this object
-            old (str) : Old strings
-            new (str) : New strings
-        戻り値[Returns]:
-            なし[None]
-        """
-        self.__gran = self.__GRAN_DICT[new]
-        self.__dtwdg_str.update_vsibledata(self.__gran)
-        self.__dtwdg_end.update_vsibledata(self.__gran)
+# 辞書登録：通貨ペア[set dictionary:Instrument]
+_INST_DICT = {
+    _INST_USDJPY: OandaIns.USD_JPY,
+    _INST_EURJPY: OandaIns.EUR_JPY,
+    _INST_EURUSD: OandaIns.EUR_USD
+}
+
+# 辞書登録：時間足[set dictionary:Granularity]
+_GRAN_DICT = {
+    _GRAN_S5: OandaGrn.S5,
+    _GRAN_S10: OandaGrn.S10,
+    _GRAN_S15: OandaGrn.S15,
+    _GRAN_S30: OandaGrn.S30,
+    _GRAN_M1: OandaGrn.M1,
+    _GRAN_M2: OandaGrn.M2,
+    _GRAN_M3: OandaGrn.M3,
+    _GRAN_M4: OandaGrn.M4,
+    _GRAN_M5: OandaGrn.M5,
+    _GRAN_M10: OandaGrn.M10,
+    _GRAN_M15: OandaGrn.M15,
+    _GRAN_M30: OandaGrn.M30,
+    _GRAN_H1: OandaGrn.H1,
+    _GRAN_H2: OandaGrn.H2,
+    _GRAN_H3: OandaGrn.H3,
+    _GRAN_H4: OandaGrn.H4,
+    _GRAN_H6: OandaGrn.H6,
+    _GRAN_H8: OandaGrn.H8,
+    _GRAN_H12: OandaGrn.H12,
+    _GRAN_D: OandaGrn.D,
+    _GRAN_W: OandaGrn.W
+}
+
+# Widget Select:通貨ペア[Instrument]
+INST_OPT = [
+    _INST_USDJPY, _INST_EURJPY, _INST_EURUSD
+]
+_inst_def = _INST_USDJPY
+_slc_inst = Select(title="通貨ペア:",
+                         value=_inst_def,
+                         options=INST_OPT,
+                         default_size=180)
+_slc_inst.on_change("value", _cb_slc_inst)
+
+# Widget Select:時間足[Granularity]
+_GRAN_OPT = [
+    _GRAN_W, _GRAN_D, _GRAN_H12, _GRAN_H8,
+    _GRAN_H6, _GRAN_H4, _GRAN_H2, _GRAN_H1,
+    _GRAN_M30, _GRAN_M15, _GRAN_M10, _GRAN_M5,
+    _GRAN_M1
+]
+_gran_def = _GRAN_D
+_slc_gran = Select(title="時間足:",
+                         value=_gran_def,
+                         options=_GRAN_OPT,
+                         default_size=180)
+_slc_gran.on_change("value", _cb_slc_gran)
+
+# ---------- 初期設定[Initial Settings] ----------
+_inst = _INST_DICT[_inst_def]
+_gran = _GRAN_DICT[_gran_def]
+
+_dtwdg_str = DateTimeWidget("開始", _gran,
+                            datetime.today() - timedelta(days=30))
+_dtwdg_end = DateTimeWidget("終了", _gran)
+
+# 窓埋め解析
+_anafg = FillingGap()

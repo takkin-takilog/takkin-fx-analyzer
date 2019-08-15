@@ -1,5 +1,10 @@
 import pandas.tseries.offsets as offsets
 import datetime
+import oandapyV20.endpoints.instruments as it
+import pandas as pd
+from retrying import retry
+from oandapyV20 import API
+from autotrader.oanda_account import ACCESS_TOKEN
 
 
 class OandaEnv(object):
@@ -170,3 +175,72 @@ class OandaRsp(object):
     HIG = "h"
     LOW = "l"
     CLS = "c"
+
+
+# Pandas data label
+LBL_TIME = "time"
+LBL_VOLUME = "volume"
+LBL_OPEN = "open"
+LBL_HIGH = "high"
+LBL_LOW = "low"
+LBL_CLOSE = "close"
+
+
+_api = API(access_token=ACCESS_TOKEN, environment=OandaEnv.PRACTICE)
+
+
+@retry(stop_max_attempt_number=5, wait_fixed=500)
+def fetch_ohlc(gran, inst, gmtstr, gmtend):
+    """"ローソク足情報を取得する[fetch ohlc]
+    引数[Args]:
+        gran (str) : ローソク足の時間足[granularity of a candlestick]
+        inst (str) : 通貨ペア[instrument]
+        gmtstr (DateTimeManager) : 開始日時[from date]
+        gmtend (DateTimeManager) : 終了日時[to date]
+    戻り値[Returns]:
+        yrng (tuple) : Y軸の最小値、最大値 (min, max)
+                       [Y range min and max]
+    """
+    DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
+
+    params_ = {
+        # "alignmentTimezone": "Japan",
+        "from": gmtstr.gmt.strftime(DT_FMT),
+        "to": gmtend.gmt.strftime(DT_FMT),
+        "granularity": gran
+    }
+
+    # APIへ過去データをリクエスト
+    ic = it.InstrumentsCandles(instrument=inst, params=params_)
+    try:
+        global _api
+        _api.request(ic)
+    except Exception as err:
+        raise err
+
+    data = []
+    for raw in ic.response[OandaRsp.CNDL]:
+        dt_ = OandaGrn.convert_dtfmt(gran, raw[OandaRsp.TIME],
+                                     dt_ofs=datetime.timedelta(hours=9),
+                                     fmt=DT_FMT)
+        data.append([dt_,
+                     raw[OandaRsp.VLM],
+                     float(raw[OandaRsp.MID][OandaRsp.OPN]),
+                     float(raw[OandaRsp.MID][OandaRsp.HIG]),
+                     float(raw[OandaRsp.MID][OandaRsp.LOW]),
+                     float(raw[OandaRsp.MID][OandaRsp.CLS])
+                     ])
+
+    # convert List to pandas data frame
+    df = pd.DataFrame(data)
+    df.columns = [LBL_TIME,
+                  LBL_VOLUME,
+                  LBL_OPEN,
+                  LBL_HIGH,
+                  LBL_LOW,
+                  LBL_CLOSE]
+    df = df.set_index(LBL_TIME)
+    # date型を整形する
+    df.index = pd.to_datetime(df.index)
+
+    return df

@@ -1,7 +1,6 @@
 from bokeh.models import Panel, Tabs
 import autotrader.viewer as _viewer
-from autotrader.analyzer import Analyzer
-
+import autotrader.analyzer as an
 
 # Tab1の設定
 vi = _viewer.Viewer()
@@ -9,7 +8,6 @@ p1 = vi.get_overall_layout()
 tab1 = Panel(child=p1, title="Main view")
 
 # Tab2の設定
-an = Analyzer()
 p2 = an.get_overall_layout()
 tab2 = Panel(child=p2, title="Analyzer")
 
