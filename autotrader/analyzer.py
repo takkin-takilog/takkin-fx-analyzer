@@ -70,19 +70,12 @@ class DateTimeWidget(object):
 
     def update_vsibledata(self, gran):
 
-        year_ = int(self.__slc_year.value)
-        month_ = int(self.__slc_month.value)
-        day_ = int(self.__slc_day.value)
-        hour_ = int(self.__slc_hour.value)
-        min_ = int(self.__slc_min.value)
-
         if gran == OandaGrn.D:
             self.__slc_year.visible = True
             self.__slc_month.visible = True
             self.__slc_day.visible = True
             self.__slc_hour.visible = False
             self.__slc_min.visible = False
-            dt = datetime(year=year_, month=month_, day=day_)
         elif (gran == OandaGrn.H12
               or gran == OandaGrn.H8
               or gran == OandaGrn.H6
@@ -95,7 +88,6 @@ class DateTimeWidget(object):
             self.__slc_day.visible = True
             self.__slc_hour.visible = True
             self.__slc_min.visible = False
-            dt = datetime(year=year_, month=month_, day=day_, hour=hour_)
         elif (gran == OandaGrn.M30
               or gran == OandaGrn.M15
               or gran == OandaGrn.M10
@@ -109,22 +101,47 @@ class DateTimeWidget(object):
             self.__slc_day.visible = True
             self.__slc_hour.visible = True
             self.__slc_min.visible = True
-            dt = datetime(year=year_, month=month_,
-                          day=day_, hour=hour_, minute=min_)
         else:
             self.__slc_year.visible = True
             self.__slc_month.visible = True
             self.__slc_day.visible = True
             self.__slc_hour.visible = True
             self.__slc_min.visible = True
-            dt = datetime(year=year_, month=month_,
-                          day=day_, hour=hour_, minute=min_)
 
-        self.__dt = dt
+        self.__gran = gran
 
     @property
     def datetime(self):
-        return self.__dt
+        year_ = int(self.__slc_year.value)
+        month_ = int(self.__slc_month.value)
+        day_ = int(self.__slc_day.value)
+        hour_ = int(self.__slc_hour.value)
+        min_ = int(self.__slc_min.value)
+
+        if self.__gran == OandaGrn.D:
+            dt = datetime(year=year_, month=month_, day=day_)
+        elif (self.__gran == OandaGrn.H12
+              or self.__gran == OandaGrn.H8
+              or self.__gran == OandaGrn.H6
+              or self.__gran == OandaGrn.H4
+              or self.__gran == OandaGrn.H3
+              or self.__gran == OandaGrn.H2
+              or self.__gran == OandaGrn.H1):
+            dt = datetime(year=year_, month=month_, day=day_, hour=hour_)
+        elif (self.__gran == OandaGrn.M30
+              or self.__gran == OandaGrn.M15
+              or self.__gran == OandaGrn.M10
+              or self.__gran == OandaGrn.M5
+              or self.__gran == OandaGrn.M4
+              or self.__gran == OandaGrn.M3
+              or self.__gran == OandaGrn.M2
+              or self.__gran == OandaGrn.M1):
+            dt = datetime(year=year_, month=month_,
+                          day=day_, hour=hour_, minute=min_)
+        else:
+            dt = datetime(year=year_, month=month_,
+                          day=day_, hour=hour_, minute=min_)
+        return dt
 
     def get_layout(self):
         slyear = self.__slc_year
@@ -172,7 +189,29 @@ def get_overall_layout():
     return(_layout)
 
 
-def datetime_str():
+def get_instrument():
+    """"通貨ペアを取得する[get currency pair(instrument)]
+    引数[Args]:
+        なし[None]
+    戻り値[Returns]:
+        _inst (str) : 通貨ペア[instrument]
+    """
+    global _inst
+    return _inst
+
+
+def get_granularity():
+    """"時間足を取得する[get granularity of a candlestick]
+    引数[Args]:
+        なし[None]
+    戻り値[Returns]:
+        _gran (str) : ローソク足の時間足[granularity of a candlestick]
+    """
+    global _gran
+    return _gran
+
+
+def get_datetime_str():
     """解析開始日時を取得する[get start datetime]
     引数[Args]:
         None
@@ -183,7 +222,7 @@ def datetime_str():
     return _dtwdg_str.datetime
 
 
-def datetime_end():
+def get_datetime_end():
     """解析終了日時を取得する[get end datetime]
     引数[Args]:
         None
