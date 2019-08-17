@@ -6,8 +6,26 @@ from datetime import datetime, timedelta
 from autotrader.oanda_common import OandaGrn
 import autotrader.utils as utl
 from bokeh.models import ColumnDataSource
-from autotrader.analysis.candlestick import CandleStickChart, CandleStickData
+from autotrader.analysis.candlestick import CandleStickChartBase, CandleStickData
 from oandapyV20.exceptions import V20Error
+import autotrader.analysis.candlestick as cs
+
+
+class CandleStickChart(CandleStickChartBase):
+    """ CandleStickChart
+            - ローソク足チャート定義クラス[Candle stick chart definition class]
+    """
+
+    def __init__(self):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            なし[None]
+        """
+        super().__init__()
+
+    def set_dataframe(self, csd):
+
+        super().set_dataframe(csd)
 
 
 class FillingGap(object):
@@ -63,7 +81,7 @@ class FillingGap(object):
         self.__layout = layout(children=[[wdgbx1]])
         return(self.__layout)
 
-    def __judge_fillingGap(self, df):
+    def __judge_fillingGap(self, df, monday):
         """窓埋め成功/失敗判定メソッド
            [judge method of fillingGap success or fail]
         引数[Args]:
@@ -73,6 +91,17 @@ class FillingGap(object):
                             true: 窓埋め成功[Filling Gap success]
                             false: 窓埋め失敗[Filling Gap fail]
         """
+
+        pre_df = df[df.index < (monday-timedelta(days=1))]
+        print(pre_df)
+        close_pri = pre_df.at[pre_df.index[-1], cs.LBL_CLOSE]
+        print("close: " + str(close_pri))
+
+        aft_df = df[df.index > (monday-timedelta(days=1))]
+        print(aft_df)
+        open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
+        print("open: " + str(open_pri))
+
         jdg = True
         return jdg
 
@@ -112,8 +141,8 @@ class FillingGap(object):
             rsllist = []
             cnt = 0
             for n in mondaylist:
-                str_ = n + timedelta(days=-2, hours=0)
-                end_ = n + timedelta(hours=12)
+                str_ = n + timedelta(days=-3, hours=20)
+                end_ = n + timedelta(days=1)
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
                 print("開始：{}" .format(dtmstr.tokyo))
@@ -135,7 +164,7 @@ class FillingGap(object):
                 self.__dflist.append(csd)
 
                 # 窓埋め成功/失敗判定
-                jdg = self.__judge_fillingGap(csd.df)
+                jdg = self.__judge_fillingGap(csd.df, n)
                 if jdg is True:
                     rsllist.append("成功")
                 else:

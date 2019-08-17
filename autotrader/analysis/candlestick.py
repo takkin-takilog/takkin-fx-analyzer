@@ -97,9 +97,9 @@ class CandleGlyph(GlyphVbarAbs):
         self.__glvbar.width = self.get_width(gran)
 
 
-class CandleStickChart(object):
-    """ CandleStickChart
-            - ローソク足チャート定義クラス[Candle stick chart definition class]
+class CandleStickChartBase(object):
+    """ CandleStickChartBase
+            - ローソク足チャート定義基準クラス[Candle stick chart definition base class]
     """
 
     def __init__(self):
