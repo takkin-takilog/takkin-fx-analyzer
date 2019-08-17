@@ -1,13 +1,12 @@
 from bokeh.models.widgets import Toggle, DataTable, DateFormatter, TableColumn
-from bokeh.layouts import layout, widgetbox
+from bokeh.layouts import layout, widgetbox, row
 import autotrader.analyzer as ana
 from autotrader.utils import DateTimeManager
-from oandapyV20.exceptions import V20Error
-import autotrader.oanda_common as oc
 from datetime import datetime, timedelta
 from autotrader.oanda_common import OandaGrn
 import autotrader.utils as utl
 from bokeh.models import ColumnDataSource
+from autotrader.analysis.candlestick import CandleStickChart, CandleStickData
 
 
 class FillingGap(object):
@@ -41,6 +40,8 @@ class FillingGap(object):
                                columns=cols,
                                width=400, height=280)
 
+        self.__csc = CandleStickChart()
+
     def get_layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
@@ -50,8 +51,10 @@ class FillingGap(object):
         """
         btnrun = self.__btn_run
         tbl = self.__tbl
+        fig = self.__csc.get_model()
 
-        wdgbx1 = widgetbox(children=[btnrun, tbl])
+        tblfig = row(children=[tbl, fig])
+        wdgbx1 = widgetbox(children=[btnrun, tblfig])
 
         self.__layout = layout(children=[[wdgbx1]])
         return(self.__layout)
@@ -115,19 +118,12 @@ class FillingGap(object):
 
                 inst = ana.get_instrument()
                 gran = OandaGrn.M10
-                try:
-                    df = oc.fetch_ohlc(gran, inst, dtmstr, dtmend)
-                except V20Error as v20err:
-                    print("-----V20Error: {}".format(v20err))
-                except ConnectionError as cerr:
-                    print("----- ConnectionError: {}".format(cerr))
-                except Exception as err:
-                    print("----- ExceptionError: {}".format(err))
+                csd = CandleStickData(gran, inst, dtmstr, dtmend)
                 # print(df)
-                dflist.append(df)
+                dflist.append(csd)
 
                 # 窓埋め成功/失敗判定
-                jdg = self.__judge_fillingGap(df)
+                jdg = self.__judge_fillingGap(csd.df)
                 if jdg is True:
                     rsllist.append("成功")
                 else:
