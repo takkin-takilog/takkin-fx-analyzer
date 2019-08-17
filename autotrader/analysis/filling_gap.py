@@ -7,6 +7,7 @@ from autotrader.oanda_common import OandaGrn
 import autotrader.utils as utl
 from bokeh.models import ColumnDataSource
 from autotrader.analysis.candlestick import CandleStickChart, CandleStickData
+from oandapyV20.exceptions import V20Error
 
 
 class FillingGap(object):
@@ -25,6 +26,7 @@ class FillingGap(object):
                                 button_type="success")
         self.__btn_run.on_click(self.__cb_tglbtn_run)
 
+        # Widget DataTable:解析結果[Result of analysis]
         self.TBLLBL_DATE = "Date"
         self.TBLLBL_RSLT = "Result"
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
@@ -39,8 +41,10 @@ class FillingGap(object):
         self.__tbl = DataTable(source=self.__src,
                                columns=cols,
                                width=400, height=280)
+        self.__src.selected.on_change('indices', self.__cb_dttbl)
 
         self.__csc = CandleStickChart()
+        self.__dflist = []
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -105,11 +109,10 @@ class FillingGap(object):
         if not mondaylist:
             print("リストは空です")
         else:
-            dflist = []
             rsllist = []
             cnt = 0
             for n in mondaylist:
-                str_ = n + timedelta(hours=6)
+                str_ = n + timedelta(days=-2, hours=0)
                 end_ = n + timedelta(hours=12)
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
@@ -117,10 +120,19 @@ class FillingGap(object):
                 print("終了：{}" .format(dtmend.tokyo))
 
                 inst = ana.get_instrument()
-                gran = OandaGrn.M10
-                csd = CandleStickData(gran, inst, dtmstr, dtmend)
+                gran = OandaGrn.H1
+
+                try:
+                    csd = CandleStickData(gran, inst, dtmstr, dtmend)
+                except V20Error as v20err:
+                    print("-----V20Error: {}".format(v20err))
+                except ConnectionError as cerr:
+                    print("----- ConnectionError: {}".format(cerr))
+                except Exception as excp:
+                    print("----- Exception: {}".format(excp))
+
                 # print(df)
-                dflist.append(csd)
+                self.__dflist.append(csd)
 
                 # 窓埋め成功/失敗判定
                 jdg = self.__judge_fillingGap(csd.df)
@@ -130,7 +142,7 @@ class FillingGap(object):
                     rsllist.append("失敗")
                 cnt = cnt + 1
 
-            print("dflist:{}" .format(len(dflist)))
+            print("dflist:{}" .format(len(self.__dflist)))
 
             self.__src.data = {
                 self.TBLLBL_DATE: mondaylist,
@@ -138,3 +150,15 @@ class FillingGap(object):
             }
 
         print("Called cb_btn_run")
+
+    def __cb_dttbl(self, attr, old, new):
+        """Widget DataTableコールバックメソッド
+           [Callback method of Widget DataTable]
+        引数[Args]:
+            attr (str) : An attribute name on this object
+            old (str) : Old strings
+            new (str) : New strings
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__csc.set_dataframe(self.__dflist[new[0]])

@@ -112,11 +112,7 @@ class CandleStickChart(object):
         self.__CND_EQU_COLOR = "#FFFF00"
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
-        self.__INIT_WIDE = 0.5
         self.__YRANGE_MARGIN = 0.1
-
-        self.__ORDLINE_CND_COLOR = "yellow"
-        self.__ORDLINE_FIX_COLOR = "cyan"
 
         tools_ = ToolType.gen_str(ToolType.WHEEL_ZOOM,
                                   ToolType.XBOX_ZOOM,
@@ -175,10 +171,14 @@ class CandleStickChart(object):
         self.__glydec.update(df[decflg], gran)
         self.__glyequ.update(df[equflg], gran)
 
-        len_ = int(len(df) * self.__INIT_WIDE)
-        self.__fig.x_range.update(
-            start=df.index[-len_], end=OandaGrn.offset(df.index[-1], gran))
+        # update x axis ange
+        min_ = df.index[0]
+        max_ = df.index[-1]
+        str_ = min_
+        end_ = max_
+        self.__fig.x_range.update(start=str_, end=end_)
 
+        # update y axis ange
         min_ = df[LBL_LOW].min()
         max_ = df[LBL_HIGH].max()
         mar = self.__YRANGE_MARGIN * (max_ - min_)
@@ -205,14 +205,8 @@ class CandleStickData(object):
         引数[Args]:
             なし[None]
         """
-        try:
-            df = self.__fetch_ohlc(gran, inst, dtmstr, dtmend)
-        except V20Error as v20err:
-            print("-----V20Error: {}".format(v20err))
-        except ConnectionError as cerr:
-            print("----- ConnectionError: {}".format(cerr))
-        except Exception as err:
-            print("----- ExceptionError: {}".format(err))
+        df = self.__fetch_ohlc(gran, inst, dtmstr, dtmend)
+
         self.__df = df
         self.__gran = gran
 
@@ -241,6 +235,10 @@ class CandleStickData(object):
         ic = it.InstrumentsCandles(instrument=inst, params=params_)
         try:
             CandleStickData._api.request(ic)
+        except V20Error as v20err:
+            raise v20err
+        except ConnectionError as cerr:
+            raise cerr
         except Exception as err:
             raise err
 
