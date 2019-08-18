@@ -93,17 +93,29 @@ class FillingGap(object):
         """
 
         pre_df = df[df.index < (monday-timedelta(days=1))]
-        print(pre_df)
         close_pri = pre_df.at[pre_df.index[-1], cs.LBL_CLOSE]
-        print("close: " + str(close_pri))
 
         aft_df = df[df.index > (monday-timedelta(days=1))]
-        print(aft_df)
         open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
-        print("open: " + str(open_pri))
 
-        jdg = True
-        return jdg
+        delta_pri = abs(close_pri - open_pri)
+        if close_pri < open_pri:
+            # 上に窓が開いた場合
+            dir = "upper"
+            ext_df = aft_df[aft_df[cs.LBL_LOW] <= close_pri]
+        else:
+            # 下に窓が開いた場合
+            dir = "lower"
+            ext_df = aft_df[aft_df[cs.LBL_HIGH] >= close_pri]
+
+        if ext_df.empty:
+            jdg_flg = False
+            jdg_data = "-"
+        else:
+            jdg_flg = True
+            jdg_data = ext_df.iloc[0]
+
+        return open_pri, close_pri, dir, delta_pri, jdg_flg, jdg_data
 
     def __cb_tglbtn_run(self, new):
         """Widget Toggle(実行)コールバックメソッド
@@ -164,8 +176,8 @@ class FillingGap(object):
                 self.__dflist.append(csd)
 
                 # 窓埋め成功/失敗判定
-                jdg = self.__judge_fillingGap(csd.df, n)
-                if jdg is True:
+                open_pri, close_pri, dir, delta_pri, jdg_flg, jdg_data = self.__judge_fillingGap(csd.df, n)
+                if jdg_flg is True:
                     rsllist.append("成功")
                 else:
                     rsllist.append("失敗")
