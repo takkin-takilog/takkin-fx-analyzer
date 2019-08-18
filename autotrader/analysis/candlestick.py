@@ -63,9 +63,9 @@ class CandleGlyph(GlyphVbarAbs):
                              line_width=0,
                              line_color=self.__COLOR)
 
-        self.__fig = fig
-        self.__ren = self.__fig.add_glyph(self.__src, self.__glyseg)
-        self.__fig.add_glyph(self.__src, self.__glvbar)
+        self._fig = fig
+        self.__ren = self._fig.add_glyph(self.__src, self.__glyseg)
+        self._fig.add_glyph(self.__src, self.__glvbar)
 
     @property
     def render(self):
@@ -120,24 +120,24 @@ class CandleStickChartBase(object):
                                   ToolType.SAVE)
 
         # Main chart figure
-        self.__fig = figure(plot_height=400,
-                            x_axis_type=AxisTyp.X_DATETIME,
-                            tools=tools_,
-                            background_fill_color=self.__BG_COLOR,
-                            sizing_mode="stretch_width",
-                            title="Candlestick Chart")
-        self.__fig.xaxis.axis_label = "Date Time"
-        self.__fig.grid.grid_line_alpha = 0.3
-        self.__fig.x_range = Range1d()
-        self.__fig.y_range = Range1d()
-        self.__fig.toolbar_location = None
+        self._fig = figure(plot_height=400,
+                           x_axis_type=AxisTyp.X_DATETIME,
+                           tools=tools_,
+                           background_fill_color=self.__BG_COLOR,
+                           sizing_mode="stretch_width",
+                           title="Candlestick Chart")
+        self._fig.xaxis.axis_label = "Date Time"
+        self._fig.grid.grid_line_alpha = 0.3
+        self._fig.x_range = Range1d()
+        self._fig.y_range = Range1d()
+        self._fig.toolbar_location = None
 
         # Candle stick figure
-        self.__glyinc = CandleGlyph(self.__fig,
+        self.__glyinc = CandleGlyph(self._fig,
                                     self.__CND_INC_COLOR)
-        self.__glydec = CandleGlyph(self.__fig,
+        self.__glydec = CandleGlyph(self._fig,
                                     self.__CND_DEC_COLOR)
-        self.__glyequ = CandleGlyph(self.__fig,
+        self.__glyequ = CandleGlyph(self._fig,
                                     self.__CND_EQU_COLOR)
 
         hover = HoverTool()
@@ -150,7 +150,7 @@ class CandleStickChartBase(object):
         hover.renderers = [self.__glyinc.render,
                            self.__glydec.render,
                            self.__glyequ.render]
-        self.__fig.add_tools(hover)
+        self._fig.add_tools(hover)
 
     def set_dataframe(self, csd):
         """"ローソク足情報を取得する[fetch candles]
@@ -176,7 +176,7 @@ class CandleStickChartBase(object):
         max_ = df.index[-1]
         str_ = min_
         end_ = max_
-        self.__fig.x_range.update(start=str_, end=end_)
+        self._fig.x_range.update(start=str_, end=end_)
 
         # update y axis ange
         min_ = df[LBL_LOW].min()
@@ -184,16 +184,16 @@ class CandleStickChartBase(object):
         mar = self.__YRANGE_MARGIN * (max_ - min_)
         str_ = min_ - mar
         end_ = max_ + mar
-        self.__fig.y_range.update(start=str_, end=end_)
+        self._fig.y_range.update(start=str_, end=end_)
 
     def get_model(self):
         """モデルを取得する[get model]
         引数[Args]:
             なし[None]
         戻り値[Returns]:
-            self.__fig (object) : model object
+            self._fig (object) : model object
         """
-        return self.__fig
+        return self._fig
 
 
 class CandleStickData(object):

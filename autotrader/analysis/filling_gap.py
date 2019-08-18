@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from autotrader.oanda_common import OandaGrn
 import autotrader.utils as utl
 from bokeh.models import ColumnDataSource
-from autotrader.analysis.candlestick import CandleStickChartBase, CandleStickData
+from autotrader.analysis.candlestick import CandleStickChartBase
+from autotrader.analysis.candlestick import CandleStickData
 from oandapyV20.exceptions import V20Error
 import autotrader.analysis.candlestick as cs
 import pandas as pd
@@ -26,35 +27,43 @@ class CandleStickChart(CandleStickChartBase):
         # Hbar Label
         self.__Y = "y"
         self.__X = "x"
-        self.__CURPRI_COLOR = "#7DA900"
+        self.__CLOSE_COLOR = "#FFEE55"
+        self.__OPEN_COLOR = "#54FFEE"
 
         super().__init__()
 
-        # 水平ライン
-        self.__srcline = ColumnDataSource({self.__X: [],
-                                           self.__Y: []})
-        self.__glyline = Line(x=self.__X,
-                              y=self.__Y,
-                              line_color=self.__CURPRI_COLOR,
-                              line_width=1)
-        print("☆☆☆☆☆☆1")
-        super.__fig.add_glyph(self.__srcline, self.__glyline)
-        print("☆☆☆☆☆☆2")
+        # 水平ライン(Close)
+        self.__srcline_cl = ColumnDataSource({self.__X: [],
+                                              self.__Y: []})
+        self.__glyline_cl = Line(x=self.__X,
+                                 y=self.__Y,
+                                 line_dash="dotted",
+                                 line_color=self.__CLOSE_COLOR,
+                                 line_width=1)
+        self._fig.add_glyph(self.__srcline_cl, self.__glyline_cl)
+
+        # 水平ライン(Open)
+        self.__srcline_op = ColumnDataSource({self.__X: [],
+                                              self.__Y: []})
+        self.__glyline_op = Line(x=self.__X,
+                                 y=self.__Y,
+                                 line_dash="dotted",
+                                 line_color=self.__OPEN_COLOR,
+                                 line_width=1)
+        self._fig.add_glyph(self.__srcline_op, self.__glyline_op)
 
     def set_dataframe(self, csd, sr):
 
         super().set_dataframe(csd)
+        xscal = self._fig.x_range
 
-        print("デバッグ用")
         clspri = sr[FillingGap.LBL_CLOSEPRI]
+        self.__srcline_cl.data = {self.__X: [xscal.start, xscal.end],
+                                  self.__Y: [clspri, clspri]}
 
-        aaa = self._fig.y_range
-
-        # 現在価格ライン
-        """
-        self.__srcline.data = {self.X: [-self.__X_AXIS_MAX, self.__X_AXIS_MAX],
-                               self.Y: [clspri, clspri]}
-        """
+        opnpri = sr[FillingGap.LBL_OPENPRI]
+        self.__srcline_op.data = {self.__X: [xscal.start, xscal.end],
+                                  self.__Y: [opnpri, opnpri]}
 
 
 class FillingGap(object):
@@ -94,7 +103,8 @@ class FillingGap(object):
         ]
 
         self.__tbl = DataTable(source=self.__src,
-                               columns=cols)
+                               columns=cols,
+                               width=200)
         self.__src.selected.on_change('indices', self.__cb_dttbl)
 
         self.__csc = CandleStickChart()
@@ -121,7 +131,8 @@ class FillingGap(object):
 
         tblfig = row(children=[tbl, fig], sizing_mode='stretch_width')
 
-        self.__layout = layout(children=[[btnrun], [tblfig]], sizing_mode='stretch_width')
+        self.__layout = layout(
+            children=[[btnrun], [tblfig]], sizing_mode='stretch_width')
         return(self.__layout)
 
     def __judge_fillingGap(self, df, monday):
@@ -135,10 +146,10 @@ class FillingGap(object):
                             false: 窓埋め失敗[Filling Gap fail]
         """
 
-        pre_df = df[df.index < (monday-timedelta(days=1))]
+        pre_df = df[df.index < (monday - timedelta(days=1))]
         close_pri = pre_df.at[pre_df.index[-1], cs.LBL_CLOSE]
 
-        aft_df = df[df.index > (monday-timedelta(days=1))]
+        aft_df = df[df.index > (monday - timedelta(days=1))]
         open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
 
         delta_pri = abs(close_pri - open_pri)
@@ -171,7 +182,7 @@ class FillingGap(object):
 
         # 月曜のみを抽出する
         # Extract only Monday
-        now = datetime.now()
+        now = datetime.now() - timedelta(hours=9)
         str_ = ana.get_datetime_str()
         str_ = utl.limit_upper(str_, now)
         end_ = ana.get_datetime_end()
@@ -214,7 +225,8 @@ class FillingGap(object):
                 self.__csdlist.append(csd)
 
                 # 窓埋め成功/失敗判定
-                close_pri, open_pri, dir_, delta_pri, jdg_flg, jdg_data = self.__judge_fillingGap(csd.df, n)
+                close_pri, open_pri, dir_, delta_pri, jdg_flg, jdg_data = self.__judge_fillingGap(
+                    csd.df, n)
                 if jdg_flg is True:
                     rsl = True
                     rsllist.append("成功")
