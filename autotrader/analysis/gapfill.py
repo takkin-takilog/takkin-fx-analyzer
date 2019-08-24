@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from bokeh.models import ColumnDataSource
 from bokeh.models import CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs
-from bokeh.models.widgets import Button, TextAreaInput, DataTable, TableColumn
+from bokeh.models.widgets import Button, TextInput, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.models.glyphs import Line
 from bokeh.layouts import layout, widgetbox
@@ -16,6 +16,7 @@ from autotrader.oanda_common import OandaGrn
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
+from dask.array.tests.test_numpy_compat import dtype
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -99,6 +100,9 @@ class GapFill(object):
     LBL_OPENPRI = "Open Pric"
     LBL_GAPPRI = "Gap Price"
     LBL_FILLTIME = "Filled Time"
+
+    RSL_FAIL = 0
+    RSL_SUCCESS = 1
 
     def __init__(self):
         """"コンストラクタ[Constructor]
@@ -191,12 +195,19 @@ class GapFill(object):
                 line_width=3, color="navy", alpha=0.5)
 
         # Tab1の設定
-        self.__txtin_smm = TextAreaInput(value="", rows=4,
-                                         title="Success/Fail probability:")
-        tab1 = Panel(child=self.__txtin_smm, title="Summary")
+        self.__txtin_succ = TextInput(value="", title="成功回数:",
+                                      width=200)
+        self.__txtin_fail = TextInput(value="", title="失敗回数:",
+                                      width=200)
+
+        wdgbx = widgetbox(children=[self.__txtin_succ,
+                                    self.__txtin_fail])
+        tab1 = Panel(child=wdgbx, title="Summary")
+
+        tab2 = Panel(child=p1, title="Test")
 
         # タブ生成
-        tabs = Tabs(tabs=[tab1, tab1])
+        tabs = Tabs(tabs=[tab1, tab2])
 
         return tabs
 
@@ -206,16 +217,15 @@ class GapFill(object):
             str_succ = "Success:  0 / 0"
             str_fail = "Fail:     0 / 0"
         else:
-            print("AAAAAAAAAAAAAAAAAAA")
-            print(self.__dfsmm[GapFill.LBL_RESULT] is True)
-            succnum = len(self.__dfsmm[GapFill.LBL_RESULT] is True)
-            failnum = len(self.__dfsmm[GapFill.LBL_RESULT] is False)
-            str_succ = "Success: {} / {}" .format(succnum, len(self.__dfsmm))
-            str_fail = "Fail:    {} / {}" .format(failnum, len(self.__dfsmm))
+            succdf = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
+            faildf = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
+            succnum = len(self.__dfsmm[succdf])
+            failnum = len(self.__dfsmm[faildf])
+            str_succ = "  {} / {}" .format(succnum, len(self.__dfsmm))
+            str_fail = "  {} / {}" .format(failnum, len(self.__dfsmm))
 
-        txt = str_succ + "\n" + str_fail
-
-        self.__txtin_smm.value = txt
+        self.__txtin_succ.value = str_succ
+        self.__txtin_fail.value = str_fail
 
     def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド
@@ -252,14 +262,16 @@ class GapFill(object):
         # 窓埋め成功時の時刻
         if ext_df.empty:
             jdg_flg = False
+            rst = GapFill.RSL_FAIL
             filltime = datetime(year=1985, month=12, day=31)
         else:
             jdg_flg = True
+            rst = GapFill.RSL_SUCCESS
             filltime = ext_df.iloc[0].name
 
         # 出力
         record = pd.Series([monday,
-                            jdg_flg,
+                            rst,
                             dir_,
                             close_pri,
                             open_pri,
