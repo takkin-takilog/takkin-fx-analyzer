@@ -2,7 +2,7 @@ from autotrader.oanda_common import OandaGrn, OandaIns
 from bokeh.models.widgets import Select
 from bokeh.layouts import row, column, layout, widgetbox
 from datetime import datetime, timedelta
-from autotrader.analysis.filling_gap import FillingGap
+from autotrader.analysis.gapfill import GapFill
 
 
 class DateTimeWidget(object):
@@ -359,4 +359,4 @@ _dtwdg_str = DateTimeWidget("開始", _gran,
 _dtwdg_end = DateTimeWidget("終了", _gran)
 
 # 窓埋め解析
-_anafg = FillingGap()
+_anafg = GapFill()

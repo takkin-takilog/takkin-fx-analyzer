@@ -1,5 +1,4 @@
 from bokeh.models import Range1d, ColumnDataSource
-from bokeh.models import HoverTool
 from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
@@ -14,7 +13,7 @@ from oandapyV20.exceptions import V20Error
 
 
 # Pandas data label
-LBL_TIME = "time"
+LBL_TIME = "datetime"
 LBL_VOLUME = "volume"
 LBL_OPEN = "open"
 LBL_HIGH = "high"
@@ -114,10 +113,7 @@ class CandleStickChartBase(object):
         self.__DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
         self.__YRANGE_MARGIN = 0.1
 
-        tools_ = ToolType.gen_str(ToolType.WHEEL_ZOOM,
-                                  ToolType.XBOX_ZOOM,
-                                  ToolType.RESET,
-                                  ToolType.SAVE)
+        tools_ = ToolType.gen_str(ToolType.RESET, ToolType.SAVE)
 
         # Main chart figure
         self._fig = figure(plot_height=400,
@@ -125,32 +121,19 @@ class CandleStickChartBase(object):
                            tools=tools_,
                            background_fill_color=self.__BG_COLOR,
                            sizing_mode="stretch_width",
-                           title="Candlestick Chart")
+                           title="Gap-Fill Candlestick Chart ( 1 hour )")
         self._fig.xaxis.axis_label = "Date Time"
         self._fig.grid.grid_line_alpha = 0.3
         self._fig.x_range = Range1d()
         self._fig.y_range = Range1d()
-        self._fig.toolbar_location = None
 
         # Candle stick figure
-        self.__glyinc = CandleGlyph(self._fig,
-                                    self.__CND_INC_COLOR)
-        self.__glydec = CandleGlyph(self._fig,
-                                    self.__CND_DEC_COLOR)
-        self.__glyequ = CandleGlyph(self._fig,
-                                    self.__CND_EQU_COLOR)
-
-        hover = HoverTool()
-        hover.formatters = {CandleGlyph.XDT: "datetime"}
-        hover.tooltips = [(LBL_TIME, "@" + CandleGlyph.XDT + "{%F}"),
-                          (LBL_HIGH, "@" + CandleGlyph.YHI),
-                          (LBL_OPEN, "@" + CandleGlyph.YOP),
-                          (LBL_CLOSE, "@" + CandleGlyph.YCL),
-                          (LBL_LOW, "@" + CandleGlyph.YLO)]
-        hover.renderers = [self.__glyinc.render,
-                           self.__glydec.render,
-                           self.__glyequ.render]
-        self._fig.add_tools(hover)
+        self._glyinc = CandleGlyph(self._fig,
+                                   self.__CND_INC_COLOR)
+        self._glydec = CandleGlyph(self._fig,
+                                   self.__CND_DEC_COLOR)
+        self._glyequ = CandleGlyph(self._fig,
+                                   self.__CND_EQU_COLOR)
 
     def set_dataframe(self, csd):
         """"ローソク足情報を取得する[fetch candles]
@@ -167,9 +150,9 @@ class CandleStickChartBase(object):
         decflg = df[LBL_OPEN] > df[LBL_CLOSE]
         equflg = df[LBL_CLOSE] == df[LBL_OPEN]
 
-        self.__glyinc.update(df[incflg], gran)
-        self.__glydec.update(df[decflg], gran)
-        self.__glyequ.update(df[equflg], gran)
+        self._glyinc.update(df[incflg], gran)
+        self._glydec.update(df[decflg], gran)
+        self._glyequ.update(df[equflg], gran)
 
         # update x axis ange
         min_ = df.index[0]

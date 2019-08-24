@@ -1,5 +1,6 @@
-from bokeh.models.widgets import Button, DataTable, DateFormatter, TableColumn
-from bokeh.layouts import layout, widgetbox, row
+from bokeh.models.widgets import Button, DataTable, TableColumn
+from bokeh.models.widgets import DateFormatter, NumberFormatter
+from bokeh.layouts import layout, widgetbox
 import autotrader.analyzer as ana
 from autotrader.utils import DateTimeManager
 from datetime import datetime, timedelta
@@ -12,6 +13,8 @@ from oandapyV20.exceptions import V20Error
 import autotrader.analysis.candlestick as cs
 import pandas as pd
 from bokeh.models.glyphs import Line
+from bokeh.models import CrosshairTool, HoverTool
+from autotrader.analysis.candlestick import CandleGlyph
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -31,6 +34,23 @@ class CandleStickChart(CandleStickChartBase):
         self.__OPEN_COLOR = "#54FFEE"
 
         super().__init__()
+
+        # プロット設定
+        self._fig.toolbar_location = "right"
+        self._fig.add_tools(CrosshairTool(line_color="pink",
+                                          line_alpha=1))
+
+        hover = HoverTool()
+        hover.formatters = {CandleGlyph.XDT: "datetime"}
+        hover.tooltips = [(cs.LBL_TIME, "@" + CandleGlyph.XDT + "{%F %R}"),
+                          (cs.LBL_HIGH, "@" + CandleGlyph.YHI),
+                          (cs.LBL_OPEN, "@" + CandleGlyph.YOP),
+                          (cs.LBL_CLOSE, "@" + CandleGlyph.YCL),
+                          (cs.LBL_LOW, "@" + CandleGlyph.YLO)]
+        hover.renderers = [self._glyinc.render,
+                           self._glydec.render,
+                           self._glyequ.render]
+        self._fig.add_tools(hover)
 
         # 水平ライン(Close)
         self.__srcline_cl = ColumnDataSource({self.__X: [],
@@ -57,18 +77,18 @@ class CandleStickChart(CandleStickChartBase):
         super().set_dataframe(csd)
         xscal = self._fig.x_range
 
-        clspri = sr[FillingGap.LBL_CLOSEPRI]
+        clspri = sr[GapFill.LBL_CLOSEPRI]
         self.__srcline_cl.data = {self.__X: [xscal.start, xscal.end],
                                   self.__Y: [clspri, clspri]}
 
-        opnpri = sr[FillingGap.LBL_OPENPRI]
+        opnpri = sr[GapFill.LBL_OPENPRI]
         self.__srcline_op.data = {self.__X: [xscal.start, xscal.end],
                                   self.__Y: [opnpri, opnpri]}
 
 
-class FillingGap(object):
-    """ FillingGap
-            - 窓埋めクラス[Filling gap class]
+class GapFill(object):
+    """ GapFill
+            - 窓埋めクラス[Gap-fill class]
     """
 
     LBL_DATA = "Data"
@@ -76,7 +96,8 @@ class FillingGap(object):
     LBL_DIR = "Direction"
     LBL_CLOSEPRI = "Close Price"
     LBL_OPENPRI = "Open Pric"
-    LBL_FILLEDTIME = "Filled Time"
+    LBL_GAPPRI = "Gap Price"
+    LBL_FILLTIME = "Filled Time"
 
     def __init__(self):
         """"コンストラクタ[Constructor]
@@ -93,29 +114,52 @@ class FillingGap(object):
         # Widget DataTable:解析結果[Result of analysis]
         self.TBLLBL_DATE = "Date"
         self.TBLLBL_RSLT = "Result"
+        self.TBLLBL_CLSPRI = "Close Price"
+        self.TBLLBL_OPNPRI = "Open Price"
+        self.TBLLBL_DIR = "Direction"
+        self.TBLLBL_GAPPRI = "Gap Price"
+        self.TBLLBL_FILLTIME = "Gap Filled Time"
+
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
-                                       self.TBLLBL_RSLT: []})
+                                       self.TBLLBL_RSLT: [],
+                                       self.TBLLBL_CLSPRI: [],
+                                       self.TBLLBL_OPNPRI: [],
+                                       self.TBLLBL_DIR: [],
+                                       self.TBLLBL_GAPPRI: [],
+                                       self.TBLLBL_FILLTIME: [],
+                                       })
 
         cols = [
             TableColumn(field=self.TBLLBL_DATE, title="Date",
                         formatter=DateFormatter()),
             TableColumn(field=self.TBLLBL_RSLT, title="Result"),
+            TableColumn(field=self.TBLLBL_CLSPRI, title="Open Price",
+                        formatter=NumberFormatter(format="0[.]000")),
+            TableColumn(field=self.TBLLBL_OPNPRI, title="Close Price",
+                        formatter=NumberFormatter(format="0[.]000")),
+            TableColumn(field=self.TBLLBL_DIR, title="Direction"),
+            TableColumn(field=self.TBLLBL_GAPPRI, title="Gap Price",
+                        formatter=NumberFormatter(format="0[.]00000")),
+            TableColumn(field=self.TBLLBL_FILLTIME, title="Gap Filled Time",
+                        formatter=DateFormatter(format="%R")),
         ]
 
         self.__tbl = DataTable(source=self.__src,
                                columns=cols,
-                               width=200)
+                               fit_columns=True,
+                               height=200)
         self.__src.selected.on_change('indices', self.__cb_dttbl)
 
         self.__csc = CandleStickChart()
         self.__csdlist = []
 
-        cols = [FillingGap.LBL_DATA,
-                FillingGap.LBL_RESULT,
-                FillingGap.LBL_DIR,
-                FillingGap.LBL_CLOSEPRI,
-                FillingGap.LBL_OPENPRI,
-                FillingGap.LBL_FILLEDTIME]
+        cols = [GapFill.LBL_DATA,
+                GapFill.LBL_RESULT,
+                GapFill.LBL_DIR,
+                GapFill.LBL_CLOSEPRI,
+                GapFill.LBL_OPENPRI,
+                GapFill.LBL_GAPPRI,
+                GapFill.LBL_FILLTIME]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
     def get_layout(self):
@@ -129,15 +173,15 @@ class FillingGap(object):
         tbl = self.__tbl
         fig = self.__csc.get_model()
 
-        tblfig = row(children=[tbl, fig], sizing_mode='stretch_width')
+        tblfig = widgetbox(children=[tbl, fig], sizing_mode='stretch_width')
 
-        self.__layout = layout(
-            children=[[btnrun], [tblfig]], sizing_mode='stretch_width')
+        self.__layout = layout(children=[[btnrun], [tblfig]],
+                               sizing_mode='stretch_width')
         return(self.__layout)
 
-    def __judge_fillingGap(self, df, monday):
+    def __judge_GapFill(self, df, monday):
         """窓埋め成功/失敗判定メソッド
-           [judge method of fillingGap success or fail]
+           [judge method of GapFill success or fail]
         引数[Args]:
             df (pandas data frame) : ローソク足データ[candle stick data]
         戻り値[Returns]:
@@ -152,7 +196,7 @@ class FillingGap(object):
         aft_df = df[df.index > (monday - timedelta(days=1))]
         open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
 
-        delta_pri = abs(close_pri - open_pri)
+        gap_pri = abs(close_pri - open_pri)
         if close_pri < open_pri:
             # 上に窓が開いた場合
             dir_ = "upper"
@@ -169,7 +213,7 @@ class FillingGap(object):
             jdg_flg = True
             jdg_data = ext_df.iloc[0]
 
-        return close_pri, open_pri, dir_, delta_pri, jdg_flg, jdg_data
+        return close_pri, open_pri, dir_, gap_pri, jdg_flg, jdg_data
 
     def __cb_btn_run(self):
         """Widget Button(実行)コールバックメソッド
@@ -206,8 +250,6 @@ class FillingGap(object):
                 end_ = n + timedelta(days=1)
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
-                #print("開始：{}" .format(dtmstr.tokyo))
-                #print("終了：{}" .format(dtmend.tokyo))
 
                 inst = ana.get_instrument()
                 gran = OandaGrn.H1
@@ -225,7 +267,7 @@ class FillingGap(object):
                 self.__csdlist.append(csd)
 
                 # 窓埋め成功/失敗判定
-                close_pri, open_pri, dir_, delta_pri, jdg_flg, jdg_data = self.__judge_fillingGap(
+                close_pri, open_pri, dir_, gap_pri, jdg_flg, jdg_data = self.__judge_GapFill(
                     csd.df, n)
                 if jdg_flg is True:
                     rsl = True
@@ -235,11 +277,13 @@ class FillingGap(object):
                     rsllist.append("失敗")
 
                 if jdg_flg:
-                    filledtime = jdg_data.name
+                    filltime = jdg_data.name
                 else:
-                    filledtime = "-"
+                    filltime = datetime(year=1985, month=12,
+                                        day=31, hour=23, minute=59, second=59)
+                print(filltime)
 
-                record = pd.Series([n, rsl, dir_, close_pri, open_pri, filledtime],
+                record = pd.Series([n, rsl, dir_, close_pri, open_pri, gap_pri, filltime],
                                    index=self.__dfsmm.columns)
                 self.__dfsmm = self.__dfsmm.append(record,  ignore_index=True)
 
@@ -249,7 +293,12 @@ class FillingGap(object):
 
             self.__src.data = {
                 self.TBLLBL_DATE: mondaylist,
-                self.TBLLBL_RSLT: rsllist
+                self.TBLLBL_RSLT: rsllist,
+                self.TBLLBL_DIR: self.__dfsmm[GapFill.LBL_DIR].tolist(),
+                self.TBLLBL_OPNPRI: self.__dfsmm[GapFill.LBL_OPENPRI].tolist(),
+                self.TBLLBL_CLSPRI: self.__dfsmm[GapFill.LBL_CLOSEPRI].tolist(),
+                self.TBLLBL_GAPPRI: self.__dfsmm[GapFill.LBL_GAPPRI].tolist(),
+                self.TBLLBL_FILLTIME: self.__dfsmm[GapFill.LBL_FILLTIME].tolist(),
             }
 
         print("Called cb_btn_run")

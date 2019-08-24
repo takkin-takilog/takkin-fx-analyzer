@@ -230,7 +230,7 @@ class CandleStick(object):
 
         hover = HoverTool()
         hover.formatters = {CandleGlyph.XDT: "datetime"}
-        hover.tooltips = [(LBL_TIME, "@" + CandleGlyph.XDT + "{%F}"),
+        hover.tooltips = [(LBL_TIME, "@" + CandleGlyph.XDT + "{%F %R}"),
                           (LBL_HIGH, "@" + CandleGlyph.YHI),
                           (LBL_OPEN, "@" + CandleGlyph.YOP),
                           (LBL_CLOSE, "@" + CandleGlyph.YCL),
