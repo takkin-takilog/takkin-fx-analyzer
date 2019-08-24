@@ -191,23 +191,31 @@ class GapFill(object):
                 line_width=3, color="navy", alpha=0.5)
 
         # Tab1の設定
-        tab1 = self.__create_result_summary()
-
-        # Tab2の設定
+        self.__txtin_smm = TextAreaInput(value="", rows=4,
+                                         title="Success/Fail probability:")
+        tab1 = Panel(child=self.__txtin_smm, title="Summary")
 
         # タブ生成
         tabs = Tabs(tabs=[tab1, tab1])
 
         return tabs
 
-    def __create_result_summary(self):
+    def __update_result_summary(self):
 
-        text_input = TextAreaInput(value="default", rows=6, title="Label:")
+        if self.__dfsmm.empty:
+            str_succ = "Success:  0 / 0"
+            str_fail = "Fail:     0 / 0"
+        else:
+            print("AAAAAAAAAAAAAAAAAAA")
+            print(self.__dfsmm[GapFill.LBL_RESULT] is True)
+            succnum = len(self.__dfsmm[GapFill.LBL_RESULT] is True)
+            failnum = len(self.__dfsmm[GapFill.LBL_RESULT] is False)
+            str_succ = "Success: {} / {}" .format(succnum, len(self.__dfsmm))
+            str_fail = "Fail:    {} / {}" .format(failnum, len(self.__dfsmm))
 
-        # Tab2の設定
-        tab = Panel(child=text_input, title="Summary")
+        txt = str_succ + "\n" + str_fail
 
-        return tab
+        self.__txtin_smm.value = txt
 
     def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド
@@ -335,6 +343,8 @@ class GapFill(object):
                 self.TBLLBL_GAPPRI: self.__dfsmm[GapFill.LBL_GAPPRI].tolist(),
                 self.TBLLBL_FILLTIME: self.__dfsmm[GapFill.LBL_FILLTIME].tolist(),
             }
+
+            self.__update_result_summary()
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
