@@ -1,14 +1,14 @@
-from bokeh.layouts import gridplot, row, column, layout
-from bokeh.models.widgets import Select, CheckboxGroup
-from bokeh import events
 from datetime import datetime, timedelta
+from bokeh import events
+from bokeh.models.widgets import Slider, RadioGroup, Button
+from bokeh.models.widgets import Select, CheckboxGroup
+from bokeh.layouts import gridplot, row, column, layout
 from oandapyV20.exceptions import V20Error
+import autotrader.config as cfg
 from autotrader.candlestick import CandleStick
 from autotrader.oders import OpenOrders, OpenPositions
 from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.utils import DateTimeManager
-from bokeh.models.widgets import Slider, RadioGroup, Button
-import autotrader.config as cfg
 
 
 class Viewer(object):

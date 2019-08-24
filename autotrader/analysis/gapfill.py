@@ -1,20 +1,21 @@
-from bokeh.models.widgets import Button, DataTable, TableColumn
-from bokeh.models.widgets import DateFormatter, NumberFormatter
-from bokeh.layouts import layout, widgetbox
-from autotrader.utils import DateTimeManager
+import pandas as pd
 from datetime import datetime, timedelta
-from autotrader.oanda_common import OandaGrn
 from bokeh.models import ColumnDataSource
-from autotrader.analysis.candlestick import CandleStickChartBase
-from autotrader.analysis.candlestick import CandleStickData
-from oandapyV20.exceptions import V20Error
-from bokeh.models.glyphs import Line
 from bokeh.models import CrosshairTool, HoverTool
-from autotrader.analysis.candlestick import CandleGlyph
+from bokeh.models import Panel, Tabs
+from bokeh.models.widgets import Button, TextAreaInput, DataTable, TableColumn
+from bokeh.models.widgets import DateFormatter, NumberFormatter
+from bokeh.models.glyphs import Line
+from bokeh.layouts import layout, widgetbox
+from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
 import autotrader.analysis.candlestick as cs
-import pandas as pd
+from autotrader.utils import DateTimeManager
+from autotrader.oanda_common import OandaGrn
+from autotrader.analysis.candlestick import CandleGlyph
+from autotrader.analysis.candlestick import CandleStickChartBase
+from autotrader.analysis.candlestick import CandleStickData
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -88,7 +89,7 @@ class CandleStickChart(CandleStickChartBase):
 
 class GapFill(object):
     """ GapFill
-            - 窓埋めクラス[Gap-fill class]
+            - 窓埋めクラス[Gap-Fill class]
     """
 
     LBL_DATA = "Data"
@@ -175,9 +176,38 @@ class GapFill(object):
 
         tblfig = widgetbox(children=[tbl, fig], sizing_mode='stretch_width')
 
-        self.__layout = layout(children=[[btnrun], [tblfig]],
-                               sizing_mode='stretch_width')
-        return(self.__layout)
+        tabs = self.__create_result_tabs()
+
+        layout_ = layout(children=[[btnrun], [tblfig], [tabs]],
+                         sizing_mode='stretch_width')
+        return(layout_)
+
+    def __create_result_tabs(self):
+
+        from bokeh.plotting import figure
+        p1 = figure(plot_width=300, plot_height=300,
+                    sizing_mode="stretch_width")
+        p1.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5],
+                line_width=3, color="navy", alpha=0.5)
+
+        # Tab1の設定
+        tab1 = self.__create_result_summary()
+
+        # Tab2の設定
+
+        # タブ生成
+        tabs = Tabs(tabs=[tab1, tab1])
+
+        return tabs
+
+    def __create_result_summary(self):
+
+        text_input = TextAreaInput(value="default", rows=6, title="Label:")
+
+        # Tab2の設定
+        tab = Panel(child=text_input, title="Summary")
+
+        return tab
 
     def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド

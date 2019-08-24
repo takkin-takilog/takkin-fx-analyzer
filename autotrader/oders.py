@@ -1,14 +1,14 @@
 from abc import ABCMeta
+import pandas as pd
+from retrying import retry
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.models.glyphs import HBar, Line
 from bokeh.plotting import figure
+import oandapyV20.endpoints.instruments as it
 from oandapyV20 import API
-from retrying import retry
+import autotrader.oanda_account as oa
 from autotrader.oanda_common import OandaEnv
 from autotrader.bokeh_common import ToolType
-import oandapyV20.endpoints.instruments as it
-import pandas as pd
-import autotrader.oanda_account as oa
 
 
 class OpenBooksAbs(metaclass=ABCMeta):

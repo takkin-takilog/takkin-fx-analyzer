@@ -1,8 +1,8 @@
-from autotrader.oanda_common import OandaGrn, OandaIns
+from datetime import datetime, timedelta
 from bokeh.models.widgets import Select
 from bokeh.layouts import row, column, layout, widgetbox
-from datetime import datetime, timedelta
 from autotrader.analysis.gapfill import GapFill
+from autotrader.oanda_common import OandaGrn, OandaIns
 
 
 class DateTimeWidget(object):

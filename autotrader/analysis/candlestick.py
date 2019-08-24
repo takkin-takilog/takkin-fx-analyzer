@@ -1,16 +1,16 @@
-from bokeh.models import Range1d, ColumnDataSource
-from bokeh.plotting import figure
-from bokeh.models.glyphs import Segment, VBar
-from oandapyV20 import API
+import datetime as dt
+import pandas as pd
 from retrying import retry
+from bokeh.models import Range1d, ColumnDataSource
+from bokeh.models import DatetimeTickFormatter
+from bokeh.models.glyphs import Segment, VBar
+from bokeh.plotting import figure
+import oandapyV20.endpoints.instruments as it
+from oandapyV20 import API
+from oandapyV20.exceptions import V20Error
 from autotrader.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.oanda_account import ACCESS_TOKEN
-from oandapyV20.exceptions import V20Error
-from bokeh.models import DatetimeTickFormatter
-import datetime as dt
-import oandapyV20.endpoints.instruments as it
-import pandas as pd
 
 # Pandas data label
 LBL_TIME = "datetime"

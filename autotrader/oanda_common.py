@@ -1,5 +1,5 @@
 import pandas.tseries.offsets as offsets
-import datetime
+import datetime as dt
 
 
 class OandaEnv(object):
@@ -89,18 +89,18 @@ class OandaGrn(object):
             return dt + offsets.MonthOffset(1 * cls.__OFS_MAG)
 
     @classmethod
-    def convert_dtfmt(cls, granularity, dt, dt_ofs=datetime.timedelta(),
+    def convert_dtfmt(cls, granularity, dt_, dt_ofs=dt.timedelta(),
                       fmt="%Y-%m-%dT%H:%M:00.000000000Z"):
         """"日付フォーマットの変換メソッド
         引数[Args]:
             granularity (str): 時間足[Candle stick granularity]
-            dt (str): DT_FMT形式でフォーマットされた日付
+            dt_ (str): DT_FMT形式でフォーマットされた日付
         戻り値[Returns]:
             tf_dt (str): 変換後の日付
         """
         hour_ = 0
         minute_ = 0
-        tdt = datetime.datetime.strptime(dt, fmt) + dt_ofs
+        tdt = dt.datetime.strptime(dt_, fmt) + dt_ofs
         if granularity == cls.D:
             pass
         elif granularity == cls.H12:
@@ -142,7 +142,7 @@ class OandaGrn(object):
             hour_ = tdt.hour
             minute_ = 1 * (tdt.minute // 1)
 
-        tf_dt = datetime.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
+        tf_dt = dt.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
 
         return tf_dt
 
