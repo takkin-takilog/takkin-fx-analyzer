@@ -1,20 +1,20 @@
 from bokeh.models.widgets import Button, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.layouts import layout, widgetbox
-import autotrader.analyzer as ana
 from autotrader.utils import DateTimeManager
 from datetime import datetime, timedelta
 from autotrader.oanda_common import OandaGrn
-import autotrader.utils as utl
 from bokeh.models import ColumnDataSource
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from oandapyV20.exceptions import V20Error
-import autotrader.analysis.candlestick as cs
-import pandas as pd
 from bokeh.models.glyphs import Line
 from bokeh.models import CrosshairTool, HoverTool
 from autotrader.analysis.candlestick import CandleGlyph
+import autotrader.analyzer as ana
+import autotrader.utils as utl
+import autotrader.analysis.candlestick as cs
+import pandas as pd
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -179,9 +179,9 @@ class GapFill(object):
                                sizing_mode='stretch_width')
         return(self.__layout)
 
-    def __judge_GapFill(self, df, monday):
+    def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド
-           [judge method of GapFill success or fail]
+           [judge method of Gap-Fill success or fail]
         引数[Args]:
             df (pandas data frame) : ローソク足データ[candle stick data]
         戻り値[Returns]:
@@ -189,31 +189,47 @@ class GapFill(object):
                             true: 窓埋め成功[Filling Gap success]
                             false: 窓埋め失敗[Filling Gap fail]
         """
-
+        # 終値
         pre_df = df[df.index < (monday - timedelta(days=1))]
         close_pri = pre_df.at[pre_df.index[-1], cs.LBL_CLOSE]
 
+        # 始値
         aft_df = df[df.index > (monday - timedelta(days=1))]
         open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
 
+        # 窓の幅
         gap_pri = abs(close_pri - open_pri)
+
+        # 窓の方向
         if close_pri < open_pri:
             # 上に窓が開いた場合
-            dir_ = "upper"
+            dir_ = "up"
             ext_df = aft_df[aft_df[cs.LBL_LOW] <= close_pri]
         else:
             # 下に窓が開いた場合
-            dir_ = "lower"
+            dir_ = "down"
             ext_df = aft_df[aft_df[cs.LBL_HIGH] >= close_pri]
 
+        # 窓埋め成功/失敗の判定結果
+        # 窓埋め成功時の時刻
         if ext_df.empty:
             jdg_flg = False
-            jdg_data = "-"
+            filltime = datetime(year=1985, month=12, day=31)
         else:
             jdg_flg = True
-            jdg_data = ext_df.iloc[0]
+            filltime = ext_df.iloc[0].name
 
-        return close_pri, open_pri, dir_, gap_pri, jdg_flg, jdg_data
+        # 出力
+        record = pd.Series([monday,
+                            jdg_flg,
+                            dir_,
+                            close_pri,
+                            open_pri,
+                            gap_pri,
+                            filltime],
+                           index=self.__dfsmm.columns)
+
+        return jdg_flg, record
 
     def __cb_btn_run(self):
         """Widget Button(実行)コールバックメソッド
@@ -245,9 +261,9 @@ class GapFill(object):
             rsllist = []
             self.__dfsmm = self.__dfsmm.drop(range(len(self.__dfsmm)))
             cnt = 0
-            for n in mondaylist:
-                str_ = n + timedelta(days=-3, hours=20)
-                end_ = n + timedelta(days=1)
+            for monday in mondaylist:
+                str_ = monday + timedelta(days=-3, hours=20)
+                end_ = monday + timedelta(days=1)
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
 
@@ -267,29 +283,18 @@ class GapFill(object):
                 self.__csdlist.append(csd)
 
                 # 窓埋め成功/失敗判定
-                close_pri, open_pri, dir_, gap_pri, jdg_flg, jdg_data = self.__judge_GapFill(
-                    csd.df, n)
+                jdg_flg, record = self.__judge_gapfill(csd.df, monday)
                 if jdg_flg is True:
-                    rsl = True
                     rsllist.append("成功")
                 else:
-                    rsl = False
                     rsllist.append("失敗")
 
-                if jdg_flg:
-                    filltime = jdg_data.name
-                else:
-                    filltime = datetime(year=1985, month=12,
-                                        day=31, hour=23, minute=59, second=59)
-                print(filltime)
-
-                record = pd.Series([n, rsl, dir_, close_pri, open_pri, gap_pri, filltime],
-                                   index=self.__dfsmm.columns)
                 self.__dfsmm = self.__dfsmm.append(record,  ignore_index=True)
 
                 cnt = cnt + 1
 
-            print("dflist:{}" .format(len(self.__csdlist)))
+                print("Fill-Gap Analing...  ( {} / {} )"
+                      .format(cnt, len(mondaylist)))
 
             self.__src.data = {
                 self.TBLLBL_DATE: mondaylist,
@@ -300,8 +305,6 @@ class GapFill(object):
                 self.TBLLBL_GAPPRI: self.__dfsmm[GapFill.LBL_GAPPRI].tolist(),
                 self.TBLLBL_FILLTIME: self.__dfsmm[GapFill.LBL_FILLTIME].tolist(),
             }
-
-        print("Called cb_btn_run")
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド

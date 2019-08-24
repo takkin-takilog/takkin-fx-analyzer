@@ -3,14 +3,14 @@ from bokeh.plotting import figure
 from bokeh.models.glyphs import Segment, VBar
 from oandapyV20 import API
 from retrying import retry
-import datetime
 from autotrader.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
-import oandapyV20.endpoints.instruments as it
-import pandas as pd
 from autotrader.oanda_account import ACCESS_TOKEN
 from oandapyV20.exceptions import V20Error
-
+from bokeh.models import DatetimeTickFormatter
+import datetime as dt
+import oandapyV20.endpoints.instruments as it
+import pandas as pd
 
 # Pandas data label
 LBL_TIME = "datetime"
@@ -127,6 +127,18 @@ class CandleStickChartBase(object):
         self._fig.x_range = Range1d()
         self._fig.y_range = Range1d()
 
+        # x axis format
+        self._fig.xaxis.formatter = DatetimeTickFormatter(
+            seconds=["%H:%M:%S"],
+            minsec=["%H:%M:%S"],
+            minutes=["%H:%M:%S"],
+            hourmin=["%H:%M:%S"],
+            hours=["%H:%M:%S"],
+            days=["%Y/%m/%d %H:%M:%S"],
+            months=["%Y/%m/%d"],
+            years=["%Y/%m/%d"],
+        )
+
         # Candle stick figure
         self._glyinc = CandleGlyph(self._fig,
                                    self.__CND_INC_COLOR)
@@ -228,7 +240,7 @@ class CandleStickData(object):
         data = []
         for raw in ic.response[OandaRsp.CNDL]:
             dt_ = OandaGrn.convert_dtfmt(gran, raw[OandaRsp.TIME],
-                                         dt_ofs=datetime.timedelta(hours=9),
+                                         dt_ofs=dt.timedelta(hours=9),
                                          fmt=DT_FMT)
             data.append([dt_,
                          raw[OandaRsp.VLM],
