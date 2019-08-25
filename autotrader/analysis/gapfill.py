@@ -1,11 +1,13 @@
+import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from bokeh.models import ColumnDataSource
+from bokeh.plotting import figure
+from bokeh.models import ColumnDataSource, Range1d
 from bokeh.models import CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
-from bokeh.models.glyphs import Line
+from bokeh.models.glyphs import Line, Quad
 from bokeh.layouts import layout, widgetbox
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
@@ -16,7 +18,74 @@ from autotrader.oanda_common import OandaGrn
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
-from dask.array.tests.test_numpy_compat import dtype
+from py._io.terminalwriter import get_line_width
+
+
+class Histogram(object):
+    """ Histogram
+            - ヒストグラム図形定義クラス[Histogram glyph definition class]
+    """
+
+    LEFT = "left"
+    RIGHT = "right"
+    TOP = "top"
+    BOTTOM = "bottom"
+
+    def __init__(self, fig, color):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            fig (figure) : フィギュアオブジェクト[figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
+        """
+        self.__src = ColumnDataSource({Histogram.LEFT: [],
+                                       Histogram.RIGHT: [],
+                                       Histogram.TOP: [],
+                                       Histogram.BOTTOM: []})
+
+        self.__glyph = Quad(left=Histogram.LEFT,
+                            right=Histogram.RIGHT,
+                            top=Histogram.TOP,
+                            bottom=Histogram.BOTTOM,
+                            fill_color=color,
+                            line_width=0)
+
+        #fig.x_range = Range1d()
+
+        fig.legend.background_fill_color = "#fefefe"
+        fig.grid.grid_line_color = "white"
+
+        fig.add_glyph(self.__src, self.__glyph)
+
+        self._fig = fig
+
+    def update(self, left, right, top, bottom):
+        """"データを設定する[set glyph date]
+        引数[Args]:
+            df (pandas data frame) : pandasデータフレーム[pandas data frame]
+            gran (str) : ローソク足の時間足[granularity of a candlestick]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__src.data = {
+            Histogram.LEFT: left,
+            Histogram.RIGHT: right,
+            Histogram.TOP: top,
+            Histogram.BOTTOM: bottom,
+        }
+        #self._fig.x_range.update(start=-rng_max, end=rng_max)
+
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        dict_ = {Histogram.LEFT: [],
+                 Histogram.RIGHT: [],
+                 Histogram.TOP: [],
+                 Histogram.BOTTOM: []}
+        self.__src.data = dict_
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -109,6 +178,8 @@ class GapFill(object):
         引数[Args]:
             なし[None]
         """
+        self.__BG_COLOR = "#2E2E2E"  # Background color
+
         # Widget Button:解析実行[Run analysis]
         self.__btn_run = Button(label="解析実行",
                                 button_type="success",
@@ -188,11 +259,14 @@ class GapFill(object):
 
     def __create_result_tabs(self):
 
-        from bokeh.plotting import figure
-        p1 = figure(plot_width=300, plot_height=300,
-                    sizing_mode="stretch_width")
-        p1.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5],
-                line_width=3, color="navy", alpha=0.5)
+        fig_gaphist = figure(title="Normal Distribution (μ=0, σ=0.5)",
+                             plot_height=400,
+                             tools='',
+                             background_fill_color=self.__BG_COLOR)
+        fig_gaphist.grid.grid_line_alpha = 0.3
+
+        self.__gaphist_succ = Histogram(fig_gaphist, "yellow")
+        self.__gaphist_fail = Histogram(fig_gaphist, "pink")
 
         # Tab1の設定
         self.__txtin_succ = TextInput(value="", title="成功回数:",
@@ -204,28 +278,63 @@ class GapFill(object):
                                     self.__txtin_fail])
         tab1 = Panel(child=wdgbx, title="Summary")
 
-        tab2 = Panel(child=p1, title="Test")
+        # Tab2の設定
+        tab2 = Panel(child=fig_gaphist, title="ヒスト")
 
         # タブ生成
         tabs = Tabs(tabs=[tab1, tab2])
 
         return tabs
 
-    def __update_result_summary(self):
+    def __update_summary(self):
 
         if self.__dfsmm.empty:
-            str_succ = "Success:  0 / 0"
-            str_fail = "Fail:     0 / 0"
+            succnum = 0
+            failnum = 0
+            length = 0
         else:
-            succdf = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
-            faildf = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
-            succnum = len(self.__dfsmm[succdf])
-            failnum = len(self.__dfsmm[faildf])
-            str_succ = "  {} / {}" .format(succnum, len(self.__dfsmm))
-            str_fail = "  {} / {}" .format(failnum, len(self.__dfsmm))
+            succflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
+            failflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
+            succnum = len(self.__dfsmm[succflg])
+            failnum = len(self.__dfsmm[failflg])
+            length = len(self.__dfsmm)
+
+        str_succ = "  {} / {}" .format(succnum, length)
+        str_fail = "  {} / {}" .format(failnum, length)
 
         self.__txtin_succ.value = str_succ
         self.__txtin_fail.value = str_fail
+
+    def __update_gaphistogram(self):
+
+        succflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
+        failflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
+        succdf = self.__dfsmm[succflg]
+        faildf = self.__dfsmm[failflg]
+
+        succgappri = succdf[GapFill.LBL_GAPPRI].tolist()
+        failgappri = faildf[GapFill.LBL_GAPPRI].tolist()
+        #failgappri = [n*(-1) for n in failgappri]
+
+        primax = self.__dfsmm[GapFill.LBL_GAPPRI].max()
+        primin = self.__dfsmm[GapFill.LBL_GAPPRI].min()
+
+        bins = 100
+
+        hist, edges = np.histogram(succgappri, bins=bins, range=(primin, primax))
+        left = [0] * len(hist)
+        right = hist
+        top = edges[1:]
+        bottom = edges[:-1]
+        self.__gaphist_succ.update(left, right, top, bottom)
+
+        hist, edges = np.histogram(failgappri, bins=bins, range=(primin, primax))
+        hist = [n * (-1) for n in hist]
+        left = hist
+        right = [0] * len(hist)
+        top = edges[1:]
+        bottom = edges[:-1]
+        self.__gaphist_fail.update(left, right, top, bottom)
 
     def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド
@@ -356,7 +465,8 @@ class GapFill(object):
                 self.TBLLBL_FILLTIME: self.__dfsmm[GapFill.LBL_FILLTIME].tolist(),
             }
 
-            self.__update_result_summary()
+            self.__update_summary()
+            self.__update_gaphistogram()
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
