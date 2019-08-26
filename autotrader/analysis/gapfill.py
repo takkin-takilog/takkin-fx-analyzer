@@ -18,7 +18,6 @@ from autotrader.oanda_common import OandaGrn
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
-from py._io.terminalwriter import get_line_width
 
 
 class Histogram(object):
