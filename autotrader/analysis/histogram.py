@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import numpy as np
 from bokeh.models import ColumnDataSource, Range1d
 from bokeh.models.glyphs import Quad
 from bokeh.plotting import figure
@@ -288,7 +289,6 @@ class HorizontalHistogramTwo(HistogramTwoAbs):
 
 if __name__ == "__main__":
     from bokeh.io import show
-    import numpy as np
     from bokeh.layouts import layout
 
     vhist = VerticalHistogram(title="Vertical", color="pink")
