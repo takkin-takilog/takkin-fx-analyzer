@@ -240,19 +240,44 @@ class GapFill(object):
                 GapFill.LBL_MAXOPNRNG]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
-        # Gap-Price histogram
+        # ---------- Gap-Price histogram ----------
         hist = HorizontalHistogramTwo(title="Gap-Price histogram",
                                       color1="lime",
                                       color2="red")
         hist.xaxis_label("回数")
         hist.yaxis_label("Gap Price")
+
+        # renderer1
+        hover = HoverTool()
+        hover.tooltips = [("回数", "@" + Histogram.RIGHT),
+                          ("範囲", "@" + Histogram.BOTTOM + "{(0.000)} - "
+                           + "@" + Histogram.TOP + "{(0.000)}")]
+        hover.renderers = [hist.render1]
+        hist.fig.add_tools(hover)
+
+        # renderer2
+        hover = HoverTool()
+        hover.tooltips = [("回数", "@" + Histogram.LEFT),
+                          ("範囲", "@" + Histogram.BOTTOM + "{(0.000)} - "
+                           + "@" + Histogram.TOP + "{(0.000)}")]
+        hover.renderers = [hist.render2]
+        hist.fig.add_tools(hover)
+
         self.__gappri_hist = hist
 
-        # Max open range histogram
+        # ---------- Max open range histogram ----------
         hist = HorizontalHistogram(title="Max open range histogram",
                                    color="lime")
         hist.xaxis_label("回数")
         hist.yaxis_label("Gap Price")
+
+        hover = HoverTool()
+        hover.tooltips = [("回数", "@" + Histogram.RIGHT),
+                          ("範囲", "@" + Histogram.BOTTOM + "{(0.000)} - "
+                           + "@" + Histogram.TOP + "{(0.000)}")]
+        hover.renderers = [hist.render]
+        hist.fig.add_tools(hover)
+
         self.__maxopn_hist = hist
 
     def get_layout(self):
