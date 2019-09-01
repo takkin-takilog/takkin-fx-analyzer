@@ -16,6 +16,7 @@ from autotrader.oanda_common import OandaGrn
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
+from autotrader.analysis.histogram import HorizontalHistogram
 from autotrader.analysis.histogram import HorizontalHistogramTwo
 
 
@@ -164,6 +165,7 @@ class GapFill(object):
     LBL_OPENPRI = "Open Pric"
     LBL_GAPPRI = "Gap Price"
     LBL_FILLTIME = "Filled Time"
+    LBL_MAXOPNRNG = "Max Open Range"
 
     RSL_FAIL = 0
     RSL_SUCCESS = 1
@@ -230,14 +232,24 @@ class GapFill(object):
                 GapFill.LBL_CLOSEPRI,
                 GapFill.LBL_OPENPRI,
                 GapFill.LBL_GAPPRI,
-                GapFill.LBL_FILLTIME]
+                GapFill.LBL_FILLTIME,
+                GapFill.LBL_MAXOPNRNG]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
-        self.__hrhist2 = HorizontalHistogramTwo(title="Gap-Price histogram",
-                                                color1="lime",
-                                                color2="red")
-        self.__hrhist2.xaxis_label("回数")
-        self.__hrhist2.yaxis_label("Gap Price")
+        # Gap-Price histogram
+        hist = HorizontalHistogramTwo(title="Gap-Price histogram",
+                                      color1="lime",
+                                      color2="red")
+        hist.xaxis_label("回数")
+        hist.yaxis_label("Gap Price")
+        self.__gappri_hist = hist
+
+        # Max open range histogram
+        hist = HorizontalHistogram(title="Max open range histogram",
+                                   color="lime")
+        hist.xaxis_label("回数")
+        hist.yaxis_label("Gap Price")
+        self.__maxopn_hist = hist
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -271,11 +283,15 @@ class GapFill(object):
         tab1 = Panel(child=wdgbx, title="Summary")
 
         # Tab2の設定
-        hist = self.__hrhist2.get_model()
-        tab2 = Panel(child=hist, title="Histogram")
+        hist1 = self.__gappri_hist.get_model()
+        tab2 = Panel(child=hist1, title="Gap-Price Histogram")
+
+        # Tab3の設定
+        hist2 = self.__maxopn_hist.get_model()
+        tab3 = Panel(child=hist2, title="Max Open Range Histogram")
 
         # タブ生成
-        tabs = Tabs(tabs=[tab1, tab2])
+        tabs = Tabs(tabs=[tab1, tab2, tab3])
 
         return tabs
 
@@ -298,7 +314,7 @@ class GapFill(object):
         self.__txtin_succ.value = str_succ
         self.__txtin_fail.value = str_fail
 
-    def __update_gaphistogram(self):
+    def __update_gapprice_hist(self):
 
         succflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
         failflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
@@ -308,7 +324,16 @@ class GapFill(object):
         succgappri = succdf[GapFill.LBL_GAPPRI].tolist()
         failgappri = faildf[GapFill.LBL_GAPPRI].tolist()
 
-        self.__hrhist2.update(succgappri, failgappri, bins=30, rng=None)
+        self.__gappri_hist.update(succgappri, failgappri, bins=30, rng=None)
+
+    def __update_maxopen_hist(self):
+
+        succflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
+        succdf = self.__dfsmm[succflg]
+
+        succgappri = succdf[GapFill.LBL_MAXOPNRNG].tolist()
+
+        self.__maxopn_hist.update(succgappri, bins=30, rng=None)
 
     def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド
@@ -334,10 +359,12 @@ class GapFill(object):
         # 窓の方向
         if close_pri < open_pri:
             # 上に窓が開いた場合
+            flgdir_up = True
             dir_ = "up"
             ext_df = aft_df[aft_df[cs.LBL_LOW] <= close_pri]
         else:
             # 下に窓が開いた場合
+            flgdir_up = False
             dir_ = "down"
             ext_df = aft_df[aft_df[cs.LBL_HIGH] >= close_pri]
 
@@ -352,6 +379,14 @@ class GapFill(object):
             rst = GapFill.RSL_SUCCESS
             filltime = ext_df.iloc[0].name
 
+        # 窓埋め前の最大開き幅
+        ext2_df = aft_df[aft_df.index <= filltime]
+        if flgdir_up is True:
+            maxopnpri = ext2_df[cs.LBL_LOW].min()
+        else:
+            maxopnpri = ext2_df[cs.LBL_HIGH].max()
+        maxopngap = abs(maxopnpri - open_pri)
+
         # 出力
         record = pd.Series([monday,
                             rst,
@@ -359,7 +394,8 @@ class GapFill(object):
                             close_pri,
                             open_pri,
                             gap_pri,
-                            filltime],
+                            filltime,
+                            maxopngap],
                            index=self.__dfsmm.columns)
 
         return jdg_flg, record
@@ -390,9 +426,10 @@ class GapFill(object):
         if not mondaylist:
             print("リストは空です")
         else:
+            dfsmm = self.__dfsmm
             self.__csdlist = []
             rsllist = []
-            self.__dfsmm = self.__dfsmm.drop(range(len(self.__dfsmm)))
+            dfsmm = dfsmm.drop(range(len(dfsmm)))
             cnt = 0
             for monday in mondaylist:
                 str_ = monday + timedelta(days=-3, hours=20)
@@ -422,7 +459,7 @@ class GapFill(object):
                 else:
                     rsllist.append("失敗")
 
-                self.__dfsmm = self.__dfsmm.append(record,  ignore_index=True)
+                dfsmm = dfsmm.append(record,  ignore_index=True)
 
                 cnt = cnt + 1
 
@@ -432,15 +469,16 @@ class GapFill(object):
             self.__src.data = {
                 self.TBLLBL_DATE: mondaylist,
                 self.TBLLBL_RSLT: rsllist,
-                self.TBLLBL_DIR: self.__dfsmm[GapFill.LBL_DIR].tolist(),
-                self.TBLLBL_OPNPRI: self.__dfsmm[GapFill.LBL_OPENPRI].tolist(),
-                self.TBLLBL_CLSPRI: self.__dfsmm[GapFill.LBL_CLOSEPRI].tolist(),
-                self.TBLLBL_GAPPRI: self.__dfsmm[GapFill.LBL_GAPPRI].tolist(),
-                self.TBLLBL_FILLTIME: self.__dfsmm[GapFill.LBL_FILLTIME].tolist(),
+                self.TBLLBL_DIR: dfsmm[GapFill.LBL_DIR].tolist(),
+                self.TBLLBL_OPNPRI: dfsmm[GapFill.LBL_OPENPRI].tolist(),
+                self.TBLLBL_CLSPRI: dfsmm[GapFill.LBL_CLOSEPRI].tolist(),
+                self.TBLLBL_GAPPRI: dfsmm[GapFill.LBL_GAPPRI].tolist(),
+                self.TBLLBL_FILLTIME: dfsmm[GapFill.LBL_FILLTIME].tolist(),
             }
 
             self.__update_summary()
-            self.__update_gaphistogram()
+            self.__update_gapprice_hist()
+            self.__update_maxopen_hist()
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
