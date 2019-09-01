@@ -191,7 +191,8 @@ class GapFill(object):
         self.TBLLBL_OPNPRI = "Open Price"
         self.TBLLBL_DIR = "Direction"
         self.TBLLBL_GAPPRI = "Gap Price"
-        self.TBLLBL_FILLTIME = "Gap Filled Time"
+        self.TBLLBL_FILLTIME = "Gap-Fill Time"
+        self.TBLLBL_MAXOPNRNG = "Max open range"
 
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
                                        self.TBLLBL_RSLT: [],
@@ -200,6 +201,7 @@ class GapFill(object):
                                        self.TBLLBL_DIR: [],
                                        self.TBLLBL_GAPPRI: [],
                                        self.TBLLBL_FILLTIME: [],
+                                       self.TBLLBL_MAXOPNRNG: [],
                                        })
 
         cols = [
@@ -213,8 +215,10 @@ class GapFill(object):
             TableColumn(field=self.TBLLBL_GAPPRI, title="Gap Price",
                         formatter=NumberFormatter(format="0[.]00000")),
             TableColumn(field=self.TBLLBL_RSLT, title="Result"),
-            TableColumn(field=self.TBLLBL_FILLTIME, title="Gap Filled Time",
+            TableColumn(field=self.TBLLBL_FILLTIME, title="Fill-Gap Time",
                         formatter=DateFormatter(format="%R")),
+            TableColumn(field=self.TBLLBL_MAXOPNRNG, title="Open Max Range",
+                        formatter=NumberFormatter(format="0[.]00000")),
         ]
 
         self.__tbl = DataTable(source=self.__src,
@@ -295,18 +299,18 @@ class GapFill(object):
 
         return tabs
 
-    def __update_summary(self):
+    def __update_summary(self, df):
 
-        if self.__dfsmm.empty:
+        if df.empty:
             succnum = 0
             failnum = 0
             length = 0
         else:
-            succflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
-            failflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
-            succnum = len(self.__dfsmm[succflg])
-            failnum = len(self.__dfsmm[failflg])
-            length = len(self.__dfsmm)
+            succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
+            failflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
+            succnum = len(df[succflg])
+            failnum = len(df[failflg])
+            length = len(df)
 
         str_succ = "  {} / {}" .format(succnum, length)
         str_fail = "  {} / {}" .format(failnum, length)
@@ -314,26 +318,40 @@ class GapFill(object):
         self.__txtin_succ.value = str_succ
         self.__txtin_fail.value = str_fail
 
-    def __update_gapprice_hist(self):
+    def __update_gapprice_hist(self, df):
 
-        succflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
-        failflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
-        succdf = self.__dfsmm[succflg]
-        faildf = self.__dfsmm[failflg]
+        succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
+        failflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
+        succdf = df[succflg]
+        faildf = df[failflg]
 
         succgappri = succdf[GapFill.LBL_GAPPRI].tolist()
         failgappri = faildf[GapFill.LBL_GAPPRI].tolist()
 
         self.__gappri_hist.update(succgappri, failgappri, bins=30, rng=None)
 
-    def __update_maxopen_hist(self):
+    def __update_maxopen_hist(self, df):
 
-        succflg = (self.__dfsmm[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
-        succdf = self.__dfsmm[succflg]
+        succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
+        succdf = df[succflg]
 
         succgappri = succdf[GapFill.LBL_MAXOPNRNG].tolist()
 
         self.__maxopn_hist.update(succgappri, bins=30, rng=None)
+
+    def ___check_candlestickdata(self, df, monday):
+        # 終値
+        pre_df = df[df.index < (monday - timedelta(days=1))]
+
+        # 始値
+        aft_df = df[df.index > (monday - timedelta(days=1))]
+
+        if pre_df.empty or aft_df.empty:
+            flg = False
+        else:
+            flg = True
+
+        return flg
 
     def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド
@@ -381,11 +399,14 @@ class GapFill(object):
 
         # 窓埋め前の最大開き幅
         ext2_df = aft_df[aft_df.index <= filltime]
-        if flgdir_up is True:
-            maxopnpri = ext2_df[cs.LBL_LOW].min()
+        if ext2_df.empty:
+            maxopngap = 0
         else:
-            maxopnpri = ext2_df[cs.LBL_HIGH].max()
-        maxopngap = abs(maxopnpri - open_pri)
+            if flgdir_up is True:
+                maxopnpri = ext2_df[cs.LBL_HIGH].max()
+            else:
+                maxopnpri = ext2_df[cs.LBL_LOW].min()
+            maxopngap = abs(maxopnpri - open_pri)
 
         # 出力
         record = pd.Series([monday,
@@ -428,6 +449,7 @@ class GapFill(object):
         else:
             dfsmm = self.__dfsmm
             self.__csdlist = []
+            validmondaylist = []
             rsllist = []
             dfsmm = dfsmm.drop(range(len(dfsmm)))
             cnt = 0
@@ -449,36 +471,42 @@ class GapFill(object):
                 except Exception as excp:
                     print("----- Exception: {}".format(excp))
 
-                # print(df)
-                self.__csdlist.append(csd)
+                # 解析可能データ判定
+                okflg = self.___check_candlestickdata(csd.df, monday)
 
-                # 窓埋め成功/失敗判定
-                jdg_flg, record = self.__judge_gapfill(csd.df, monday)
-                if jdg_flg is True:
-                    rsllist.append("成功")
-                else:
-                    rsllist.append("失敗")
+                if okflg is True:
 
-                dfsmm = dfsmm.append(record,  ignore_index=True)
+                    # 窓埋め成功/失敗判定
+                    jdg_flg, record = self.__judge_gapfill(csd.df, monday)
+                    if jdg_flg is True:
+                        rsllist.append("成功")
+                    else:
+                        rsllist.append("失敗")
+
+                    validmondaylist.append(monday)
+                    self.__csdlist.append(csd)
+                    dfsmm = dfsmm.append(record,  ignore_index=True)
 
                 cnt = cnt + 1
-
                 print("Fill-Gap Analing...  ( {} / {} )"
                       .format(cnt, len(mondaylist)))
 
             self.__src.data = {
-                self.TBLLBL_DATE: mondaylist,
+                self.TBLLBL_DATE: validmondaylist,
                 self.TBLLBL_RSLT: rsllist,
                 self.TBLLBL_DIR: dfsmm[GapFill.LBL_DIR].tolist(),
                 self.TBLLBL_OPNPRI: dfsmm[GapFill.LBL_OPENPRI].tolist(),
                 self.TBLLBL_CLSPRI: dfsmm[GapFill.LBL_CLOSEPRI].tolist(),
                 self.TBLLBL_GAPPRI: dfsmm[GapFill.LBL_GAPPRI].tolist(),
                 self.TBLLBL_FILLTIME: dfsmm[GapFill.LBL_FILLTIME].tolist(),
+                self.TBLLBL_MAXOPNRNG: dfsmm[GapFill.LBL_MAXOPNRNG].tolist(),
             }
 
-            self.__update_summary()
-            self.__update_gapprice_hist()
-            self.__update_maxopen_hist()
+            self.__update_summary(dfsmm)
+            self.__update_gapprice_hist(dfsmm)
+            self.__update_maxopen_hist(dfsmm)
+
+            self.__dfsmm = dfsmm
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
