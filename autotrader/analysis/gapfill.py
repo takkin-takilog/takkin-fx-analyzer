@@ -264,7 +264,7 @@ class GapFill(object):
         """
         btnrun = self.__btn_run
         tbl = self.__tbl
-        fig = self.__csc.get_model()
+        fig = self.__csc.fig
 
         tblfig = widgetbox(children=[tbl, fig], sizing_mode='stretch_width')
 
@@ -287,11 +287,11 @@ class GapFill(object):
         tab1 = Panel(child=wdgbx, title="Summary")
 
         # Tab2の設定
-        hist1 = self.__gappri_hist.get_model()
+        hist1 = self.__gappri_hist.fig
         tab2 = Panel(child=hist1, title="Gap-Price Histogram")
 
         # Tab3の設定
-        hist2 = self.__maxopn_hist.get_model()
+        hist2 = self.__maxopn_hist.fig
         tab3 = Panel(child=hist2, title="Max Open Range Histogram")
 
         # タブ生成

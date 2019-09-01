@@ -42,9 +42,20 @@ class HistogramAbs(metaclass=ABCMeta):
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
 
-        fig.add_glyph(self._src, self.__glyph)
+        self.__ren = fig.add_glyph(self._src, self.__glyph)
 
         self._fig = fig
+
+    @property
+    def render(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__ren
 
     def xaxis_label(self, xlabel):
         self._fig.xaxis.axis_label = xlabel
@@ -52,7 +63,8 @@ class HistogramAbs(metaclass=ABCMeta):
     def yaxis_label(self, ylabel):
         self._fig.yaxis.axis_label = ylabel
 
-    def get_model(self):
+    @property
+    def fig(self):
         """モデルを取得する[get model]
         引数[Args]:
             なし[None]
@@ -128,10 +140,32 @@ class HistogramTwoAbs(metaclass=ABCMeta):
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
 
-        fig.add_glyph(self._src1, self.__glyph1)
-        fig.add_glyph(self._src2, self.__glyph2)
+        self.__ren1 = fig.add_glyph(self._src1, self.__glyph1)
+        self.__ren2 = fig.add_glyph(self._src2, self.__glyph2)
 
         self._fig = fig
+
+    @property
+    def render1(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__ren1
+
+    @property
+    def render2(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__ren2
 
     def xaxis_label(self, xlabel):
         self._fig.xaxis.axis_label = xlabel
@@ -139,7 +173,8 @@ class HistogramTwoAbs(metaclass=ABCMeta):
     def yaxis_label(self, ylabel):
         self._fig.yaxis.axis_label = ylabel
 
-    def get_model(self):
+    @property
+    def fig(self):
         """モデルを取得する[get model]
         引数[Args]:
             なし[None]
@@ -317,10 +352,10 @@ if __name__ == "__main__":
     vhis2.update(c, d, bins=10, rng=None)
     hhis2.update(c, d, bins=10, rng=None)
 
-    plt_vhist = vhist.get_model()
-    plt_hhist = hhist.get_model()
-    plt_vhis2 = vhis2.get_model()
-    plt_hhis2 = hhis2.get_model()
+    plt_vhist = vhist.fig
+    plt_hhist = hhist.fig
+    plt_vhis2 = vhis2.fig
+    plt_hhis2 = hhis2.fig
     hhis2.xaxis_label("回数")
     hhis2.yaxis_label("Price")
 

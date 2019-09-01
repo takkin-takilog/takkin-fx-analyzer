@@ -181,7 +181,8 @@ class CandleStickChartBase(object):
         end_ = max_ + mar
         self._fig.y_range.update(start=str_, end=end_)
 
-    def get_model(self):
+    @property
+    def fig(self):
         """モデルを取得する[get model]
         引数[Args]:
             なし[None]
