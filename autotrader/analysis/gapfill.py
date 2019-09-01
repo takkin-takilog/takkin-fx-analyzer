@@ -203,7 +203,6 @@ class GapFill(object):
         cols = [
             TableColumn(field=self.TBLLBL_DATE, title="Date",
                         formatter=DateFormatter()),
-            TableColumn(field=self.TBLLBL_RSLT, title="Result"),
             TableColumn(field=self.TBLLBL_CLSPRI, title="Open Price",
                         formatter=NumberFormatter(format="0[.]000")),
             TableColumn(field=self.TBLLBL_OPNPRI, title="Close Price",
@@ -211,6 +210,7 @@ class GapFill(object):
             TableColumn(field=self.TBLLBL_DIR, title="Direction"),
             TableColumn(field=self.TBLLBL_GAPPRI, title="Gap Price",
                         formatter=NumberFormatter(format="0[.]00000")),
+            TableColumn(field=self.TBLLBL_RSLT, title="Result"),
             TableColumn(field=self.TBLLBL_FILLTIME, title="Gap Filled Time",
                         formatter=DateFormatter(format="%R")),
         ]
@@ -233,9 +233,11 @@ class GapFill(object):
                 GapFill.LBL_FILLTIME]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
-        self.__hrhist2 = HorizontalHistogramTwo(title="Gap-Hill hist",
+        self.__hrhist2 = HorizontalHistogramTwo(title="Gap-Price histogram",
                                                 color1="lime",
                                                 color2="red")
+        self.__hrhist2.xaxis_label("回数")
+        self.__hrhist2.yaxis_label("Gap Price")
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -270,7 +272,7 @@ class GapFill(object):
 
         # Tab2の設定
         hist = self.__hrhist2.get_model()
-        tab2 = Panel(child=hist, title="ヒスト")
+        tab2 = Panel(child=hist, title="Histogram")
 
         # タブ生成
         tabs = Tabs(tabs=[tab1, tab2])
@@ -306,7 +308,7 @@ class GapFill(object):
         succgappri = succdf[GapFill.LBL_GAPPRI].tolist()
         failgappri = faildf[GapFill.LBL_GAPPRI].tolist()
 
-        self.__hrhist2.update(succgappri, failgappri, bins=100, rng=None)
+        self.__hrhist2.update(succgappri, failgappri, bins=30, rng=None)
 
     def __judge_gapfill(self, df, monday):
         """窓埋め成功/失敗判定メソッド

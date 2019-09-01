@@ -46,6 +46,12 @@ class HistogramAbs(metaclass=ABCMeta):
 
         self._fig = fig
 
+    def xaxis_label(self, xlabel):
+        self._fig.xaxis.axis_label = xlabel
+
+    def yaxis_label(self, ylabel):
+        self._fig.yaxis.axis_label = ylabel
+
     def get_model(self):
         """モデルを取得する[get model]
         引数[Args]:
@@ -126,6 +132,12 @@ class HistogramTwoAbs(metaclass=ABCMeta):
         fig.add_glyph(self._src2, self.__glyph2)
 
         self._fig = fig
+
+    def xaxis_label(self, xlabel):
+        self._fig.xaxis.axis_label = xlabel
+
+    def yaxis_label(self, ylabel):
+        self._fig.yaxis.axis_label = ylabel
 
     def get_model(self):
         """モデルを取得する[get model]
@@ -309,6 +321,8 @@ if __name__ == "__main__":
     plt_hhist = hhist.get_model()
     plt_vhis2 = vhis2.get_model()
     plt_hhis2 = hhis2.get_model()
+    hhis2.xaxis_label("回数")
+    hhis2.yaxis_label("Price")
 
     layout_ = layout(children=[[plt_vhist, plt_hhist],
                                [plt_vhis2, plt_hhis2]])
