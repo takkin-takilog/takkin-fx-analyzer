@@ -244,7 +244,6 @@ def _cb_slc_inst(attr, old, new):
         なし[None]
     """
     global _inst
-    print("inst: {}" .format(_inst))
     _inst = _INST_DICT[new]
 
 

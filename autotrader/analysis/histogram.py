@@ -25,6 +25,7 @@ class HistogramAbs(metaclass=ABCMeta):
 
         fig = figure(title=title,
                      plot_height=400,
+                     plot_width=400,
                      tools='',
                      background_fill_color=self.__BG_COLOR)
 
@@ -111,6 +112,7 @@ class HistogramTwoAbs(metaclass=ABCMeta):
 
         fig = figure(title=title,
                      plot_height=400,
+                     plot_width=400,
                      tools='',
                      background_fill_color=self.__BG_COLOR)
 
@@ -307,13 +309,9 @@ class HorizontalHistogramTwo(HistogramTwoAbs):
         hist1, edges1 = np.histogram(arry1, bins=bins, range=rng)
         hist2, edges2 = np.histogram(arry2, bins=bins, range=rng)
 
-        if rng is None:
-            end_ = max(hist1.max(), hist2.max())
-            end_ += (end_ * 0.1)
-            str_ = -end_
-        else:
-            str_ = rng[0]
-            end_ = rng[1]
+        end_ = max(hist1.max(), hist2.max())
+        end_ += (end_ * 0.1)
+        str_ = -end_
 
         hist2 = [n * (-1) for n in hist2]
 

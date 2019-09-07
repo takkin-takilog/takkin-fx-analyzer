@@ -12,7 +12,7 @@ import autotrader.analyzer as ana
 import autotrader.utils as utl
 import autotrader.analysis.candlestick as cs
 from autotrader.utils import DateTimeManager
-from autotrader.oanda_common import OandaGrn
+from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
@@ -343,7 +343,7 @@ class GapFill(object):
         self.__txtin_succ.value = str_succ
         self.__txtin_fail.value = str_fail
 
-    def __update_gapprice_hist(self, df):
+    def __update_gapprice_hist(self, df, inst):
 
         succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
         failflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
@@ -353,16 +353,59 @@ class GapFill(object):
         succgappri = succdf[GapFill.LBL_GAPPRI].tolist()
         failgappri = faildf[GapFill.LBL_GAPPRI].tolist()
 
-        self.__gappri_hist.update(succgappri, failgappri, bins=30, rng=None)
+        if not succgappri:
+            maxsu = 0
+        else:
+            maxsu = max(succgappri)
 
-    def __update_maxopen_hist(self, df):
+        if not failgappri:
+            minsu = 0
+        else:
+            minsu = max(failgappri)
+        max_ = max([maxsu, minsu])
+
+        pips = OandaIns.PIPS_DICT[inst]
+
+        shiftl = 3
+
+        maxrng = pow(10, shiftl - pips)
+        ofs = pow(10, shiftl - pips - 2) * 5  # 切り上げ
+        max_ = round(max_ + ofs, pips - shiftl + 1)
+        if max_ < maxrng:
+            max_ = maxrng
+
+        div = 50
+        bins_ = int(max_ * pow(10, pips - shiftl) * div)
+
+        self.__gappri_hist.update(succgappri, failgappri, bins=bins_,
+                                  rng=(0, max_))
+
+    def __update_maxopen_hist(self, df, inst):
 
         succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
         succdf = df[succflg]
 
         succgappri = succdf[GapFill.LBL_MAXOPNRNG].tolist()
 
-        self.__maxopn_hist.update(succgappri, bins=30, rng=None)
+        if not succgappri:
+            max_ = 0
+        else:
+            max_ = max(succgappri)
+
+        pips = OandaIns.PIPS_DICT[inst]
+
+        shiftl = 3
+
+        maxrng = pow(10, shiftl - pips)
+        ofs = pow(10, shiftl - pips - 2) * 5  # 切り上げ
+        max_ = round(max_ + ofs, pips - shiftl + 1)
+        if max_ < maxrng:
+            max_ = maxrng
+
+        div = 50
+        bins_ = int(max_ * pow(10, pips - shiftl) * div)
+
+        self.__maxopn_hist.update(succgappri, bins=bins_, rng=(0, max_))
 
     def ___check_candlestickdata(self, df, monday):
         # 終値
@@ -513,7 +556,7 @@ class GapFill(object):
                     dfsmm = dfsmm.append(record,  ignore_index=True)
 
                 cnt = cnt + 1
-                print("Fill-Gap Analing...  ( {} / {} )"
+                print("Fill-Gap Analyzing...  ( {} / {} )"
                       .format(cnt, len(mondaylist)))
 
             self.__src.data = {
@@ -528,8 +571,8 @@ class GapFill(object):
             }
 
             self.__update_summary(dfsmm)
-            self.__update_gapprice_hist(dfsmm)
-            self.__update_maxopen_hist(dfsmm)
+            self.__update_gapprice_hist(dfsmm, inst)
+            self.__update_maxopen_hist(dfsmm, inst)
 
             self.__dfsmm = dfsmm
 
