@@ -156,10 +156,10 @@ class OandaIns(object):
     EUR_JPY = "EUR_JPY"
     EUR_USD = "EUR_USD"
 
-    # pips定義
-    PIPS_DICT = {USD_JPY: 3,
-                 EUR_JPY: 3,
-                 EUR_USD: 5}
+    # 通貨最小定義
+    MIN_UNIT = {USD_JPY: 3,
+                EUR_JPY: 3,
+                EUR_USD: 5}
 
 
 class OandaRsp(object):

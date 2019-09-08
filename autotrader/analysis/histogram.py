@@ -1,8 +1,85 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from bokeh.models import ColumnDataSource, Range1d
-from bokeh.models.glyphs import Quad
+from bokeh.models.glyphs import Quad, Line
 from bokeh.plotting import figure
+
+
+class LineAbs(metaclass=ABCMeta):
+    """ LineAbs
+            - 線グラフ定義抽象クラス[Line graph definition abstract class]
+    """
+
+    X = "x"
+    Y = "y"
+
+    def __init__(self, title, color):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            fig (figure) : フィギュアオブジェクト[figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
+        """
+        self.__BG_COLOR = "#2E2E2E"  # Background color
+
+        fig = figure(title=title,
+                     plot_height=400,
+                     plot_width=400,
+                     tools='',
+                     background_fill_color=self.__BG_COLOR)
+
+        self._src = ColumnDataSource({LineAbs.X: [],
+                                      LineAbs.Y: []})
+
+        self.__glyph = Line(x=LineAbs.X,
+                            y=LineAbs.Y,
+                            line_color=color)
+        fig.grid.grid_line_alpha = 0.3
+
+        self.__ren = fig.add_glyph(self._src, self.__glyph)
+
+        self._fig = fig
+
+    @property
+    def render(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__ren
+
+    def xaxis_label(self, xlabel):
+        self._fig.xaxis.axis_label = xlabel
+
+    def yaxis_label(self, ylabel):
+        self._fig.yaxis.axis_label = ylabel
+
+    @property
+    def fig(self):
+        """モデルを取得する[get model]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            self._fig (object) : model object
+        """
+        return self._fig
+
+    @abstractmethod
+    def update(self):
+        pass
+
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        dict_ = {LineAbs.X: [],
+                 LineAbs.Y: []}
+        self._src.data = dict_
 
 
 class HistogramAbs(metaclass=ABCMeta):

@@ -1,12 +1,13 @@
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
 from bokeh.models import ColumnDataSource
 from bokeh.models import CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
-from bokeh.models.glyphs import Line, Quad
-from bokeh.layouts import layout, widgetbox
+from bokeh.models.glyphs import Line
+from bokeh.layouts import layout, widgetbox, row, column
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
@@ -18,70 +19,19 @@ from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.histogram import HorizontalHistogram
 from autotrader.analysis.histogram import HorizontalHistogramTwo
+from autotrader.analysis.histogram import LineAbs
 
 
-class Histogram(object):
-    """ Histogram
-            - ヒストグラム図形定義クラス[Histogram glyph definition class]
-    """
+class LineSim(LineAbs):
 
-    LEFT = "left"
-    RIGHT = "right"
-    TOP = "top"
-    BOTTOM = "bottom"
+    def __init__(self, title, color):
+        super().__init__(title, color)
 
-    def __init__(self, fig, color):
-        """"コンストラクタ[Constructor]
-        引数[Args]:
-            fig (figure) : フィギュアオブジェクト[figure object]
-            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
-        """
-        self.__src = ColumnDataSource({Histogram.LEFT: [],
-                                       Histogram.RIGHT: [],
-                                       Histogram.TOP: [],
-                                       Histogram.BOTTOM: []})
-
-        self.__glyph = Quad(left=Histogram.LEFT,
-                            right=Histogram.RIGHT,
-                            top=Histogram.TOP,
-                            bottom=Histogram.BOTTOM,
-                            fill_color=color,
-                            line_width=0)
-
-        fig.legend.background_fill_color = "#fefefe"
-        fig.grid.grid_line_color = "white"
-
-        fig.add_glyph(self.__src, self.__glyph)
-
-        self._fig = fig
-
-    def update(self, left, right, top, bottom):
-        """"データを設定する[set glyph date]
-        引数[Args]:
-            df (pandas data frame) : pandasデータフレーム[pandas data frame]
-            gran (str) : ローソク足の時間足[granularity of a candlestick]
-        戻り値[Returns]:
-            なし[None]
-        """
-        self.__src.data = {
-            Histogram.LEFT: left,
-            Histogram.RIGHT: right,
-            Histogram.TOP: top,
-            Histogram.BOTTOM: bottom,
+    def update(self, xlist, ylist):
+        self._src.data = {
+            LineSim.X: xlist,
+            LineSim.Y: ylist,
         }
-
-    def clear(self):
-        """"データをクリアする[clear data]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            なし[None]
-        """
-        dict_ = {Histogram.LEFT: [],
-                 Histogram.RIGHT: [],
-                 Histogram.TOP: [],
-                 Histogram.BOTTOM: []}
-        self.__src.data = dict_
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -162,7 +112,7 @@ class GapFill(object):
     LBL_RESULT = "Result"
     LBL_DIR = "Direction"
     LBL_CLOSEPRI = "Close Price"
-    LBL_OPENPRI = "Open Pric"
+    LBL_OPENPRI = "Open Price"
     LBL_GAPPRI = "Gap Price"
     LBL_FILLTIME = "Filled Time"
     LBL_MAXOPNRNG = "Max Open Range"
@@ -249,17 +199,19 @@ class GapFill(object):
 
         # renderer1
         hover = HoverTool()
-        hover.tooltips = [("回数", "@" + Histogram.RIGHT),
-                          ("範囲", "@" + Histogram.BOTTOM + "{(0.000)} - "
-                           + "@" + Histogram.TOP + "{(0.000)}")]
+        hover.tooltips = [("回数", "@" + HorizontalHistogramTwo.RIGHT),
+                          ("範囲", "@" + HorizontalHistogramTwo.BOTTOM
+                           + "{(0.000)} - " + "@" + HorizontalHistogramTwo.TOP
+                           + "{(0.000)}")]
         hover.renderers = [hist.render1]
         hist.fig.add_tools(hover)
 
         # renderer2
         hover = HoverTool()
-        hover.tooltips = [("回数", "@" + Histogram.LEFT),
-                          ("範囲", "@" + Histogram.BOTTOM + "{(0.000)} - "
-                           + "@" + Histogram.TOP + "{(0.000)}")]
+        hover.tooltips = [("回数", "@" + HorizontalHistogramTwo.LEFT),
+                          ("範囲", "@" + HorizontalHistogramTwo.BOTTOM
+                           + "{(0.000)} - " + "@" + HorizontalHistogramTwo.TOP
+                           + "{(0.000)}")]
         hover.renderers = [hist.render2]
         hist.fig.add_tools(hover)
 
@@ -272,13 +224,35 @@ class GapFill(object):
         hist.yaxis_label("Gap Price")
 
         hover = HoverTool()
-        hover.tooltips = [("回数", "@" + Histogram.RIGHT),
-                          ("範囲", "@" + Histogram.BOTTOM + "{(0.000)} - "
-                           + "@" + Histogram.TOP + "{(0.000)}")]
+        hover.tooltips = [("回数", "@" + HorizontalHistogram.RIGHT),
+                          ("範囲", "@" + HorizontalHistogram.BOTTOM
+                           + "{(0.000)} - " + "@" + HorizontalHistogram.TOP
+                           + "{(0.000)}")]
         hover.renderers = [hist.render]
         hist.fig.add_tools(hover)
 
         self.__maxopn_hist = hist
+
+        # ---------- Income simulation ----------
+        self.__txtin_spread = TextInput(value="1.0", title="スプレッド[pips]:",
+                                        width=200)
+
+        self.__btn_simrun = Button(label="シミュレーション実行",
+                                   button_type="success",
+                                   sizing_mode='fixed',
+                                   default_size=200)
+        self.__btn_simrun.on_click(self.__cb_btn_simrun)
+
+        self.__txtin_losscut = TextInput(value="", title="ロスカット幅:",
+                                         width=200)
+
+        self.__txtin_gapprith = TextInput(value="", title="Gap Price Th:",
+                                          width=200)
+
+        # simulation graph
+        self.__linesim = LineSim(title="profit graph", color="pink")
+        self.__linesim.xaxis_label("Loss Cut Price Offset")
+        self.__linesim.yaxis_label("Sum of Pips")
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -313,11 +287,25 @@ class GapFill(object):
 
         # Tab2の設定
         hist1 = self.__gappri_hist.fig
-        tab2 = Panel(child=hist1, title="Gap-Price Histogram")
+        hist2 = self.__maxopn_hist.fig
+        hist = row(children=[hist1, hist2])
+        tab2 = Panel(child=hist, title="Histogram")
 
         # Tab3の設定
-        hist2 = self.__maxopn_hist.fig
-        tab3 = Panel(child=hist2, title="Max Open Range Histogram")
+        spr = self.__txtin_spread
+        sim = self.__btn_simrun
+        lsct = self.__txtin_losscut
+        gpth = self.__txtin_gapprith
+
+        simwid = column(children=[spr,
+                                  sim,
+                                  lsct,
+                                  gpth])
+
+        line = self.__linesim.fig
+        w3 = row(children=[simwid, line])
+
+        tab3 = Panel(child=w3, title="Income Simulation")
 
         # タブ生成
         tabs = Tabs(tabs=[tab1, tab2, tab3])
@@ -364,18 +352,18 @@ class GapFill(object):
             minsu = max(failgappri)
         max_ = max([maxsu, minsu])
 
-        pips = OandaIns.PIPS_DICT[inst]
-
+        minunit = OandaIns.MIN_UNIT[inst]
         shiftl = 3
+        tmp = shiftl - minunit
 
-        maxrng = pow(10, shiftl - pips)
-        ofs = pow(10, shiftl - pips - 2) * 5  # 切り上げ
-        max_ = round(max_ + ofs, pips - shiftl + 1)
+        maxrng = pow(10, tmp)
+        ofs = pow(10, tmp - 2) * 5  # 切り上げ
+        max_ = round(max_ + ofs, 1 - tmp)
         if max_ < maxrng:
             max_ = maxrng
 
         div = 50
-        bins_ = int(max_ * pow(10, pips - shiftl) * div)
+        bins_ = int(max_ * pow(10, -tmp) * div)
 
         self.__gappri_hist.update(succgappri, failgappri, bins=bins_,
                                   rng=(0, max_))
@@ -392,18 +380,18 @@ class GapFill(object):
         else:
             max_ = max(succgappri)
 
-        pips = OandaIns.PIPS_DICT[inst]
-
+        minunit = OandaIns.MIN_UNIT[inst]
         shiftl = 3
+        tmp = shiftl - minunit
 
-        maxrng = pow(10, shiftl - pips)
-        ofs = pow(10, shiftl - pips - 2) * 5  # 切り上げ
-        max_ = round(max_ + ofs, pips - shiftl + 1)
+        maxrng = pow(10, tmp)
+        ofs = pow(10, tmp - 2) * 5  # 切り上げ
+        max_ = round(max_ + ofs, 1 - tmp)
         if max_ < maxrng:
             max_ = maxrng
 
         div = 50
-        bins_ = int(max_ * pow(10, pips - shiftl) * div)
+        bins_ = int(max_ * pow(10, -tmp) * div)
 
         self.__maxopn_hist.update(succgappri, bins=bins_, rng=(0, max_))
 
@@ -588,3 +576,53 @@ class GapFill(object):
         """
         idx = new[0]
         self.__csc.set_dataframe(self.__csdlist[idx], self.__dfsmm.iloc[idx])
+
+    def __cb_btn_simrun(self):
+        """Widget Button(シミュレーション実行)コールバックメソッド
+           [Callback method of Widget Button(Execute simulation)]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        if self.__dfsmm.empty:
+            pass
+        else:
+            inst = ana.get_instrument()
+            minunit = OandaIns.MIN_UNIT[inst]
+            spread = float(self.__txtin_spread.value)
+            ofspri = pow(10, 1 - minunit) * spread
+            print("---------- ofspri ---------")
+            print(ofspri)
+            print("---------- spread ---------")
+            print(spread)
+            print(self.__dfsmm)
+            df = self.__dfsmm[[GapFill.LBL_RESULT,
+                               GapFill.LBL_GAPPRI,
+                               GapFill.LBL_MAXOPNRNG]]
+            print(df)
+            dfsu = df[df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS]
+            dffa = df[df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL]
+            #dfsu[GapFill.LBL_GAPPRI] -= ofspri
+            print("---------- sufa1 ---------")
+            print(dfsu)
+            maxop = dfsu[GapFill.LBL_MAXOPNRNG].max()
+            maxop = round(maxop, minunit)
+            print("maxop = {}" .format(maxop))
+            minunitpri = round(pow(0.1, minunit), minunit)
+            print("minunitpri = {}" .format(minunitpri))
+
+            xlist = np.arange(minunitpri, maxop + minunitpri * 5, minunitpri)
+            ylist = []
+            for lc in xlist:
+                dfpd = dfsu[dfsu[GapFill.LBL_MAXOPNRNG] < lc]
+                lossnum = len(dffa) + len(dfsu) - len(dfpd)
+                pipsloss = lossnum * (lc + spread)
+
+                dfpdsp = dfpd[GapFill.LBL_GAPPRI] - spread
+                dfpdsp = dfpdsp[dfpdsp > 0]
+                #print(lc)
+                #print(dfpdsp.sum())
+                ylist.append(dfpdsp.sum() - pipsloss)
+
+            self.__linesim.update(xlist, ylist)
