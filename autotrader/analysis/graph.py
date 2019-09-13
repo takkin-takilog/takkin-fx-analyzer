@@ -5,8 +5,8 @@ from bokeh.models.glyphs import Quad, Line
 from bokeh.plotting import figure
 
 
-class LineAbs(metaclass=ABCMeta):
-    """ LineAbs
+class LineGraphAbs(metaclass=ABCMeta):
+    """ LineGraphAbs
             - 線グラフ定義抽象クラス[Line graph definition abstract class]
     """
 
@@ -27,11 +27,11 @@ class LineAbs(metaclass=ABCMeta):
                      tools='',
                      background_fill_color=self.__BG_COLOR)
 
-        self._src = ColumnDataSource({LineAbs.X: [],
-                                      LineAbs.Y: []})
+        self._src = ColumnDataSource({LineGraphAbs.X: [],
+                                      LineGraphAbs.Y: []})
 
-        self.__glyph = Line(x=LineAbs.X,
-                            y=LineAbs.Y,
+        self.__glyph = Line(x=LineGraphAbs.X,
+                            y=LineGraphAbs.Y,
                             line_color=color)
         fig.grid.grid_line_alpha = 0.3
 
@@ -77,8 +77,8 @@ class LineAbs(metaclass=ABCMeta):
         戻り値[Returns]:
             なし[None]
         """
-        dict_ = {LineAbs.X: [],
-                 LineAbs.Y: []}
+        dict_ = {LineGraphAbs.X: [],
+                 LineGraphAbs.Y: []}
         self._src.data = dict_
 
 

@@ -17,20 +17,20 @@ from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
-from autotrader.analysis.histogram import HorizontalHistogram
-from autotrader.analysis.histogram import HorizontalHistogramTwo
-from autotrader.analysis.histogram import LineAbs
+from autotrader.analysis.graph import HorizontalHistogram
+from autotrader.analysis.graph import HorizontalHistogramTwo
+from autotrader.analysis.graph import LineGraphAbs
 
 
-class LineSim(LineAbs):
+class LineGraphSim(LineGraphAbs):
 
     def __init__(self, title, color):
         super().__init__(title, color)
 
     def update(self, xlist, ylist):
         self._src.data = {
-            LineSim.X: xlist,
-            LineSim.Y: ylist,
+            LineGraphSim.X: xlist,
+            LineGraphSim.Y: ylist,
         }
 
 
@@ -250,9 +250,9 @@ class GapFill(object):
                                           width=200)
 
         # simulation graph
-        self.__linesim = LineSim(title="profit graph", color="pink")
-        self.__linesim.xaxis_label("Loss Cut Price Offset")
-        self.__linesim.yaxis_label("Sum of Pips")
+        self.__linegraphsim = LineGraphSim(title="profit graph", color="pink")
+        self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
+        self.__linegraphsim.yaxis_label("Sum of Pips")
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -302,7 +302,7 @@ class GapFill(object):
                                   lsct,
                                   gpth])
 
-        line = self.__linesim.fig
+        line = self.__linegraphsim.fig
         w3 = row(children=[simwid, line])
 
         tab3 = Panel(child=w3, title="Income Simulation")
@@ -625,4 +625,4 @@ class GapFill(object):
                 #print(dfpdsp.sum())
                 ylist.append(dfpdsp.sum() - pipsloss)
 
-            self.__linesim.update(xlist, ylist)
+            self.__linegraphsim.update(xlist, ylist)
