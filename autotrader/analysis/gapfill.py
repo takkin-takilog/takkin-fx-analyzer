@@ -515,7 +515,8 @@ class GapFill(object):
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
 
-                inst = ana.get_instrument()
+                inst_id = ana.get_instrument_id()
+                inst = OandaIns.list[inst_id].oanda_name
                 gran = OandaGrn.H1
 
                 try:
@@ -588,8 +589,8 @@ class GapFill(object):
         if self.__dfsmm.empty:
             pass
         else:
-            inst = ana.get_instrument()
-            minunit = OandaIns.MIN_UNIT[inst]
+            inst_id = ana.get_instrument_id()
+            minunit = OandaIns.list[inst_id].min_unit
             spread = float(self.__txtin_spread.value)
             ofspri = pow(10, 1 - minunit) * spread
             print("---------- ofspri ---------")

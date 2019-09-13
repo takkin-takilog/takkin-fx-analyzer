@@ -1,5 +1,6 @@
 import pandas.tseries.offsets as offsets
 import datetime as dt
+from astropy.wcs.docstrings import name
 
 
 class OandaEnv(object):
@@ -147,6 +148,26 @@ class OandaGrn(object):
         return tf_dt
 
 
+class InsInfo(object):
+
+    def __init__(self, disp_name, oanda_name, minunit):
+        self.__disp_name = disp_name
+        self.__oanda_name = oanda_name
+        self.__minunit = minunit
+
+    @property
+    def disp_name(self):
+        return self.__disp_name
+
+    @property
+    def oanda_name(self):
+        return self.__oanda_name
+
+    @property
+    def min_unit(self):
+        return self.__minunit
+
+
 class OandaIns(object):
     """ OandaIns
         - 通貨ペアクラス[Instruments class]
@@ -160,6 +181,19 @@ class OandaIns(object):
     MIN_UNIT = {USD_JPY: 3,
                 EUR_JPY: 3,
                 EUR_USD: 5}
+
+    list = [InsInfo("USD-JPY", "USD_JPY", 3),
+            InsInfo("EUR-JPY", "EUR_JPY", 3),
+            InsInfo("EUR-USD", "EUR_USD", 5)
+            ]
+
+    @classmethod
+    def get_id_from_dispname(self, disp_name):
+
+        for id_, obj in enumerate(self.list):
+            if disp_name == obj.disp_name:
+                break
+        return id_
 
 
 class OandaRsp(object):

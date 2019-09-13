@@ -189,15 +189,15 @@ def get_overall_layout():
     return(_layout)
 
 
-def get_instrument():
+def get_instrument_id():
     """"通貨ペアを取得する[get currency pair(instrument)]
     引数[Args]:
         なし[None]
     戻り値[Returns]:
         _inst (str) : 通貨ペア[instrument]
     """
-    global _inst
-    return _inst
+    global _inst_id
+    return _inst_id
 
 
 def get_granularity():
@@ -245,6 +245,7 @@ def _cb_slc_inst(attr, old, new):
     """
     global _inst
     _inst = _INST_DICT[new]
+    _inst_id = OandaIns.get_id_from_dispname(new)
 
 
 def _cb_slc_gran(attr, old, new):
@@ -351,6 +352,7 @@ _slc_gran.on_change("value", _cb_slc_gran)
 
 # ---------- 初期設定[Initial Settings] ----------
 _inst = _INST_DICT[_inst_def]
+_inst_id = 0
 _gran = _GRAN_DICT[_gran_def]
 
 _dtwdg_str = DateTimeWidget("開始", _gran,
