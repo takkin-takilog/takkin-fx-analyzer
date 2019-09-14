@@ -331,7 +331,7 @@ class GapFill(object):
         self.__txtin_succ.value = str_succ
         self.__txtin_fail.value = str_fail
 
-    def __update_gapprice_hist(self, df, inst):
+    def __update_gapprice_hist(self, df, minunit):
 
         succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
         failflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
@@ -352,7 +352,6 @@ class GapFill(object):
             minsu = max(failgappri)
         max_ = max([maxsu, minsu])
 
-        minunit = OandaIns.MIN_UNIT[inst]
         shiftl = 3
         tmp = shiftl - minunit
 
@@ -368,7 +367,7 @@ class GapFill(object):
         self.__gappri_hist.update(succgappri, failgappri, bins=bins_,
                                   rng=(0, max_))
 
-    def __update_maxopen_hist(self, df, inst):
+    def __update_maxopen_hist(self, df, minunit):
 
         succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
         succdf = df[succflg]
@@ -380,7 +379,6 @@ class GapFill(object):
         else:
             max_ = max(succgappri)
 
-        minunit = OandaIns.MIN_UNIT[inst]
         shiftl = 3
         tmp = shiftl - minunit
 
@@ -560,8 +558,10 @@ class GapFill(object):
             }
 
             self.__update_summary(dfsmm)
-            self.__update_gapprice_hist(dfsmm, inst)
-            self.__update_maxopen_hist(dfsmm, inst)
+            minunit = OandaIns.list[inst_id].min_unit
+
+            self.__update_gapprice_hist(dfsmm, minunit)
+            self.__update_maxopen_hist(dfsmm, minunit)
 
             self.__dfsmm = dfsmm
 

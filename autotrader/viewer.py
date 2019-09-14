@@ -16,11 +16,6 @@ class Viewer(object):
             - ビュアークラス[Viewer class]
     """
 
-    # 通貨ペア名定義[define currency pair(instrument)]
-    INST_USDJPY = "USD-JPY"
-    INST_EURJPY = "EUR-JPY"
-    INST_EURUSD = "EUR-USD"
-
     # 時間足名定義[define time scale(granularity)]
     GRAN_S5 = "５秒間足"
     GRAN_S10 = "１０秒間足"
@@ -44,7 +39,7 @@ class Viewer(object):
     GRAN_D = "日足"
     GRAN_W = "週足"
 
-    def __init__(self, inst_def=INST_USDJPY, gran_def=GRAN_D):
+    def __init__(self, inst_id_def=0, gran_def=GRAN_D):
         """"コンストラクタ[Constructor]
         引数[Args]:
             inst_def (str) : 通貨ペア[Instrument]
@@ -56,13 +51,6 @@ class Viewer(object):
 
         # コンフィグファイル読み込み[read config file]
         cfg.read()
-
-        # 辞書登録：通貨ペア[set dictionary:Instrument]
-        self.__INST_DICT = {
-            self.INST_USDJPY: OandaIns.USD_JPY,
-            self.INST_EURJPY: OandaIns.EUR_JPY,
-            self.INST_EURUSD: OandaIns.EUR_USD
-        }
 
         # 辞書登録：時間足[set dictionary:Granularity]
         self.__GRAN_DICT = {
@@ -97,11 +85,9 @@ class Viewer(object):
         ]
 
         # Widget Select:通貨ペア[Instrument]
-        INST_OPT = [
-            self.INST_USDJPY, self.INST_EURJPY, self.INST_EURUSD
-        ]
+        INST_OPT = OandaIns.get_dispname_list()
         self.__slc_inst = Select(title="通貨ペア:",
-                                 value=inst_def,
+                                 value=INST_OPT[inst_id_def],
                                  options=INST_OPT,
                                  default_size=200)
         self.__slc_inst.on_change("value", self.__cb_slc_inst)
@@ -254,13 +240,14 @@ class Viewer(object):
         self.__sld_techbb.on_change('value', self.__cb_sld_techbb)
 
         # ---------- 初期設定[Initial Settings] ----------
-        self.__inst = self.__INST_DICT[inst_def]
+        self.__inst_id = inst_id_def
         self.__gran = self.__GRAN_DICT[gran_def]
         self.__set_ftchtyp()
 
         self.__cs = CandleStick()
+        inst = OandaIns.list[self.__inst_id].oanda_name
         try:
-            yrng = self.__cs.fetch(self.__gran, self.__inst,
+            yrng = self.__cs.fetch(self.__gran, inst,
                                    self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
@@ -422,7 +409,7 @@ class Viewer(object):
         戻り値[Returns]:
             なし[None]
         """
-        self.__inst = self.__INST_DICT[new]
+        self.__inst_id = OandaIns.get_id_from_dispname(new)
         self.__update_chart()
 
     def __cb_slc_gran(self, attr, old, new):
@@ -465,8 +452,9 @@ class Viewer(object):
         戻り値[Returns]:
             なし[None]
         """
+        inst = OandaIns.list[self.__inst_id].oanda_name
         try:
-            yrng = self.__cs.fetch(self.__gran, self.__inst,
+            yrng = self.__cs.fetch(self.__gran, inst,
                                    self.__gmtstr, self.__gmtend)
         except V20Error as v20err:
             print("-----V20Error: {}".format(v20err))
@@ -528,8 +516,9 @@ class Viewer(object):
         """
         if self.__mode == self.__MODE_LIST[0]:
             dtmmin = self.__cs.orders_fetch_datetime
-            self.__opord.fetch(self.__inst, dtmmin)
-            self.__oppos.fetch(self.__inst, dtmmin)
+            inst = OandaIns.list[self.__inst_id].oanda_name
+            self.__opord.fetch(inst, dtmmin)
+            self.__oppos.fetch(inst, dtmmin)
             self.__cs.draw_orders_fix_vline()
 
     def __cb_chart_mousemove(self, event):

@@ -190,7 +190,7 @@ def get_overall_layout():
 
 
 def get_instrument_id():
-    """"通貨ペアを取得する[get currency pair(instrument)]
+    """"通貨ペアIDを取得する[get currency pair(instrument)]
     引数[Args]:
         なし[None]
     戻り値[Returns]:
@@ -243,8 +243,7 @@ def _cb_slc_inst(attr, old, new):
     戻り値[Returns]:
         なし[None]
     """
-    global _inst
-    _inst = _INST_DICT[new]
+    global _inst_id
     _inst_id = OandaIns.get_id_from_dispname(new)
 
 
@@ -264,11 +263,6 @@ def _cb_slc_gran(attr, old, new):
     _dtwdg_str.update_vsibledata(_gran)
     _dtwdg_end.update_vsibledata(_gran)
 
-
-# 通貨ペア名定義[define currency pair(instrument)]
-_INST_USDJPY = "USD-JPY"
-_INST_EURJPY = "EUR-JPY"
-_INST_EURUSD = "EUR-USD"
 
 # 時間足名定義[define time scale(granularity)]
 _GRAN_S5 = "５秒間足"
@@ -292,13 +286,6 @@ _GRAN_H8 = "８時間足"
 _GRAN_H12 = "１２時間足"
 _GRAN_D = "日足"
 _GRAN_W = "週足"
-
-# 辞書登録：通貨ペア[set dictionary:Instrument]
-_INST_DICT = {
-    _INST_USDJPY: OandaIns.USD_JPY,
-    _INST_EURJPY: OandaIns.EUR_JPY,
-    _INST_EURUSD: OandaIns.EUR_USD
-}
 
 # 辞書登録：時間足[set dictionary:Granularity]
 _GRAN_DICT = {
@@ -326,12 +313,9 @@ _GRAN_DICT = {
 }
 
 # Widget Select:通貨ペア[Instrument]
-INST_OPT = [
-    _INST_USDJPY, _INST_EURJPY, _INST_EURUSD
-]
-_inst_def = _INST_USDJPY
+INST_OPT = OandaIns.get_dispname_list()
 _slc_inst = Select(title="通貨ペア:",
-                         value=_inst_def,
+                         value=INST_OPT[0],
                          options=INST_OPT,
                          default_size=180)
 _slc_inst.on_change("value", _cb_slc_inst)
@@ -351,7 +335,6 @@ _slc_gran = Select(title="時間足:",
 _slc_gran.on_change("value", _cb_slc_gran)
 
 # ---------- 初期設定[Initial Settings] ----------
-_inst = _INST_DICT[_inst_def]
 _inst_id = 0
 _gran = _GRAN_DICT[_gran_def]
 
