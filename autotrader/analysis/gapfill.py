@@ -27,6 +27,17 @@ class LineGraphSim(LineGraphAbs):
     def __init__(self, title, color):
         super().__init__(title, color)
 
+        self._fig.add_tools(CrosshairTool(line_color="pink",
+                                          line_alpha=0.5,
+                                          dimensions="height"))
+
+        hover = HoverTool()
+        hover.tooltips = [("loss cut", "@" + LineGraphSim.X + "{(0.00000)}"),
+                          ("profit", "@" + LineGraphSim.Y + "{(0.00000)}")]
+        hover.renderers = [self._ren]
+        hover.mode = "vline"
+        self._fig.add_tools(hover)
+
     def update(self, xlist, ylist):
         self._src.data = {
             LineGraphSim.X: xlist,
@@ -55,7 +66,7 @@ class CandleStickChart(CandleStickChartBase):
         # プロット設定
         self._fig.toolbar_location = "right"
         self._fig.add_tools(CrosshairTool(line_color="pink",
-                                          line_alpha=1))
+                                          line_alpha=0.5))
 
         hover = HoverTool()
         hover.formatters = {CandleGlyph.XDT: "datetime"}
@@ -250,7 +261,7 @@ class GapFill(object):
                                           width=200)
 
         # simulation graph
-        self.__linegraphsim = LineGraphSim(title="profit graph", color="pink")
+        self.__linegraphsim = LineGraphSim(title="profit graph", color="yellow")
         self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
         self.__linegraphsim.yaxis_label("Sum of Pips")
 
@@ -610,11 +621,12 @@ class GapFill(object):
 
             maxop = df[GapFill.LBL_MAXOPNRNG].max()
             minstep = round(pow(0.1, minunit), minunit)
-            margin = minstep * 5
-            xlist = np.arange(minstep, maxop + margin, minstep)
+            RANG_GAIN = 0.5
+            start = minstep
+            end = maxop + minstep * int(maxop/minstep * RANG_GAIN)
+            step = round(pow(0.1, minunit), minunit)
+            xlist = np.arange(start, end, step)
             ylist = []
-
-            print("----------spread:{}" .format(spread))
             for losscut in xlist:
                 # 利益確定となる行を抽出
                 dfpro = df[losscut > df[GapFill.LBL_MAXOPNRNG]]
@@ -624,53 +636,14 @@ class GapFill(object):
                 losssum = (tmp - len(dfpro)) * (losscut + spread)
                 # 合計損益を計算
                 prolossum = profitsum - losssum
+                """
                 print("ロスカット：{}, 利益：{}, 損失：{}, 合計：{}" .format(round(losscut, minunit),
-                                                                              round(profitsum, minunit),
-                                                                              round(losssum, minunit),
-                                                                              round(prolossum, minunit)))
+                                                              round(
+                                                                  profitsum, minunit),
+                                                              round(
+                                                                  losssum, minunit),
+                                                              round(prolossum, minunit)))
+                """
                 ylist.append(prolossum)
 
             self.__linegraphsim.update(xlist, ylist)
-
-
-            """
-            ofspri = pow(10, 1 - minunit) * spread
-            print("---------- ofspri ---------")
-            print(ofspri)
-            print("---------- spread ---------")
-            print(spread)
-            print(self.__dfsmm)
-            df = self.__dfsmm[[GapFill.LBL_RESULT,
-                               GapFill.LBL_GAPPRI,
-                               GapFill.LBL_MAXOPNRNG]]
-            print(df)
-            dfsu = df[df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS]
-            dffa = df[df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL]
-            #dfsu[GapFill.LBL_GAPPRI] -= ofspri
-            print("---------- sufa1 ---------")
-            print(dfsu)
-            maxop = dfsu[GapFill.LBL_MAXOPNRNG].max()
-            maxop = round(maxop, minunit)
-            print("maxop = {}" .format(maxop))
-            minstep = round(pow(0.1, minunit), minunit)
-            print("minstep = {}" .format(minstep))
-
-            margin = minstep * 5
-            xlist = np.arange(minstep, maxop + margin, minstep)
-            ylist = []
-            for lc in xlist:
-
-
-
-                dfpd = dfsu[dfsu[GapFill.LBL_MAXOPNRNG] < lc]
-                lossnum = len(dffa) + len(dfsu) - len(dfpd)
-                pipsloss = lossnum * (lc + spread)
-
-                dfpdsp = dfpd[GapFill.LBL_GAPPRI] - spread
-                dfpdsp = dfpdsp[dfpdsp > 0]
-                #print(lc)
-                #print(dfpdsp.sum())
-                ylist.append(dfpdsp.sum() - pipsloss)
-
-            self.__linegraphsim.update(xlist, ylist)
-            """

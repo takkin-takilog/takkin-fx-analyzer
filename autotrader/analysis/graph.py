@@ -35,7 +35,7 @@ class LineGraphAbs(metaclass=ABCMeta):
                             line_color=color)
         fig.grid.grid_line_alpha = 0.3
 
-        self.__ren = fig.add_glyph(self._src, self.__glyph)
+        self._ren = fig.add_glyph(self._src, self.__glyph)
 
         self._fig = fig
 
