@@ -190,11 +190,11 @@ def get_overall_layout():
 
 
 def get_instrument_id():
-    """"通貨ペアIDを取得する[get currency pair(instrument)]
+    """"通貨ペアIDを取得する[get currency pair ID(instrument ID)]
     引数[Args]:
         なし[None]
     戻り値[Returns]:
-        _inst (str) : 通貨ペア[instrument]
+        _inst_id (int) : 通貨ペアID[instrument ID]
     """
     global _inst_id
     return _inst_id

@@ -565,6 +565,10 @@ class GapFill(object):
 
             self.__dfsmm = dfsmm
 
+            minunit = OandaIns.list[inst_id].min_unit
+            spread_str = str(round(pow(0.1, minunit - 1), minunit))
+            self.__txtin_spread.value = spread_str
+
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
            [Callback method of Widget DataTable]
@@ -592,6 +596,44 @@ class GapFill(object):
             inst_id = ana.get_instrument_id()
             minunit = OandaIns.list[inst_id].min_unit
             spread = float(self.__txtin_spread.value)
+
+            df = self.__dfsmm[[GapFill.LBL_RESULT,
+                               GapFill.LBL_GAPPRI,
+                               GapFill.LBL_MAXOPNRNG]]
+            # 以下の条件を満たす場合トレードしないため、データフレームから除去する。
+            # ・スプレッド < Gap Price
+            df = df[spread < df[GapFill.LBL_GAPPRI]]
+
+            tmp = len(df)
+
+            df = df[df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS]
+
+            maxop = df[GapFill.LBL_MAXOPNRNG].max()
+            minstep = round(pow(0.1, minunit), minunit)
+            margin = minstep * 5
+            xlist = np.arange(minstep, maxop + margin, minstep)
+            ylist = []
+
+            print("----------spread:{}" .format(spread))
+            for losscut in xlist:
+                # 利益確定となる行を抽出
+                dfpro = df[losscut > df[GapFill.LBL_MAXOPNRNG]]
+                # 合計利益を計算
+                profitsum = (dfpro[GapFill.LBL_GAPPRI] - spread).sum()
+                # 合計損失を計算
+                losssum = (tmp - len(dfpro)) * (losscut + spread)
+                # 合計損益を計算
+                prolossum = profitsum - losssum
+                print("ロスカット：{}, 利益：{}, 損失：{}, 合計：{}" .format(round(losscut, minunit),
+                                                                              round(profitsum, minunit),
+                                                                              round(losssum, minunit),
+                                                                              round(prolossum, minunit)))
+                ylist.append(prolossum)
+
+            self.__linegraphsim.update(xlist, ylist)
+
+
+            """
             ofspri = pow(10, 1 - minunit) * spread
             print("---------- ofspri ---------")
             print(ofspri)
@@ -610,12 +652,16 @@ class GapFill(object):
             maxop = dfsu[GapFill.LBL_MAXOPNRNG].max()
             maxop = round(maxop, minunit)
             print("maxop = {}" .format(maxop))
-            minunitpri = round(pow(0.1, minunit), minunit)
-            print("minunitpri = {}" .format(minunitpri))
+            minstep = round(pow(0.1, minunit), minunit)
+            print("minstep = {}" .format(minstep))
 
-            xlist = np.arange(minunitpri, maxop + minunitpri * 5, minunitpri)
+            margin = minstep * 5
+            xlist = np.arange(minstep, maxop + margin, minstep)
             ylist = []
             for lc in xlist:
+
+
+
                 dfpd = dfsu[dfsu[GapFill.LBL_MAXOPNRNG] < lc]
                 lossnum = len(dffa) + len(dfsu) - len(dfpd)
                 pipsloss = lossnum * (lc + spread)
@@ -627,3 +673,4 @@ class GapFill(object):
                 ylist.append(dfpdsp.sum() - pipsloss)
 
             self.__linegraphsim.update(xlist, ylist)
+            """
