@@ -124,6 +124,7 @@ class GapFill(object):
     LBL_DIR = "Direction"
     LBL_CLOSEPRI = "Close Price"
     LBL_OPENPRI = "Open Price"
+    LBL_SPREAD = "Spread"
     LBL_GAPPRI = "Gap Price"
     LBL_FILLTIME = "Filled Time"
     LBL_MAXOPNRNG = "Max Open Range"
@@ -151,6 +152,7 @@ class GapFill(object):
         self.TBLLBL_CLSPRI = "Close Price"
         self.TBLLBL_OPNPRI = "Open Price"
         self.TBLLBL_DIR = "Direction"
+        self.TBLLBL_SPREAD = "Spread"
         self.TBLLBL_GAPPRI = "Gap Price"
         self.TBLLBL_FILLTIME = "Gap-Fill Time"
         self.TBLLBL_MAXOPNRNG = "Max open range"
@@ -160,6 +162,7 @@ class GapFill(object):
                                        self.TBLLBL_CLSPRI: [],
                                        self.TBLLBL_OPNPRI: [],
                                        self.TBLLBL_DIR: [],
+                                       self.TBLLBL_SPREAD: [],
                                        self.TBLLBL_GAPPRI: [],
                                        self.TBLLBL_FILLTIME: [],
                                        self.TBLLBL_MAXOPNRNG: [],
@@ -173,6 +176,7 @@ class GapFill(object):
             TableColumn(field=self.TBLLBL_OPNPRI, title="Open Price",
                         formatter=NumberFormatter(format="0[.]000")),
             TableColumn(field=self.TBLLBL_DIR, title="Direction"),
+            TableColumn(field=self.TBLLBL_SPREAD, title="Spread"),
             TableColumn(field=self.TBLLBL_GAPPRI, title="Gap Price",
                         formatter=NumberFormatter(format="0[.]00000")),
             TableColumn(field=self.TBLLBL_RSLT, title="Result"),
@@ -196,6 +200,7 @@ class GapFill(object):
                 GapFill.LBL_DIR,
                 GapFill.LBL_CLOSEPRI,
                 GapFill.LBL_OPENPRI,
+                GapFill.LBL_SPREAD,
                 GapFill.LBL_GAPPRI,
                 GapFill.LBL_FILLTIME,
                 GapFill.LBL_MAXOPNRNG]
@@ -245,9 +250,6 @@ class GapFill(object):
         self.__maxopn_hist = hist
 
         # ---------- Income simulation ----------
-        self.__txtin_spread = TextInput(value="1.0", title="スプレッド[pips]:",
-                                        width=200)
-
         self.__btn_simrun = Button(label="シミュレーション実行",
                                    button_type="success",
                                    sizing_mode='fixed',
@@ -261,7 +263,8 @@ class GapFill(object):
                                           width=200)
 
         # simulation graph
-        self.__linegraphsim = LineGraphSim(title="profit graph", color="yellow")
+        self.__linegraphsim = LineGraphSim(title="profit graph",
+                                           color="yellow")
         self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
         self.__linegraphsim.yaxis_label("Sum of Pips")
 
@@ -303,13 +306,11 @@ class GapFill(object):
         tab2 = Panel(child=hist, title="Histogram")
 
         # Tab3の設定
-        spr = self.__txtin_spread
         sim = self.__btn_simrun
         lsct = self.__txtin_losscut
         gpth = self.__txtin_gapprith
 
-        simwid = column(children=[spr,
-                                  sim,
+        simwid = column(children=[sim,
                                   lsct,
                                   gpth])
 
@@ -418,7 +419,7 @@ class GapFill(object):
 
         return flg
 
-    def __judge_gapfill(self, df, monday):
+    def __judge_gapfill(self, df, monday, gran, inst_id):
         """窓埋め成功/失敗判定メソッド
            [judge method of Gap-Fill success or fail]
         引数[Args]:
@@ -435,6 +436,10 @@ class GapFill(object):
         # 始値
         aft_df = df[df.index > (monday - timedelta(days=1))]
         open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
+
+        # スプレッド
+        open_time = aft_df.index[0]
+        spread = CandleStickData.get_spread(gran, inst_id, open_time)
 
         # 窓の幅
         gap_pri = abs(close_pri - open_pri)
@@ -479,6 +484,7 @@ class GapFill(object):
                             dir_,
                             close_pri,
                             open_pri,
+                            spread,
                             gap_pri,
                             filltime,
                             maxopngap],
@@ -543,7 +549,10 @@ class GapFill(object):
                 if okflg is True:
 
                     # 窓埋め成功/失敗判定
-                    jdg_flg, record = self.__judge_gapfill(csd.df, monday)
+                    jdg_flg, record = self.__judge_gapfill(csd.df,
+                                                           monday,
+                                                           gran,
+                                                           inst_id)
                     if jdg_flg is True:
                         rsllist.append("成功")
                     else:
@@ -563,6 +572,7 @@ class GapFill(object):
                 self.TBLLBL_DIR: dfsmm[GapFill.LBL_DIR].tolist(),
                 self.TBLLBL_CLSPRI: dfsmm[GapFill.LBL_CLOSEPRI].tolist(),
                 self.TBLLBL_OPNPRI: dfsmm[GapFill.LBL_OPENPRI].tolist(),
+                self.TBLLBL_SPREAD: dfsmm[GapFill.LBL_SPREAD].tolist(),
                 self.TBLLBL_GAPPRI: dfsmm[GapFill.LBL_GAPPRI].tolist(),
                 self.TBLLBL_FILLTIME: dfsmm[GapFill.LBL_FILLTIME].tolist(),
                 self.TBLLBL_MAXOPNRNG: dfsmm[GapFill.LBL_MAXOPNRNG].tolist(),
@@ -575,10 +585,6 @@ class GapFill(object):
             self.__update_maxopen_hist(dfsmm, minunit)
 
             self.__dfsmm = dfsmm
-
-            minunit = OandaIns.list[inst_id].min_unit
-            spread_str = str(round(pow(0.1, minunit - 1), minunit))
-            self.__txtin_spread.value = spread_str
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
@@ -602,38 +608,42 @@ class GapFill(object):
             なし[None]
         """
         if self.__dfsmm.empty:
-            pass
+            print("空です")
         else:
             inst_id = ana.get_instrument_id()
             minunit = OandaIns.list[inst_id].min_unit
-            spread = float(self.__txtin_spread.value)
 
             df = self.__dfsmm[[GapFill.LBL_RESULT,
+                               GapFill.LBL_SPREAD,
                                GapFill.LBL_GAPPRI,
                                GapFill.LBL_MAXOPNRNG]]
             # 以下の条件を満たす場合トレードしないため、データフレームから除去する。
             # ・スプレッド < Gap Price
-            df = df[spread < df[GapFill.LBL_GAPPRI]]
+            df = df[df[GapFill.LBL_SPREAD] < df[GapFill.LBL_GAPPRI]]
 
-            tmp = len(df)
+            df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 
-            df = df[df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS]
+            maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
 
-            maxop = df[GapFill.LBL_MAXOPNRNG].max()
-            minstep = round(pow(0.1, minunit), minunit)
+            minstep = OandaIns.normalize(inst_id, pow(0.1, minunit))
             RANG_GAIN = 0.5
             start = minstep
-            end = maxop + minstep * int(maxop/minstep * RANG_GAIN)
-            step = round(pow(0.1, minunit), minunit)
+            if minstep < maxop:
+                end = maxop + minstep * int(maxop / minstep * RANG_GAIN)
+            else:
+                end = minstep * 100
+            step = minstep
             xlist = np.arange(start, end, step)
             ylist = []
             for losscut in xlist:
-                # 利益確定となる行を抽出
-                dfpro = df[losscut > df[GapFill.LBL_MAXOPNRNG]]
+                df_flg2 = losscut > df[GapFill.LBL_MAXOPNRNG]
                 # 合計利益を計算
-                profitsum = (dfpro[GapFill.LBL_GAPPRI] - spread).sum()
+                dfpro = df[df_flg1 == df_flg2]
+                profitsum = (dfpro[GapFill.LBL_GAPPRI] -
+                             dfpro[GapFill.LBL_SPREAD]).sum()
                 # 合計損失を計算
-                losssum = (tmp - len(dfpro)) * (losscut + spread)
+                lossdf = df[df_flg1 != df_flg2]
+                losssum = (losscut + lossdf[GapFill.LBL_SPREAD]).sum()
                 # 合計損益を計算
                 prolossum = profitsum - losssum
                 """

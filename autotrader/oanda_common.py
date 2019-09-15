@@ -89,6 +89,56 @@ class OandaGrn(object):
             return dt + offsets.MonthOffset(1 * cls.__OFS_MAG)
 
     @classmethod
+    def offset_min_unit(cls, dt, granularity):
+        ofs = 0
+        if granularity == cls.S5:
+            ofs = offsets.Second(5)
+        elif granularity == cls.S10:
+            ofs = offsets.Second(10)
+        elif granularity == cls.S15:
+            ofs = offsets.Second(15)
+        elif granularity == cls.S30:
+            ofs = offsets.Second(30)
+        elif granularity == cls.M1:
+            ofs = offsets.Minute(1)
+        elif granularity == cls.M2:
+            ofs = offsets.Minute(2)
+        elif granularity == cls.M3:
+            ofs = offsets.Minute(3)
+        elif granularity == cls.M4:
+            ofs = offsets.Minute(4)
+        elif granularity == cls.M5:
+            ofs = offsets.Minute(5)
+        elif granularity == cls.M10:
+            ofs = offsets.Minute(10)
+        elif granularity == cls.M15:
+            ofs = offsets.Minute(15)
+        elif granularity == cls.M30:
+            ofs = offsets.Minute(30)
+        elif granularity == cls.H1:
+            ofs = offsets.Hour(1)
+        elif granularity == cls.H2:
+            ofs = offsets.Hour(2)
+        elif granularity == cls.H3:
+            ofs = offsets.Hour(3)
+        elif granularity == cls.H4:
+            ofs = offsets.Hour(4)
+        elif granularity == cls.H6:
+            ofs = offsets.Hour(6)
+        elif granularity == cls.H8:
+            ofs = offsets.Hour(8)
+        elif granularity == cls.H12:
+            ofs = offsets.Hour(12)
+        elif granularity == cls.D:
+            ofs = offsets.Day(1)
+        elif granularity == cls.W:
+            ofs = offsets.Week(1)
+        elif granularity == cls.M:
+            ofs = offsets.MonthOffset(1)
+
+        return dt + ofs
+
+    @classmethod
     def convert_dtfmt(cls, granularity, dt_, dt_ofs=dt.timedelta(),
                       fmt="%Y-%m-%dT%H:%M:00.000000000Z"):
         """"日付フォーマットの変換メソッド
@@ -182,20 +232,25 @@ class OandaIns(object):
             ]
 
     @classmethod
-    def get_id_from_dispname(self, disp_name):
+    def get_id_from_dispname(cls, disp_name):
 
-        for id_, obj in enumerate(self.list):
+        for id_, obj in enumerate(cls.list):
             if disp_name == obj.disp_name:
                 break
         return id_
 
     @classmethod
-    def get_dispname_list(self):
+    def get_dispname_list(cls):
 
         namelist = []
-        for obj in self.list:
+        for obj in cls.list:
             namelist.append(obj.disp_name)
         return namelist
+
+    @classmethod
+    def normalize(cls, inst_id, value):
+        minunit = cls.list[inst_id].min_unit
+        return round(value, minunit)
 
 
 class OandaRsp(object):
@@ -207,6 +262,8 @@ class OandaRsp(object):
     TIME = "time"
     VLM = "volume"
     MID = "mid"
+    BID = "bid"
+    ASK = "ask"
     OPN = "o"
     HIG = "h"
     LOW = "l"

@@ -8,6 +8,8 @@ from bokeh.plotting import figure
 import oandapyV20.endpoints.instruments as it
 from oandapyV20 import API
 from oandapyV20.exceptions import V20Error
+from autotrader.utils import DateTimeManager
+from autotrader.oanda_common import OandaIns
 from autotrader.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
 from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
 from autotrader.oanda_account import ACCESS_TOKEN
@@ -194,7 +196,34 @@ class CandleStickChartBase(object):
 
 class CandleStickData(object):
 
+    _DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
+
     _api = API(access_token=ACCESS_TOKEN, environment=OandaEnv.PRACTICE)
+
+    @classmethod
+    def get_spread(cls, gran, inst_id, time):
+
+        dtmstr = DateTimeManager(time)
+        end = OandaGrn.offset_min_unit(time, gran)
+        dtmend = DateTimeManager(end)
+
+        params = {
+            # "alignmentTimezone": "Japan",
+            "from": dtmstr.gmt.strftime(CandleStickData._DT_FMT),
+            "to": dtmend.gmt.strftime(CandleStickData._DT_FMT),
+            "granularity": gran,
+            "price": "AB"
+        }
+        inst = OandaIns.list[inst_id].oanda_name
+        ic = CandleStickData.__request_api(inst, params)
+
+        dfb = CandleStickData.__convert_dataframe(ic, gran,
+                                                  price_typ=OandaRsp.BID)
+        dfa = CandleStickData.__convert_dataframe(ic, gran,
+                                                  price_typ=OandaRsp.ASK)
+        deltadf = dfa - dfb
+
+        return OandaIns.normalize(inst_id, deltadf.iloc[0][LBL_OPEN])
 
     def __init__(self, gran, inst, dtmstr, dtmend):
         """"コンストラクタ[Constructor]
@@ -206,7 +235,6 @@ class CandleStickData(object):
         self.__df = df
         self.__gran = gran
 
-    @retry(stop_max_attempt_number=5, wait_fixed=500)
     def __fetch_ohlc(self, gran, inst, gmtstr, gmtend):
         """"ローソク足情報を取得する[fetch ohlc]
         引数[Args]:
@@ -218,50 +246,15 @@ class CandleStickData(object):
             yrng (tuple) : Y軸の最小値、最大値 (min, max)
                            [Y range min and max]
         """
-        DT_FMT = "%Y-%m-%dT%H:%M:00.000000000Z"
-
-        params_ = {
+        params = {
             # "alignmentTimezone": "Japan",
-            "from": gmtstr.gmt.strftime(DT_FMT),
-            "to": gmtend.gmt.strftime(DT_FMT),
+            "from": gmtstr.gmt.strftime(CandleStickData._DT_FMT),
+            "to": gmtend.gmt.strftime(CandleStickData._DT_FMT),
             "granularity": gran
         }
 
-        # APIへ過去データをリクエスト
-        ic = it.InstrumentsCandles(instrument=inst, params=params_)
-        try:
-            CandleStickData._api.request(ic)
-        except V20Error as v20err:
-            raise v20err
-        except ConnectionError as cerr:
-            raise cerr
-        except Exception as err:
-            raise err
-
-        data = []
-        for raw in ic.response[OandaRsp.CNDL]:
-            dt_ = OandaGrn.convert_dtfmt(gran, raw[OandaRsp.TIME],
-                                         dt_ofs=dt.timedelta(hours=9),
-                                         fmt=DT_FMT)
-            data.append([dt_,
-                         raw[OandaRsp.VLM],
-                         float(raw[OandaRsp.MID][OandaRsp.OPN]),
-                         float(raw[OandaRsp.MID][OandaRsp.HIG]),
-                         float(raw[OandaRsp.MID][OandaRsp.LOW]),
-                         float(raw[OandaRsp.MID][OandaRsp.CLS])
-                         ])
-
-        # convert List to pandas data frame
-        df = pd.DataFrame(data)
-        df.columns = [LBL_TIME,
-                      LBL_VOLUME,
-                      LBL_OPEN,
-                      LBL_HIGH,
-                      LBL_LOW,
-                      LBL_CLOSE]
-        df = df.set_index(LBL_TIME)
-        # date型を整形する
-        df.index = pd.to_datetime(df.index)
+        ic = CandleStickData.__request_api(inst, params)
+        df = CandleStickData.__convert_dataframe(ic, gran)
 
         return df
 
@@ -284,3 +277,49 @@ class CandleStickData(object):
             self.__gran (str) : ローソク足の時間足[Granularity of a candlestick]
         """
         return self.__gran
+
+    @classmethod
+    @retry(stop_max_attempt_number=5, wait_fixed=500)
+    def __request_api(self, inst, params):
+
+        # APIへ過去データをリクエスト
+        ic = it.InstrumentsCandles(instrument=inst, params=params)
+        try:
+            CandleStickData._api.request(ic)
+        except V20Error as v20err:
+            raise v20err
+        except ConnectionError as cerr:
+            raise cerr
+        except Exception as err:
+            raise err
+
+        return ic
+
+    @classmethod
+    def __convert_dataframe(cls, ic, gran, price_typ=OandaRsp.MID):
+        data = []
+        for raw in ic.response[OandaRsp.CNDL]:
+            dt_ = OandaGrn.convert_dtfmt(gran, raw[OandaRsp.TIME],
+                                         dt_ofs=dt.timedelta(hours=9),
+                                         fmt=CandleStickData._DT_FMT)
+            data.append([dt_,
+                         raw[OandaRsp.VLM],
+                         float(raw[price_typ][OandaRsp.OPN]),
+                         float(raw[price_typ][OandaRsp.HIG]),
+                         float(raw[price_typ][OandaRsp.LOW]),
+                         float(raw[price_typ][OandaRsp.CLS])
+                         ])
+
+        # convert List to pandas data frame
+        df = pd.DataFrame(data)
+        df.columns = [LBL_TIME,
+                      LBL_VOLUME,
+                      LBL_OPEN,
+                      LBL_HIGH,
+                      LBL_LOW,
+                      LBL_CLOSE]
+        df = df.set_index(LBL_TIME)
+        # date型を整形する
+        df.index = pd.to_datetime(df.index)
+
+        return df
