@@ -616,7 +616,10 @@ class GapFill(object):
             df = self.__dfsmm[[GapFill.LBL_RESULT,
                                GapFill.LBL_SPREAD,
                                GapFill.LBL_GAPPRI,
-                               GapFill.LBL_MAXOPNRNG]]
+                               GapFill.LBL_MAXOPNRNG]].copy()
+
+            df[GapFill.LBL_SPREAD] = df[GapFill.LBL_SPREAD] / 2
+
             # 以下の条件を満たす場合トレードしないため、データフレームから除去する。
             # ・スプレッド < Gap Price
             df = df[df[GapFill.LBL_SPREAD] < df[GapFill.LBL_GAPPRI]]
