@@ -217,10 +217,10 @@ class CandleStickData(object):
         inst = OandaIns.list[inst_id].oanda_name
         ic = CandleStickData.__request_api(inst, params)
 
-        dfb = CandleStickData.__convert_dataframe(ic, gran,
-                                                  price_typ=OandaRsp.BID)
-        dfa = CandleStickData.__convert_dataframe(ic, gran,
-                                                  price_typ=OandaRsp.ASK)
+        price_typ = OandaRsp.BID
+        dfb = CandleStickData.__convert_dataframe(ic, gran, price_typ)
+        price_typ = OandaRsp.ASK
+        dfa = CandleStickData.__convert_dataframe(ic, gran, price_typ)
         deltadf = dfa - dfb
 
         return OandaIns.normalize(inst_id, deltadf.iloc[0][LBL_OPEN])
