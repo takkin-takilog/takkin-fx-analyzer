@@ -7,7 +7,7 @@ from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.models.glyphs import Line
-from bokeh.layouts import layout, widgetbox, row, column
+from bokeh.layouts import layout, widgetbox, row, column, gridplot
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
@@ -138,6 +138,7 @@ class GapFill(object):
             なし[None]
         """
         self.__BG_COLOR = "#2E2E2E"  # Background color
+        self.__HIST_DIV = 50
 
         # Widget Button:解析実行[Run analysis]
         self.__btn_run = Button(label="解析実行",
@@ -207,47 +208,21 @@ class GapFill(object):
         self.__dfsmm = pd.DataFrame(columns=cols)
 
         # ---------- Gap-Price histogram ----------
-        hist = HorizontalHistogramTwo(title="Gap-Price histogram",
-                                      color1="lime",
-                                      color2="red")
-        hist.xaxis_label("回数")
-        hist.yaxis_label("Gap Price")
+        hist = self.__generate_gapprice_hist("Gap-Price histogram (All data)")
+        self.__hist_gap_all = hist
 
-        # renderer1
-        hover = HoverTool()
-        hover.tooltips = [("回数", "@" + HorizontalHistogramTwo.RIGHT),
-                          ("範囲", "@" + HorizontalHistogramTwo.BOTTOM
-                           + "{(0.000)} - " + "@" + HorizontalHistogramTwo.TOP
-                           + "{(0.000)}")]
-        hover.renderers = [hist.render1]
-        hist.fig.add_tools(hover)
-
-        # renderer2
-        hover = HoverTool()
-        hover.tooltips = [("回数", "@" + HorizontalHistogramTwo.LEFT),
-                          ("範囲", "@" + HorizontalHistogramTwo.BOTTOM
-                           + "{(0.000)} - " + "@" + HorizontalHistogramTwo.TOP
-                           + "{(0.000)}")]
-        hover.renderers = [hist.render2]
-        hist.fig.add_tools(hover)
-
-        self.__gappri_hist = hist
+        hist = self.__generate_gapprice_hist(
+            "Gap-Price histogram (Only valid data)")
+        self.__hist_gap_vld = hist
 
         # ---------- Max open range histogram ----------
-        hist = HorizontalHistogram(title="Max open range histogram",
-                                   color="lime")
-        hist.xaxis_label("回数")
-        hist.yaxis_label("Gap Price")
+        hist = self.__generate_maxopenrange_hist(
+            "Max open range histogram (All data)")
+        self.__maxopn_hist_all = hist
 
-        hover = HoverTool()
-        hover.tooltips = [("回数", "@" + HorizontalHistogram.RIGHT),
-                          ("範囲", "@" + HorizontalHistogram.BOTTOM
-                           + "{(0.000)} - " + "@" + HorizontalHistogram.TOP
-                           + "{(0.000)}")]
-        hover.renderers = [hist.render]
-        hist.fig.add_tools(hover)
-
-        self.__maxopn_hist = hist
+        hist = self.__generate_maxopenrange_hist(
+            "Max open range histogram (Only valid data)")
+        self.__maxopn_hist_vld = hist
 
         # ---------- Income simulation ----------
         self.__btn_simrun = Button(label="シミュレーション実行",
@@ -287,6 +262,50 @@ class GapFill(object):
                          sizing_mode='stretch_width')
         return(layout_)
 
+    def __generate_gapprice_hist(self, title_):
+
+        hist = HorizontalHistogramTwo(title=title_,
+                                      color1="lime",
+                                      color2="red")
+        hist.xaxis_label("回数")
+        hist.yaxis_label("Gap Price")
+
+        # renderer1
+        hover = HoverTool()
+        hover.tooltips = [("回数", "@" + HorizontalHistogramTwo.RIGHT),
+                          ("範囲", "@" + HorizontalHistogramTwo.BOTTOM
+                           + "{(0.000)} - " + "@" + HorizontalHistogramTwo.TOP
+                           + "{(0.000)}")]
+        hover.renderers = [hist.render1]
+        hist.fig.add_tools(hover)
+
+        # renderer2
+        hover = HoverTool()
+        hover.tooltips = [("回数", "@" + HorizontalHistogramTwo.LEFT),
+                          ("範囲", "@" + HorizontalHistogramTwo.BOTTOM
+                           + "{(0.000)} - " + "@" + HorizontalHistogramTwo.TOP
+                           + "{(0.000)}")]
+        hover.renderers = [hist.render2]
+        hist.fig.add_tools(hover)
+
+        return hist
+
+    def __generate_maxopenrange_hist(self, title_):
+
+        hist = HorizontalHistogram(title=title_, color="lime")
+        hist.xaxis_label("回数")
+        hist.yaxis_label("Gap Price")
+
+        hover = HoverTool()
+        hover.tooltips = [("回数", "@" + HorizontalHistogram.RIGHT),
+                          ("範囲", "@" + HorizontalHistogram.BOTTOM
+                           + "{(0.000)} - " + "@" + HorizontalHistogram.TOP
+                           + "{(0.000)}")]
+        hover.renderers = [hist.render]
+        hist.fig.add_tools(hover)
+
+        return hist
+
     def __create_result_tabs(self):
 
         # Tab1の設定
@@ -300,9 +319,12 @@ class GapFill(object):
         tab1 = Panel(child=wdgbx, title="Summary")
 
         # Tab2の設定
-        hist1 = self.__gappri_hist.fig
-        hist2 = self.__maxopn_hist.fig
-        hist = row(children=[hist1, hist2])
+        hist_gap_all = self.__hist_gap_all.fig
+        hist_gap_vld = self.__hist_gap_vld.fig
+        hist_max_all = self.__maxopn_hist_all.fig
+        hist_max_vld = self.__maxopn_hist_vld.fig
+        hist = gridplot(children=[[hist_gap_all, hist_gap_vld],
+                                  [hist_max_all, hist_max_vld]])
         tab2 = Panel(child=hist, title="Histogram")
 
         # Tab3の設定
@@ -343,7 +365,30 @@ class GapFill(object):
         self.__txtin_succ.value = str_succ
         self.__txtin_fail.value = str_fail
 
-    def __update_gapprice_hist(self, df, minunit):
+    def __update_hist(self, df, minunit):
+
+        # ========== Gap prie hist ==========
+        # Gap prie hist all
+        sulist, faillist, bins, rng = self.__update_hist_gapprice(df, minunit)
+        self.__hist_gap_all.update(sulist, faillist, bins, rng)
+
+        # Gap prie hist valid
+        dfvld = df[df[GapFill.LBL_SPREAD] < df[GapFill.LBL_GAPPRI]].copy()
+        sulist, faillist, bins, rng = self.__update_hist_gapprice(
+            dfvld, minunit)
+        self.__hist_gap_vld.update(sulist, faillist, bins, rng)
+
+        # ========== Max open hist ==========
+        # Max open hist all
+        sulist, bins, rng = self.__update_hist_maxopen(df, minunit)
+        self.__maxopn_hist_all.update(sulist, bins, rng)
+
+        # Max open hist valid
+        dfvld = df[df[GapFill.LBL_SPREAD] < df[GapFill.LBL_GAPPRI]].copy()
+        sulist, bins, rng = self.__update_hist_maxopen(dfvld, minunit)
+        self.__maxopn_hist_vld.update(sulist, bins, rng)
+
+    def __update_hist_gapprice(self, df, minunit):
 
         succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
         failflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
@@ -373,13 +418,12 @@ class GapFill(object):
         if max_ < maxrng:
             max_ = maxrng
 
-        div = 50
-        bins_ = int(max_ * pow(10, -tmp) * div)
+        bins = int(max_ * pow(10, -tmp) * self.__HIST_DIV)
+        rng = (0, max_)
 
-        self.__gappri_hist.update(succgappri, failgappri, bins=bins_,
-                                  rng=(0, max_))
+        return succgappri, failgappri, bins, rng
 
-    def __update_maxopen_hist(self, df, minunit):
+    def __update_hist_maxopen(self, df, minunit):
 
         succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
         succdf = df[succflg]
@@ -400,10 +444,10 @@ class GapFill(object):
         if max_ < maxrng:
             max_ = maxrng
 
-        div = 50
-        bins_ = int(max_ * pow(10, -tmp) * div)
+        bins = int(max_ * pow(10, -tmp) * self.__HIST_DIV)
+        rng = (0, max_)
 
-        self.__maxopn_hist.update(succgappri, bins=bins_, rng=(0, max_))
+        return succgappri, bins, rng
 
     def ___check_candlestickdata(self, df, monday):
         # 終値
@@ -581,8 +625,7 @@ class GapFill(object):
             self.__update_summary(dfsmm)
             minunit = OandaIns.list[inst_id].min_unit
 
-            self.__update_gapprice_hist(dfsmm, minunit)
-            self.__update_maxopen_hist(dfsmm, minunit)
+            self.__update_hist(dfsmm, minunit)
 
             self.__dfsmm = dfsmm
 
