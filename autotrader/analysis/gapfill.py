@@ -32,8 +32,8 @@ class LineGraphSim(LineGraphAbs):
                                           dimensions="height"))
 
         hover = HoverTool()
-        hover.tooltips = [("loss cut", "@" + LineGraphSim.X + "{(0.00000)}"),
-                          ("profit", "@" + LineGraphSim.Y + "{(0.00000)}")]
+        hover.tooltips = [("loss cut", "@" + LineGraphSim.X + "{0.00000}"),
+                          ("profit", "@" + LineGraphSim.Y + "{0.00000}")]
         hover.renderers = [self._ren]
         hover.mode = "vline"
         self._fig.add_tools(hover)
