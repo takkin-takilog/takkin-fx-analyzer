@@ -549,7 +549,7 @@ class GapFill(object):
             maxopngap = abs(maxopnpri - open_pri)
 
         # 有効トレード判定結果
-        dfvld = spread < gap_pri
+        vldflg = (spread / 2) < gap_pri
 
         # 出力
         record = pd.Series([monday,
@@ -561,7 +561,7 @@ class GapFill(object):
                             gap_pri,
                             filltime,
                             maxopngap,
-                            dfvld],
+                            vldflg],
                            index=self.__dfsmm.columns)
 
         return jdg_flg, record
@@ -689,13 +689,14 @@ class GapFill(object):
             df = self.__dfsmm[[GapFill.LBL_RESULT,
                                GapFill.LBL_SPREAD,
                                GapFill.LBL_GAPPRI,
-                               GapFill.LBL_MAXOPNRNG]].copy()
+                               GapFill.LBL_MAXOPNRNG,
+                               GapFill.LBL_VALID]].copy()
 
             df[GapFill.LBL_SPREAD] = df[GapFill.LBL_SPREAD] / 2
 
             # 以下の条件を満たす場合トレードしないため、データフレームから除去する。
             # ・スプレッド < Gap Price
-            df = df[df[GapFill.LBL_SPREAD] < df[GapFill.LBL_GAPPRI]]
+            df = df[df[GapFill.LBL_VALID] == utl.TRUE]
 
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 
