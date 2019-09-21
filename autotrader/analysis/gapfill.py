@@ -128,6 +128,7 @@ class GapFill(object):
     LBL_GAPPRI = "Gap Price"
     LBL_FILLTIME = "Filled Time"
     LBL_MAXOPNRNG = "Max Open Range"
+    LBL_VALID = "Valid Trade"
 
     RSL_FAIL = 0
     RSL_SUCCESS = 1
@@ -204,7 +205,8 @@ class GapFill(object):
                 GapFill.LBL_SPREAD,
                 GapFill.LBL_GAPPRI,
                 GapFill.LBL_FILLTIME,
-                GapFill.LBL_MAXOPNRNG]
+                GapFill.LBL_MAXOPNRNG,
+                GapFill.LBL_VALID]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
         # ---------- Gap-Price histogram ----------
@@ -367,13 +369,14 @@ class GapFill(object):
 
     def __update_hist(self, df, minunit):
 
+        dfvld = df[df[GapFill.LBL_VALID] == utl.TRUE].copy()
+
         # ========== Gap prie hist ==========
         # Gap prie hist all
         sulist, faillist, bins, rng = self.__update_hist_gapprice(df, minunit)
         self.__hist_gap_all.update(sulist, faillist, bins, rng)
 
         # Gap prie hist valid
-        dfvld = df[df[GapFill.LBL_SPREAD] < df[GapFill.LBL_GAPPRI]].copy()
         sulist, faillist, bins, rng = self.__update_hist_gapprice(
             dfvld, minunit)
         self.__hist_gap_vld.update(sulist, faillist, bins, rng)
@@ -384,7 +387,6 @@ class GapFill(object):
         self.__maxopn_hist_all.update(sulist, bins, rng)
 
         # Max open hist valid
-        dfvld = df[df[GapFill.LBL_SPREAD] < df[GapFill.LBL_GAPPRI]].copy()
         sulist, bins, rng = self.__update_hist_maxopen(dfvld, minunit)
         self.__maxopn_hist_vld.update(sulist, bins, rng)
 
@@ -522,6 +524,9 @@ class GapFill(object):
                 maxopnpri = ext2_df[cs.LBL_LOW].min()
             maxopngap = abs(maxopnpri - open_pri)
 
+        # 有効トレード判定結果
+        dfvld = spread < gap_pri
+
         # 出力
         record = pd.Series([monday,
                             rst,
@@ -531,7 +536,8 @@ class GapFill(object):
                             spread,
                             gap_pri,
                             filltime,
-                            maxopngap],
+                            maxopngap,
+                            dfvld],
                            index=self.__dfsmm.columns)
 
         return jdg_flg, record

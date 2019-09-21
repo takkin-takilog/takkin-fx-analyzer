@@ -2,6 +2,10 @@ import datetime
 import copy
 
 
+TRUE = 1
+FALSE = 0
+
+
 class DateTimeManager(object):
     """ DateTimeManager
             - DateTime管理クラス[DateTime Manager class]
