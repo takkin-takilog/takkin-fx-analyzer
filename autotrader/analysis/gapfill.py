@@ -311,23 +311,37 @@ class GapFill(object):
     def __create_result_tabs(self):
 
         # Tab1の設定
-        self.__txtin_succ = TextInput(value="", title="成功回数:",
-                                      width=200)
-        self.__txtin_fail = TextInput(value="", title="失敗回数:",
-                                      width=200)
+        txtin_succ = TextInput(value="",
+                               title="Success count (All data):",
+                               width=200)
+        txtin_fail = TextInput(value="",
+                               title="Failure count (All data):",
+                               width=200)
+        txtin_all_wdgbx = widgetbox(children=[txtin_succ,
+                                              txtin_fail])
+        self.__txtin_succ_all = txtin_succ
+        self.__txtin_fail_all = txtin_fail
 
-        wdgbx = widgetbox(children=[self.__txtin_succ,
-                                    self.__txtin_fail])
-        tab1 = Panel(child=wdgbx, title="Summary")
+        txtin_succ = TextInput(value="",
+                               title="Success count (Only valid data):",
+                               width=200)
+        txtin_fail = TextInput(value="",
+                               title="Failure count (Only valid data):",
+                               width=200)
+        txtin_vld_wdgbx = widgetbox(children=[txtin_succ,
+                                              txtin_fail])
+        self.__txtin_succ_vld = txtin_succ
+        self.__txtin_fail_vld = txtin_fail
 
         # Tab2の設定
         hist_gap_all = self.__hist_gap_all.fig
         hist_gap_vld = self.__hist_gap_vld.fig
         hist_max_all = self.__maxopn_hist_all.fig
         hist_max_vld = self.__maxopn_hist_vld.fig
-        hist = gridplot(children=[[hist_gap_all, hist_gap_vld],
+        hist = gridplot(children=[[txtin_all_wdgbx, txtin_vld_wdgbx],
+                                  [hist_gap_all, hist_gap_vld],
                                   [hist_max_all, hist_max_vld]])
-        tab2 = Panel(child=hist, title="Histogram")
+        tab2 = Panel(child=hist, title="Summary")
 
         # Tab3の設定
         sim = self.__btn_simrun
@@ -344,28 +358,38 @@ class GapFill(object):
         tab3 = Panel(child=w3, title="Income Simulation")
 
         # タブ生成
-        tabs = Tabs(tabs=[tab1, tab2, tab3])
+        tabs = Tabs(tabs=[tab2, tab3])
 
         return tabs
 
     def __update_summary(self, df):
 
+        str_succ, str_fail = self.__make_summary(df)
+        self.__txtin_succ_all.value = str_succ
+        self.__txtin_fail_all.value = str_fail
+
+        dfvld = df[df[GapFill.LBL_VALID] == utl.TRUE]
+        str_succ, str_fail = self.__make_summary(dfvld)
+        self.__txtin_succ_vld.value = str_succ
+        self.__txtin_fail_vld.value = str_fail
+
+    def __make_summary(self, df):
+
         if df.empty:
-            succnum = 0
-            failnum = 0
             length = 0
+            succ_cnt = 0
+            fail_cnt = 0
         else:
-            succflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS)
-            failflg = (df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL)
-            succnum = len(df[succflg])
-            failnum = len(df[failflg])
             length = len(df)
+            succdf = df[df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS]
+            faildf = df[df[GapFill.LBL_RESULT] == GapFill.RSL_FAIL]
+            succ_cnt = len(succdf)
+            fail_cnt = len(faildf)
 
-        str_succ = "  {} / {}" .format(succnum, length)
-        str_fail = "  {} / {}" .format(failnum, length)
+        str_succ = "  {} / {}" .format(succ_cnt, length)
+        str_fail = "  {} / {}" .format(fail_cnt, length)
 
-        self.__txtin_succ.value = str_succ
-        self.__txtin_fail.value = str_fail
+        return str_succ, str_fail
 
     def __update_hist(self, df, minunit):
 
