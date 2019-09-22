@@ -1,6 +1,6 @@
 import datetime
 import copy
-
+import numpy as np
 
 TRUE = 1
 FALSE = 0
@@ -65,3 +65,19 @@ def limit_lower(input_val, lower_val):
     else:
         ret = lower_val
     return ret
+
+
+def normalzie(x, amin=0, amax=1):
+    """"正規化する[normalzie]
+    引数[Args]:
+        x : 入力値[input value]
+        amin : 正規化下限値[normalzie lower value]
+        amax : 正規化上限値[normalzie upper value]
+    戻り値[Returns]:
+        [normalzied value]
+    """
+    xmax = x.max()
+    xmin = x.min()
+    if xmin == xmax:
+        return np.ones_like(x)
+    return (amax - amin) * (x - xmin) / (xmax - xmin) + amin

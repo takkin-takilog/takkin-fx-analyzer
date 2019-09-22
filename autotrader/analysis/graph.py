@@ -1,8 +1,101 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from bokeh.models import ColumnDataSource, Range1d
-from bokeh.models.glyphs import Quad, Line
+from bokeh.models import LinearColorMapper, ColorBar
+from bokeh.models.glyphs import Quad, Line, Image
 from bokeh.plotting import figure
+import autotrader.utils as utl
+
+
+class HeatMap(object):
+
+    IMAGE = "image"
+    X = "x"
+    Y = "y"
+    DW = "dw"
+    DH = "dh"
+
+    def __init__(self, title):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            fig (figure) : フィギュアオブジェクト[figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
+        """
+        color_mapper = LinearColorMapper(palette="Plasma256", low=0, high=1)
+
+        fig = figure(title=title,
+                     tools='',
+                     toolbar_location=None)
+        fig.x_range.range_padding = 0
+        fig.y_range.range_padding = 0
+
+        src = ColumnDataSource({HeatMap.IMAGE: [],
+                                HeatMap.X: [],
+                                HeatMap.Y: [],
+                                HeatMap.DW: [],
+                                HeatMap.DH: []})
+
+        glyph = Image(image=HeatMap.IMAGE,
+                      x=HeatMap.X,
+                      y=HeatMap.Y,
+                      dw=HeatMap.DW,
+                      dh=HeatMap.DH,
+                      color_mapper=color_mapper)
+
+        ren = fig.add_glyph(src, glyph)
+
+        color_bar = ColorBar(color_mapper=color_mapper,
+                             label_standoff=12,
+                             border_line_color=None,
+                             location=(0, 0))
+        fig.add_layout(color_bar, 'right')
+
+        self.__fig = fig
+        self.__src = src
+        self.__glyph = glyph
+        self.__ren = ren
+        self.__cm = color_mapper
+
+    @property
+    def fig(self):
+        """モデルを取得する[get model]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            self._fig (object) : model object
+        """
+        return self.__fig
+
+    def xaxis_label(self, xlabel):
+        self.__fig.xaxis.axis_label = xlabel
+
+    def yaxis_label(self, ylabel):
+        self.__fig.yaxis.axis_label = ylabel
+
+    def update(self, image, x, y, dw, dh):
+        self.__src.data = {
+            HeatMap.IMAGE: [image],
+            HeatMap.X: [x],
+            HeatMap.Y: [y],
+            HeatMap.DW: [dw],
+            HeatMap.DH: [dh]
+        }
+        self.__cm.low = image.min()
+        self.__cm.high = image.max()
+
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        dict_ = {HeatMap.IMAGE: [],
+                 HeatMap.X: [],
+                 HeatMap.Y: [],
+                 HeatMap.DW: [],
+                 HeatMap.DH: []}
+        self.__src.data = dict_
 
 
 class LineGraphAbs(metaclass=ABCMeta):
@@ -409,6 +502,11 @@ class HorizontalHistogramTwo(HistogramTwoAbs):
         self._fig.x_range.update(start=str_, end=end_)
 
 
+def normal2d(X, Y, sigx=1.0, sigy=1.0, mux=0.0, muy=0.0):
+    z = (X - mux)**2 / sigx**2 + (Y - muy)**2 / sigy**2
+    return np.exp(-z / 2) / (2 * np.pi * sigx * sigy)
+
+
 if __name__ == "__main__":
     from bokeh.io import show
     from bokeh.layouts import layout
@@ -434,7 +532,28 @@ if __name__ == "__main__":
     hhis2.xaxis_label("回数")
     hhis2.yaxis_label("Price")
 
+    # ============ HeatMap ================
+    hm = HeatMap("Title Sample")
+
+    X1, Y1 = np.mgrid[0:10:2, 1:10:2]
+    print(X1)
+    image = utl.normalzie(X1, amin=0.03, amax=0.86)
+
+    print(image)
+    print(image.min())
+    print(image.max())
+
+    x = 0
+    y = 0
+    dw = 0.64
+    dh = 0.75
+
+    hm.update(image, x, y, dw, dh)
+    hm.xaxis_label("X軸")
+    hm.yaxis_label("Y軸")
+
     layout_ = layout(children=[[plt_vhist, plt_hhist],
-                               [plt_vhis2, plt_hhis2]])
+                               [plt_vhis2, plt_hhis2],
+                               [hm.fig]])
 
     show(layout_)
