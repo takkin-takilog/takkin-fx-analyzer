@@ -19,7 +19,7 @@ from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.graph import HorizontalHistogram
 from autotrader.analysis.graph import HorizontalHistogramTwo
-from autotrader.analysis.graph import LineGraphAbs
+from autotrader.analysis.graph import LineGraphAbs, HeatMap
 
 
 class LineGraphSim(LineGraphAbs):
@@ -245,6 +245,11 @@ class GapFill(object):
         self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
         self.__linegraphsim.yaxis_label("Sum of Pips")
 
+        self.__hm = HeatMap("Title Sample")
+
+        self.__hm.xaxis_label("Loss Cut")
+        self.__hm.yaxis_label("Thresh")
+
     def get_layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
@@ -344,11 +349,13 @@ class GapFill(object):
         tab2 = Panel(child=hist, title="Summary")
 
         # Tab3の設定
+        hm = self.__hm.fig
         sim = self.__btn_simrun
         lsct = self.__txtin_losscut
         gpth = self.__txtin_gapprith
 
-        simwid = column(children=[sim,
+        simwid = column(children=[hm,
+                                  sim,
                                   lsct,
                                   gpth])
 
@@ -686,51 +693,73 @@ class GapFill(object):
             inst_id = ana.get_instrument_id()
             minunit = OandaIns.list[inst_id].min_unit
 
-            df = self.__dfsmm[[GapFill.LBL_RESULT,
+            dfmst = self.__dfsmm[[GapFill.LBL_RESULT,
                                GapFill.LBL_SPREAD,
                                GapFill.LBL_GAPPRI,
                                GapFill.LBL_MAXOPNRNG,
                                GapFill.LBL_VALID]].copy()
 
-            df[GapFill.LBL_SPREAD] = df[GapFill.LBL_SPREAD] / 2
+            dfmst[GapFill.LBL_SPREAD] = dfmst[GapFill.LBL_SPREAD] / 2
 
             # 以下の条件を満たす場合トレードしないため、データフレームから除去する。
             # ・スプレッド < Gap Price
-            df = df[df[GapFill.LBL_VALID] == utl.TRUE]
+            df = dfmst[dfmst[GapFill.LBL_VALID] == utl.TRUE].copy()
+
+            minstep = OandaIns.normalize(inst_id, pow(0.1, minunit))
+
+            th_min = 0
+            th_max = df[GapFill.LBL_MAXOPNRNG].max()
+
+            step = minstep*10
+            ylist = np.arange(th_min, th_max, step)
 
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 
-            maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
-
-            minstep = OandaIns.normalize(inst_id, pow(0.1, minunit))
-            RANG_GAIN = 0.5
             start = minstep
+            maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
             if minstep < maxop:
+                RANG_GAIN = 0.5
                 end = maxop + minstep * int(maxop / minstep * RANG_GAIN)
             else:
                 end = minstep * 100
-            step = minstep
-            xlist = np.arange(start, end, step)
-            ylist = []
-            for losscut in xlist:
-                df_flg2 = losscut > df[GapFill.LBL_MAXOPNRNG]
-                # 合計利益を計算
-                dfpro = df[df_flg1 == df_flg2]
-                profitsum = (dfpro[GapFill.LBL_GAPPRI] -
-                             dfpro[GapFill.LBL_SPREAD]).sum()
-                # 合計損失を計算
-                lossdf = df[df_flg1 != df_flg2]
-                losssum = (losscut + lossdf[GapFill.LBL_SPREAD]).sum()
-                # 合計損益を計算
-                prolossum = profitsum - losssum
-                """
-                print("ロスカット：{}, 利益：{}, 損失：{}, 合計：{}" .format(round(losscut, minunit),
-                                                              round(
-                                                                  profitsum, minunit),
-                                                              round(
-                                                                  losssum, minunit),
-                                                              round(prolossum, minunit)))
-                """
-                ylist.append(prolossum)
 
-            self.__linegraphsim.update(xlist, ylist)
+            xlist = np.arange(start, end, step)
+
+            #========================================================
+            map_ = []
+            cnt=0
+            for th in ylist:
+                # 閾値未満
+                df = df[th <= df[GapFill.LBL_MAXOPNRNG]]
+
+                df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
+
+                zlist = []
+                for losscut in xlist:
+                    df_flg2 = losscut > df[GapFill.LBL_MAXOPNRNG]
+                    # 合計利益を計算
+                    dfpro = df[df_flg1 == df_flg2]
+                    profitsum = (dfpro[GapFill.LBL_GAPPRI] -
+                                 dfpro[GapFill.LBL_SPREAD]).sum()
+                    # 合計損失を計算
+                    lossdf = df[df_flg1 != df_flg2]
+                    losssum = (losscut + lossdf[GapFill.LBL_SPREAD]).sum()
+                    # 合計損益を計算
+                    prolossum = profitsum - losssum
+                    """
+                    print("ロスカット：{}, 利益：{}, 損失：{}, 合計：{}" .format(round(losscut, minunit),
+                                                                  round(
+                                                                      profitsum, minunit),
+                                                                  round(
+                                                                      losssum, minunit),
+                                                                  round(prolossum, minunit)))
+                    """
+                    zlist.append(prolossum)
+                cnt = cnt + 1
+                print("Sim: {}/{}" .format(cnt, len(ylist)))
+                map_.append(zlist)
+
+            self.__linegraphsim.update(xlist, map_[0])
+            map_ = np.array(map_)
+            self.__hm.update(map_, xlist[0], ylist[0], xlist[-1], ylist[-1])
+            print(map_.shape)
