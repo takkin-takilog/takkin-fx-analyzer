@@ -19,8 +19,17 @@ from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.graph import HorizontalHistogram
 from autotrader.analysis.graph import HorizontalHistogramTwo
-from autotrader.analysis.graph import LineGraphAbs, HeatMap
+from autotrader.analysis.graph import LineGraphAbs, HeatMap, HeatMap2
 
+
+class HeatMapSim(HeatMap2):
+
+    def __init__(self, title):
+        super().__init__(title)
+
+    def update(self, image, xlist, ylist, dw, dh):
+        #super().update(xlist, ylist, w, h, d)
+        pass
 
 class LineGraphSim(LineGraphAbs):
 

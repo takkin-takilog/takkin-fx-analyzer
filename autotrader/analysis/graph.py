@@ -2,9 +2,11 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 from bokeh.models import ColumnDataSource, Range1d
 from bokeh.models import LinearColorMapper, ColorBar
-from bokeh.models.glyphs import Quad, Line, Image
+from bokeh.models.glyphs import Quad, Line, Image, Rect
 from bokeh.plotting import figure
+from bokeh.transform import transform
 import autotrader.utils as utl
+from autotrader.bokeh_common import ToolType
 
 
 class HeatMap(object):
@@ -95,6 +97,115 @@ class HeatMap(object):
                  HeatMap.Y: [],
                  HeatMap.DW: [],
                  HeatMap.DH: []}
+        self.__src.data = dict_
+
+
+class HeatMap2(object):
+
+    _X = "x"
+    _Y = "y"
+    _W = "width"
+    _H = "height"
+    _D = "depth"
+
+    def __init__(self, title):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            fig (figure) : フィギュアオブジェクト[figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
+        """
+        mapper = LinearColorMapper(palette="Plasma256", low=0, high=1)
+        tools_ = ToolType.gen_str(ToolType.HOVER)
+
+        fig = figure(title=title,
+                     tools=tools_,
+                     toolbar_location=None)
+        fig.x_range.range_padding = 0
+        fig.y_range.range_padding = 0
+
+        src = ColumnDataSource({HeatMap2._X: [],
+                                HeatMap2._Y: [],
+                                HeatMap2._W: [],
+                                HeatMap2._H: [],
+                                HeatMap2._D: []
+                                })
+        """
+        glyph = Rect(x=HeatMap2.X,
+                     y=HeatMap2.Y,
+                     width=HeatMap2.W,
+                     height=HeatMap2.H,
+                     line_color=None,
+                     hover_line_color="black",
+                     fill_color=transform(HeatMap2.D, mapper)
+                     )
+        """
+
+        fig.rect(x=HeatMap2._X,
+                 y=HeatMap2._Y,
+                 width=HeatMap2._W,
+                 height=HeatMap2._H,
+                 source=src,
+                 line_color=None,
+                 fill_color=transform(HeatMap2._D, mapper),
+                 hover_line_color="black",
+                 hover_color=transform(HeatMap2._D, mapper)
+                 )
+
+
+        #ren = fig.add_glyph(src, glyph)
+
+        color_bar = ColorBar(color_mapper=mapper,
+                             label_standoff=12,
+                             border_line_color=None,
+                             location=(0, 0))
+        fig.add_layout(color_bar, 'right')
+
+        self.__fig = fig
+        self.__src = src
+        #self.__glyph = glyph
+        #self.__ren = ren
+        self.__cm = mapper
+
+    @property
+    def fig(self):
+        """モデルを取得する[get model]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            self._fig (object) : model object
+        """
+        return self.__fig
+
+    def xaxis_label(self, xlabel):
+        self.__fig.xaxis.axis_label = xlabel
+
+    def yaxis_label(self, ylabel):
+        self.__fig.yaxis.axis_label = ylabel
+
+    def update(self, x, y, w, h, d):
+
+        self.__src.data = {HeatMap2._X: x,
+                           HeatMap2._Y: y,
+                           HeatMap2._W: w,
+                           HeatMap2._H: h,
+                           HeatMap2._D: d
+                           }
+        self.__cm.low = d.min()
+        self.__cm.high = d.max()
+
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        dict_ = {HeatMap2._X: [],
+                 HeatMap2._Y: [],
+                 HeatMap2._W: [],
+                 HeatMap2._H: [],
+                 HeatMap2._D: []
+                 }
         self.__src.data = dict_
 
 
@@ -552,8 +663,32 @@ if __name__ == "__main__":
     hm.xaxis_label("X軸")
     hm.yaxis_label("Y軸")
 
+    # ============ HeatMap ================
+    hm2 = HeatMap2("Title Sample")
+
+    x = np.array([0, 1, 2,
+                  0, 1, 2,
+                  0, 1, 2])
+
+    y = np.array([0, 0, 0,
+                  1, 1, 1,
+                  2, 2, 2])
+
+    w = np.ones(len(x)) * 0.9
+    h = np.ones(len(x)) * 0.9
+
+    d = np.arange(len(x))
+
+
+    print(d)
+
+    hm2.update(x, y, w, h, d)
+
+
+
+
     layout_ = layout(children=[[plt_vhist, plt_hhist],
                                [plt_vhis2, plt_hhis2],
-                               [hm.fig]])
+                               [hm.fig, hm2.fig]])
 
     show(layout_)
