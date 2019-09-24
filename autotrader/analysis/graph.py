@@ -182,14 +182,25 @@ class HeatMap2(object):
     def yaxis_label(self, ylabel):
         self.__fig.yaxis.axis_label = ylabel
 
-    def update(self, x, y, w, h, d):
+    def update(self, map3d, xstep, ystep):
+        print("1==================")
 
+        x = map3d[:, 0]
+        y = map3d[:, 1]
+        d = map3d[:, 2]
+        print("AAAA")
+        print(len(map3d))
+        w = [xstep * 0.9] * len(map3d)
+        h = [ystep * 0.9] * len(map3d)
+
+        print("2==================")
         self.__src.data = {HeatMap2._X: x,
                            HeatMap2._Y: y,
                            HeatMap2._W: w,
                            HeatMap2._H: h,
                            HeatMap2._D: d
                            }
+        print("3==================")
         self.__cm.low = d.min()
         self.__cm.high = d.max()
 

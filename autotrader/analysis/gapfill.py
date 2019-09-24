@@ -254,7 +254,7 @@ class GapFill(object):
         self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
         self.__linegraphsim.yaxis_label("Sum of Pips")
 
-        self.__hm = HeatMap("Title Sample")
+        self.__hm = HeatMap2("Title Sample")
 
         self.__hm.xaxis_label("Loss Cut")
         self.__hm.yaxis_label("Thresh")
@@ -719,12 +719,11 @@ class GapFill(object):
             th_min = 0
             th_max = df[GapFill.LBL_MAXOPNRNG].max()
 
-            step = minstep*10
-            ylist = np.arange(th_min, th_max, step)
+            ystep = minstep*10
+            ylist = np.arange(th_min, th_max, ystep)
 
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 
-            start = minstep
             maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
             if minstep < maxop:
                 RANG_GAIN = 0.5
@@ -732,10 +731,12 @@ class GapFill(object):
             else:
                 end = minstep * 100
 
-            xlist = np.arange(start, end, step)
+            xstep = ystep
+            xlist = np.arange(0, end, xstep)
 
             #========================================================
             map_ = []
+            map3d = np.empty((0,3))
             cnt=0
             for th in ylist:
                 # 閾値未満
@@ -764,11 +765,14 @@ class GapFill(object):
                                                                   round(prolossum, minunit)))
                     """
                     zlist.append(prolossum)
+
+                    nda = np.array([losscut, th, prolossum])
+                    map3d = np.vstack((map3d, nda))
+
                 cnt = cnt + 1
                 print("Sim: {}/{}" .format(cnt, len(ylist)))
                 map_.append(zlist)
 
             self.__linegraphsim.update(xlist, map_[0])
-            map_ = np.array(map_)
-            self.__hm.update(map_, xlist[0], ylist[0], xlist[-1], ylist[-1])
-            print(map_.shape)
+            print(map3d)
+            self.__hm.update(map3d, xstep, ystep)
