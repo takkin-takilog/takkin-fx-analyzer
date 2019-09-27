@@ -162,18 +162,13 @@ class HeatMap2(object):
 
         self.__fig = fig
         self.__src = src
+        self.__cb = color_bar
         #self.__glyph = glyph
         #self.__ren = ren
         self.__cm = mapper
 
     @property
     def fig(self):
-        """モデルを取得する[get model]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            self._fig (object) : model object
-        """
         return self.__fig
 
     def xaxis_label(self, xlabel):
@@ -185,8 +180,11 @@ class HeatMap2(object):
     def update(self, map3d, xstep, ystep):
         print("1==================")
 
-        x = map3d[:, 0]
-        y = map3d[:, 1]
+        ofsx = xstep / 2
+        ofsy = ystep / 2
+
+        x = map3d[:, 0] + ofsx
+        y = map3d[:, 1] + ofsy
         d = map3d[:, 2]
         print("AAAA")
         print(len(map3d))
@@ -203,6 +201,9 @@ class HeatMap2(object):
         print("3==================")
         self.__cm.low = d.min()
         self.__cm.high = d.max()
+
+        self.__fig.plot_width  = len(x)
+        self.__fig.plot_height = len(y)
 
     def clear(self):
         """"データをクリアする[clear data]
