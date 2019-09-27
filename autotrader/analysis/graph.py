@@ -118,12 +118,16 @@ class HeatMap2(object):
         tools_ = ToolType.gen_str(ToolType.HOVER)
 
         fig = figure(title=title,
+                     plot_width = 200,
                      tools=tools_,
                      toolbar_location=None,
-                     match_aspect=True
+                     #match_aspect=True
                      )
-        fig.x_range.range_padding = 0
-        fig.y_range.range_padding = 0
+
+        fig.x_range = Range1d()
+        fig.y_range = Range1d()
+        #fig.x_range.range_padding = 0
+        #fig.y_range.range_padding = 0
 
         src = ColumnDataSource({HeatMap2._X: [],
                                 HeatMap2._Y: [],
@@ -188,24 +192,33 @@ class HeatMap2(object):
         x = map3d[:, 0] + ofsx
         y = map3d[:, 1] + ofsy
         d = map3d[:, 2]
-        print("AAAA")
-        print(len(map3d))
         w = [xstep * 0.9] * len(map3d)
         h = [ystep * 0.9] * len(map3d)
 
-        print("2==================")
         self.__src.data = {HeatMap2._X: x,
                            HeatMap2._Y: y,
                            HeatMap2._W: w,
                            HeatMap2._H: h,
                            HeatMap2._D: d
                            }
-        print("3==================")
         self.__cm.low = d.min()
         self.__cm.high = d.max()
 
-        self.__fig.frame_width = 100
-        self.__fig.frame_height = 100
+        strx = x[0] - ofsx
+        endx = x[-1] + ofsx
+        print("start={}, end={}" .format(strx, endx))
+        self.__fig.x_range.update(start=strx, end=endx, bounds = (strx, endx))
+        print("1---------")
+
+        stry = y[0] - ofsy
+        endy = y[-1] + ofsy
+        self.__fig.y_range.update(start=stry, end=endy, bounds = (stry, endy))
+
+        pw = 600
+        ph = int(pw * (endy - stry) / (endx - strx))
+
+        self.__fig.width = pw
+        self.__fig.height = ph
 
     def clear(self):
         """"データをクリアする[clear data]
