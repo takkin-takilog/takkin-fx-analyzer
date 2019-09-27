@@ -119,7 +119,9 @@ class HeatMap2(object):
 
         fig = figure(title=title,
                      tools=tools_,
-                     toolbar_location=None)
+                     toolbar_location=None,
+                     match_aspect=True
+                     )
         fig.x_range.range_padding = 0
         fig.y_range.range_padding = 0
 
@@ -202,8 +204,8 @@ class HeatMap2(object):
         self.__cm.low = d.min()
         self.__cm.high = d.max()
 
-        self.__fig.plot_width  = len(x)
-        self.__fig.plot_height = len(y)
+        self.__fig.frame_width = 100
+        self.__fig.frame_height = 100
 
     def clear(self):
         """"データをクリアする[clear data]
