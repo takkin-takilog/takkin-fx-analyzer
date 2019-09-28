@@ -19,17 +19,8 @@ from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.graph import HorizontalHistogram
 from autotrader.analysis.graph import HorizontalHistogramTwo
-from autotrader.analysis.graph import LineGraphAbs, HeatMap, HeatMap2
+from autotrader.analysis.graph import LineGraphAbs, HeatMap
 
-
-class HeatMapSim(HeatMap2):
-
-    def __init__(self, title):
-        super().__init__(title)
-
-    def update(self, image, xlist, ylist, dw, dh):
-        #super().update(xlist, ylist, w, h, d)
-        pass
 
 class LineGraphSim(LineGraphAbs):
 
@@ -254,7 +245,7 @@ class GapFill(object):
         self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
         self.__linegraphsim.yaxis_label("Sum of Pips")
 
-        self.__hm = HeatMap2("Title Sample")
+        self.__hm = HeatMap("Title Sample")
 
         self.__hm.xaxis_label("Loss Cut")
         self.__hm.yaxis_label("Thresh")
@@ -775,4 +766,4 @@ class GapFill(object):
 
             self.__linegraphsim.update(xlist, map_[0])
             print(map3d)
-            self.__hm.update(map3d, xstep, ystep)
+            self.__hm.update(map3d, ylist, xstep, ystep)
