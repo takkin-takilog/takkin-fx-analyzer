@@ -60,6 +60,7 @@ class HeatMap(object):
         fig.add_tools(HoverTool(renderers=[ren]))
 
         ren.hover_glyph = Rect(line_color="red",
+                               line_width=2,
                                fill_color=transform(HeatMap._D, mapper))
 
         self.__hline = HorLine(fig, "white", 2)
