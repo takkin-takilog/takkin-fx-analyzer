@@ -727,7 +727,7 @@ class GapFill(object):
 
             #========================================================
             map_ = []
-            map3d = np.empty((0,3))
+            map3d = np.empty((0, 3))
             cnt=0
             for th in ylist:
                 # 閾値未満

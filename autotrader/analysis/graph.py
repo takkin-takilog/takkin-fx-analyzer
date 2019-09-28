@@ -7,8 +7,6 @@ from bokeh.models import LinearColorMapper, ColorBar, HoverTool
 from bokeh.models.glyphs import Quad, Line, Rect
 from bokeh.plotting import figure
 from bokeh.transform import transform
-import autotrader.utils as utl
-from autotrader.bokeh_common import ToolType
 
 
 class HeatMap(object):
@@ -31,7 +29,7 @@ class HeatMap(object):
                      plot_width=200,
                      plot_height=200,
                      tools="",
-                     #toolbar_location=None,
+                     toolbar_location=None,
                      #match_aspect=True
                      background_fill_color="black",
                      )
