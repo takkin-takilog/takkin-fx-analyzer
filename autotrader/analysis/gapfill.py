@@ -42,12 +42,16 @@ class HeatMapSim(HeatMap):
 
     def update(self, map3d, xlist, ylist, htmap, xstep, ystep):
         super().update(map3d, ylist, xstep, ystep)
+
+        d = map3d[:, 2]
+        x_range = (min(xlist), max(xlist))
+        z_range = (min(d), max(d))
+        self.__lgs.update_range(x_range, z_range)
+
         self.__xlist = xlist
         self.__htmap = htmap
 
     def __cb_mousemove(self, event):
-
-        print("Called from Chield")
 
         if self._upflg:
             df_y = self._df_y
@@ -77,11 +81,21 @@ class LineGraphSim(LineGraphAbs):
         hover.mode = "vline"
         self._fig.add_tools(hover)
 
-    def update(self, xlist, ylist):
+    def update(self, xlist, zlist):
         self._src.data = {
             LineGraphSim.X: xlist,
-            LineGraphSim.Y: ylist,
+            LineGraphSim.Y: zlist,
         }
+
+    def update_range(self, x_range, z_range):
+
+        str_ = x_range[0]
+        end_ = x_range[1]
+        self._fig.x_range.update(start=str_, end=end_)
+
+        str_ = z_range[0]
+        end_ = z_range[1]
+        self._fig.y_range.update(start=str_, end=end_)
 
 
 class CandleStickChart(CandleStickChartBase):

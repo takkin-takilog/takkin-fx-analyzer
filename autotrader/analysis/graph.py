@@ -86,7 +86,7 @@ class HeatMap(object):
     def yaxis_label(self, ylabel):
         self._fig.yaxis.axis_label = ylabel
 
-    def update(self, map3d, ylist, xstep, ystep):
+    def update(self, map3d, zlist, xstep, ystep):
 
         ofsx = xstep / 2
         ofsy = ystep / 2
@@ -120,7 +120,7 @@ class HeatMap(object):
         self._fig.width = pw
         self._fig.height = ph
 
-        self._df_y = pd.Series(ylist + ofsy)
+        self._df_y = pd.Series(zlist + ofsy)
         self._xrng = [strx, endx]
 
         self._upflg = True
@@ -163,6 +163,9 @@ class LineGraphAbs(metaclass=ABCMeta):
                      plot_width=400,
                      tools='',
                      background_fill_color=self.__BG_COLOR)
+
+        fig.x_range = Range1d()
+        fig.y_range = Range1d()
 
         self._src = ColumnDataSource({LineGraphAbs.X: [],
                                       LineGraphAbs.Y: []})
