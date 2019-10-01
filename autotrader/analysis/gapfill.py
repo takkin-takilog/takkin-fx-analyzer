@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from bokeh import events
 from bokeh.models import ColumnDataSource
 from bokeh.models import CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs
@@ -20,6 +21,44 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.graph import HorizontalHistogram
 from autotrader.analysis.graph import HorizontalHistogramTwo
 from autotrader.analysis.graph import LineGraphAbs, HeatMap
+
+
+class HeatMapSim(HeatMap):
+
+    def __init__(self, title):
+        super().__init__(title)
+
+        # simulation graph
+        self.__lgs = LineGraphSim(title="profit graph",
+                                  color="yellow")
+        self.__lgs.xaxis_label("Loss Cut Price Offset")
+        self.__lgs.yaxis_label("Sum of Pips")
+
+        self._fig.on_event(events.MouseMove, self.__cb_mousemove)
+
+    @property
+    def linegraph_fig(self):
+        return self.__lgs.fig
+
+    def update(self, map3d, xlist, ylist, htmap, xstep, ystep):
+        super().update(map3d, ylist, xstep, ystep)
+        self.__xlist = xlist
+        self.__htmap = htmap
+
+    def __cb_mousemove(self, event):
+
+        print("Called from Chield")
+
+        if self._upflg:
+            df_y = self._df_y
+            xrng = self._xrng
+            xlist = self.__xlist
+            htmap = self.__htmap
+
+            idxmin = np.abs(df_y - event.y).idxmin()
+            y = df_y[idxmin]
+            self._hline.update(xrng, y)
+            self.__lgs.update(xlist, htmap[idxmin])
 
 
 class LineGraphSim(LineGraphAbs):
@@ -240,12 +279,14 @@ class GapFill(object):
                                           width=200)
 
         # simulation graph
+        """
         self.__linegraphsim = LineGraphSim(title="profit graph",
                                            color="yellow")
         self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
         self.__linegraphsim.yaxis_label("Sum of Pips")
+        """
 
-        self.__hm = HeatMap("Title Sample")
+        self.__hm = HeatMapSim("Title Sample")
 
         self.__hm.xaxis_label("Loss Cut")
         self.__hm.yaxis_label("Thresh")
@@ -359,7 +400,7 @@ class GapFill(object):
                                   lsct,
                                   gpth])
 
-        line = self.__linegraphsim.fig
+        line = self.__hm.linegraph_fig
         w3 = row(children=[simwid, line])
 
         tab3 = Panel(child=w3, title="Income Simulation")
@@ -694,10 +735,10 @@ class GapFill(object):
             minunit = OandaIns.list[inst_id].min_unit
 
             dfmst = self.__dfsmm[[GapFill.LBL_RESULT,
-                               GapFill.LBL_SPREAD,
-                               GapFill.LBL_GAPPRI,
-                               GapFill.LBL_MAXOPNRNG,
-                               GapFill.LBL_VALID]].copy()
+                                  GapFill.LBL_SPREAD,
+                                  GapFill.LBL_GAPPRI,
+                                  GapFill.LBL_MAXOPNRNG,
+                                  GapFill.LBL_VALID]].copy()
 
             dfmst[GapFill.LBL_SPREAD] = dfmst[GapFill.LBL_SPREAD] / 2
 
@@ -728,7 +769,7 @@ class GapFill(object):
             #========================================================
             map_ = []
             map3d = np.empty((0, 3))
-            cnt=0
+            cnt = 0
             for th in ylist:
                 # 閾値未満
                 df = df[th <= df[GapFill.LBL_MAXOPNRNG]]
@@ -764,6 +805,6 @@ class GapFill(object):
                 print("Sim: {}/{}" .format(cnt, len(ylist)))
                 map_.append(zlist)
 
-            self.__linegraphsim.update(xlist, map_[0])
+            # self.__linegraphsim.update(xlist, map_[0])
             print(map3d)
-            self.__hm.update(map3d, ylist, xstep, ystep)
+            self.__hm.update(map3d, xlist, ylist, map_, xstep, ystep)

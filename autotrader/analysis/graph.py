@@ -61,7 +61,7 @@ class HeatMap(object):
                                line_width=2,
                                fill_color=transform(HeatMap._D, mapper))
 
-        self.__hline = HorLine(fig, "white", 2)
+        self._hline = HorLine(fig, "white", 2)
 
         color_bar = ColorBar(color_mapper=mapper,
                              label_standoff=12,
@@ -69,22 +69,22 @@ class HeatMap(object):
                              location=(0, 0))
         fig.add_layout(color_bar, 'right')
 
-        fig.on_event(events.MouseMove, self.__cb_mousemove)
-
-        self.__fig = fig
+        self._fig = fig
         self.__src = src
         self.__cb = color_bar
         self.__cm = mapper
+        self._disp_y = 0
+        self._upflg = False
 
     @property
     def fig(self):
-        return self.__fig
+        return self._fig
 
     def xaxis_label(self, xlabel):
-        self.__fig.xaxis.axis_label = xlabel
+        self._fig.xaxis.axis_label = xlabel
 
     def yaxis_label(self, ylabel):
-        self.__fig.yaxis.axis_label = ylabel
+        self._fig.yaxis.axis_label = ylabel
 
     def update(self, map3d, ylist, xstep, ystep):
 
@@ -108,20 +108,22 @@ class HeatMap(object):
 
         strx = x[0] - ofsx
         endx = x[-1] + ofsx
-        self.__fig.x_range.update(start=strx, end=endx, bounds=(strx, endx))
+        self._fig.x_range.update(start=strx, end=endx, bounds=(strx, endx))
 
         stry = y[0] - ofsy
         endy = y[-1] + ofsy
-        self.__fig.y_range.update(start=stry, end=endy, bounds=(stry, endy))
+        self._fig.y_range.update(start=stry, end=endy, bounds=(stry, endy))
 
         pw = 600
         ph = int(pw * (endy - stry) / (endx - strx))
 
-        self.__fig.width = pw
-        self.__fig.height = ph
+        self._fig.width = pw
+        self._fig.height = ph
 
-        self.__df_y = pd.Series(ylist + ofsy)
-        self.__xrng = [strx, endx]
+        self._df_y = pd.Series(ylist + ofsy)
+        self._xrng = [strx, endx]
+
+        self._upflg = True
 
     def clear(self):
         """"データをクリアする[clear data]
@@ -137,22 +139,7 @@ class HeatMap(object):
                  HeatMap._D: []
                  }
         self.__src.data = dict_
-
-    def __cb_mousemove(self, event):
-        """Event mouse move(チャート)コールバックメソッド
-           [Callback method of mouse move event(Chart)]
-        引数[Args]:
-            event (str) : An event name on this object
-        戻り値[Returns]:
-            なし[None]
-        """
-        # self.__cs.draw_orders_cand_vline(date)
-
-        idxmin = np.abs(self.__df_y - event.y).idxmin()
-
-        y = self.__df_y[idxmin]
-
-        self.__hline.update(self.__xrng, y)
+        self._upflg = False
 
 
 class LineGraphAbs(metaclass=ABCMeta):
