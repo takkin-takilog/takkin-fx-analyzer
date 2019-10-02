@@ -43,9 +43,14 @@ class HeatMapSim(HeatMap):
     def update(self, map3d, xlist, ylist, htmap, xstep, ystep):
         super().update(map3d, ylist, xstep, ystep)
 
+        MARGIN = 0.1
+
         d = map3d[:, 2]
-        x_range = (min(xlist), max(xlist))
-        z_range = (min(d), max(d))
+        x_leng = (max(xlist) - min(xlist)) * MARGIN
+        x_range = (min(xlist) - x_leng, max(xlist) + x_leng)
+
+        z_leng = (max(d) - min(d)) * MARGIN
+        z_range = (min(d) - z_leng, max(d) + z_leng)
         self.__lgs.update_range(x_range, z_range)
 
         self.__xlist = xlist
