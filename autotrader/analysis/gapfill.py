@@ -29,7 +29,7 @@ class HeatMapSim(HeatMap):
         super().__init__(title)
 
         # simulation graph
-        self.__lgs = LineGraphSim(title="profit graph",
+        self.__lgs = LineGraphSim(title="Profit Graph",
                                   color="yellow")
         self.__lgs.xaxis_label("Loss Cut Price Offset")
         self.__lgs.yaxis_label("Sum of Pips")
@@ -305,9 +305,9 @@ class GapFill(object):
         self.__linegraphsim.yaxis_label("Sum of Pips")
         """
 
-        self.__hm = HeatMapSim("Title Sample")
+        self.__hm = HeatMapSim("Profit Heatmap")
 
-        self.__hm.xaxis_label("Loss Cut")
+        self.__hm.xaxis_label("Loss Cut Price Offset")
         self.__hm.yaxis_label("Thresh")
 
     def get_layout(self):

@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 import pandas as pd
-from bokeh import events
 from bokeh.models import ColumnDataSource, Range1d
 from bokeh.models import LinearColorMapper, ColorBar, HoverTool
 from bokeh.models.glyphs import Quad, Line, Rect
@@ -55,7 +54,12 @@ class HeatMap(object):
 
         ren = fig.add_glyph(src, glyph)
 
-        fig.add_tools(HoverTool(renderers=[ren]))
+        hover = HoverTool()
+        hover.tooltips = [("Loss cut Price Offset", "@" + HeatMap._X),
+                          ("Thresh", "@" + HeatMap._H),
+                          ("Sum of pips", "@" + HeatMap._D)]
+        hover.renderers = [ren]
+        fig.add_tools(hover)
 
         ren.hover_glyph = Rect(line_color="red",
                                line_width=2,
@@ -679,8 +683,6 @@ if __name__ == "__main__":
     h = np.ones(len(x)) * 0.9
 
     d = np.arange(len(x))
-
-    print(d)
 
     hm.update(x, y, w, h, d)
 
