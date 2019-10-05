@@ -36,6 +36,9 @@ class HeatMapSim(HeatMap):
 
         self._fig.on_event(events.MouseMove, self.__cb_mousemove)
 
+        self.__x_min = 0
+        self.__y_min = 0
+
     @property
     def linegraph_fig(self):
         return self.__lgs.fig
@@ -53,10 +56,20 @@ class HeatMapSim(HeatMap):
         z_range = (min(d) - z_leng, max(d) + z_leng)
         self.__lgs.update_range(x_range, z_range)
 
+        x_max = map3d[:, 0][self._maxidx]
+        y_max = map3d[:, 1][self._maxidx]
+
         self.__xlist = xlist
         self.__ylist = ylist
         self.__ystep = ystep
         self.__htmap = htmap
+
+        self.__x_max = x_max
+        self.__y_max = y_max
+
+    @property
+    def max_coordinate(self):
+        return (self.__x_max, self.__y_max)
 
     def __cb_mousemove(self, event):
 
@@ -305,10 +318,10 @@ class GapFill(object):
                                    default_size=200)
         self.__btn_simrun.on_click(self.__cb_btn_simrun)
 
-        self.__txtin_losscut = TextInput(value="", title="ロスカット幅:",
+        self.__txtin_losscut = TextInput(value="", title="最適ロスカット幅:",
                                          width=200)
 
-        self.__txtin_gapprith = TextInput(value="", title="Gap Price Th:",
+        self.__txtin_gapprith = TextInput(value="", title="最適Gap Price閾値:",
                                           width=200)
 
         self.__hm = HeatMapSim("Profit Heatmap")
@@ -415,20 +428,21 @@ class GapFill(object):
         tab2 = Panel(child=hist, title="Summary")
 
         # Tab3の設定
+        simrun = self.__btn_simrun
         hm = self.__hm.fig
-        sim = self.__btn_simrun
+        line = self.__hm.linegraph_fig
+
         lsct = self.__txtin_losscut
         gpth = self.__txtin_gapprith
 
-        simwid = column(children=[hm,
-                                  sim,
-                                  lsct,
-                                  gpth])
+        wgr1 = row(children=[hm, line])
+        wgr2 = row(children=[lsct, gpth])
 
-        line = self.__hm.linegraph_fig
-        w3 = row(children=[simwid, line])
+        wid3 = column(children=[simrun,
+                                wgr1,
+                                wgr2])
 
-        tab3 = Panel(child=w3, title="Income Simulation")
+        tab3 = Panel(child=wid3, title="Income Simulation")
 
         # タブ生成
         tabs = Tabs(tabs=[tab2, tab3])
@@ -753,6 +767,8 @@ class GapFill(object):
         戻り値[Returns]:
             なし[None]
         """
+        THIN_COE = 10   # 間引き係数
+
         if self.__dfsmm.empty:
             print("空です")
         else:
@@ -776,7 +792,7 @@ class GapFill(object):
             th_min = 0
             th_max = df[GapFill.LBL_MAXOPNRNG].max()
 
-            ystep = minstep * 10
+            ystep = minstep * THIN_COE
             ylist = np.arange(th_min, th_max, ystep)
 
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
@@ -791,43 +807,73 @@ class GapFill(object):
             xstep = ystep
             xlist = np.arange(0, end, xstep)
 
-            #========================================================
-            map_ = []
-            map3d = np.empty((0, 3))
-            cnt = 0
-            for th in ylist:
-                # 閾値未満
-                df = df[th <= df[GapFill.LBL_MAXOPNRNG]]
-
-                df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
-
-                zlist = []
-                for losscut in xlist:
-                    df_flg2 = losscut > df[GapFill.LBL_MAXOPNRNG]
-                    # 合計利益を計算
-                    dfpro = df[df_flg1 == df_flg2]
-                    profitsum = (dfpro[GapFill.LBL_GAPPRI] -
-                                 dfpro[GapFill.LBL_SPREAD]).sum()
-                    # 合計損失を計算
-                    lossdf = df[df_flg1 != df_flg2]
-                    losssum = (losscut + lossdf[GapFill.LBL_SPREAD]).sum()
-                    # 合計損益を計算
-                    prolossum = profitsum - losssum
-                    """
-                    print("ロスカット：{}, 利益：{}, 損失：{}, 合計：{}" .format(round(losscut, minunit),
-                                                                  round(
-                                                                      profitsum, minunit),
-                                                                  round(
-                                                                      losssum, minunit),
-                                                                  round(prolossum, minunit)))
-                    """
-                    zlist.append(prolossum)
-
-                    nda = np.array([losscut, th, prolossum])
-                    map3d = np.vstack((map3d, nda))
-
-                cnt = cnt + 1
-                print("Sim: {}/{}" .format(cnt, len(ylist)))
-                map_.append(zlist)
-
+            map_, map3d = self.__make_map(df, xlist, ylist)
             self.__hm.update(map3d, xlist, ylist, map_, xstep, ystep)
+
+            x_max = self.__hm.max_coordinate[0]
+            y_max = self.__hm.max_coordinate[1]
+            x_max_str = x_max - xstep
+            y_max_str = y_max - ystep
+            x_max_end = x_max + xstep
+            y_max_end = y_max + ystep
+
+            x_max_str = utl.limit_lower(x_max_str, xlist[0])
+            y_max_str = utl.limit_lower(y_max_str, ylist[0])
+            x_max_end = utl.limit_upper(x_max_end, xlist[-1])
+            y_max_end = utl.limit_upper(y_max_end, ylist[-1])
+
+            xmaxlist = np.arange(x_max_str, x_max_end, minstep)
+            ymaxlist = np.arange(y_max_str, y_max_end, minstep)
+            map_, map3d = self.__make_map(df, xmaxlist, ymaxlist)
+
+            x = map3d[:, 0]
+            y = map3d[:, 1]
+            d = map3d[:, 2]
+            maxidx = np.argmax(d)
+            self.__txtin_losscut.value = str(x[maxidx])
+            self.__txtin_gapprith.value = str(y[maxidx])
+
+    def __make_map(self, df_, xlist, ylist):
+
+        df = df_.copy()
+
+        zlist_map = []
+        map3d = np.empty((0, 3))
+        cnt = 0
+        for th in ylist:
+            # 閾値未満
+            df = df[th <= df[GapFill.LBL_MAXOPNRNG]]
+
+            df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
+
+            zlist = []
+            for losscut in xlist:
+                df_flg2 = losscut > df[GapFill.LBL_MAXOPNRNG]
+                # 合計利益を計算
+                dfpro = df[df_flg1 == df_flg2]
+                profitsum = (dfpro[GapFill.LBL_GAPPRI] -
+                             dfpro[GapFill.LBL_SPREAD]).sum()
+                # 合計損失を計算
+                lossdf = df[df_flg1 != df_flg2]
+                losssum = (losscut + lossdf[GapFill.LBL_SPREAD]).sum()
+                # 合計損益を計算
+                prolossum = profitsum - losssum
+                """
+                minunit = 3
+                print("ロスカット：{}, 利益：{}, 損失：{}, 合計：{}" .format(round(losscut, minunit),
+                                                              round(
+                                                                  profitsum, minunit),
+                                                              round(
+                                                                  losssum, minunit),
+                                                              round(prolossum, minunit)))
+                """
+                zlist.append(prolossum)
+
+                nda = np.array([losscut, th, prolossum])
+                map3d = np.vstack((map3d, nda))
+
+            cnt = cnt + 1
+            print("Sim: {}/{}" .format(cnt, len(ylist)))
+            zlist_map.append(zlist)
+
+        return zlist_map, map3d

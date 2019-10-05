@@ -45,10 +45,10 @@ def limit_upper(input_val, upper_val):
     戻り値[Returns]:
         [limited value]
     """
-    if input_val < upper_val:
-        ret = input_val
-    else:
+    if upper_val < input_val:
         ret = upper_val
+    else:
+        ret = input_val
     return ret
 
 
@@ -61,9 +61,9 @@ def limit_lower(input_val, lower_val):
         [limited value]
     """
     if input_val < lower_val:
-        ret = input_val
-    else:
         ret = lower_val
+    else:
+        ret = input_val
     return ret
 
 

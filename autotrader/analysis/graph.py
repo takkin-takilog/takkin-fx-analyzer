@@ -56,6 +56,23 @@ class HeatMap(object):
 
         ren = fig.add_glyph(src, glyph)
 
+        srcm = ColumnDataSource({HeatMap._X: [],
+                                HeatMap._Y: [],
+                                HeatMap._W: [],
+                                HeatMap._H: [],
+                                HeatMap._D: []
+                                })
+        glyphm = Rect(x=HeatMap._X,
+                      y=HeatMap._Y,
+                      width=HeatMap._W,
+                      height=HeatMap._H,
+                      line_color="red",
+                      line_width=2,
+                      fill_color=transform(HeatMap._D, mapper),
+                      )
+
+        fig.add_glyph(srcm, glyphm)
+
         hover = HoverTool()
         hover.tooltips = [("Loss cut Price Offset", "@" + HeatMap._X + "{0.00000}"),
                           ("Thresh", "@" + HeatMap._Y + "{0.00000}"),
@@ -77,6 +94,7 @@ class HeatMap(object):
 
         self._fig = fig
         self.__src = src
+        self.__srcm = srcm
         self.__cb = color_bar
         self.__cm = mapper
         self._disp_y = 0
@@ -109,6 +127,15 @@ class HeatMap(object):
                            HeatMap._H: h,
                            HeatMap._D: d
                            }
+
+        maxidx = np.argmax(d)
+        self.__srcm.data = {HeatMap._X: [x[maxidx]],
+                            HeatMap._Y: [y[maxidx]],
+                            HeatMap._W: [w[maxidx]],
+                            HeatMap._H: [h[maxidx]],
+                            HeatMap._D: [d[maxidx]]
+                            }
+
         self.__cm.low = d.min()
         self.__cm.high = d.max()
 
@@ -129,6 +156,7 @@ class HeatMap(object):
         self._df_y = pd.Series(ylist + ofsy)
         self._xrng = [strx, endx]
 
+        self._maxidx = maxidx
         self._upflg = True
 
     def clear(self):
