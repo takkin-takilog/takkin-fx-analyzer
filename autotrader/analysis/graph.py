@@ -22,7 +22,7 @@ class HeatMap(object):
             fig (figure) : フィギュアオブジェクト[figure object]
             color_ (str) : カラーコード[Color code(ex "#E73B3A")]
         """
-        self.__FIG_WIDTH = 100
+        self.__FIG_WIDTH = 300
 
         mapper = LinearColorMapper(palette="Plasma256", low=0, high=1)
 
@@ -31,7 +31,6 @@ class HeatMap(object):
                      plot_height=self.__FIG_WIDTH,
                      tools="",
                      toolbar_location=None,
-                     #match_aspect=True
                      background_fill_color="black",
                      )
         fig.xgrid.visible = False
@@ -57,11 +56,11 @@ class HeatMap(object):
         ren = fig.add_glyph(src, glyph)
 
         srcm = ColumnDataSource({HeatMap._X: [],
-                                HeatMap._Y: [],
-                                HeatMap._W: [],
-                                HeatMap._H: [],
-                                HeatMap._D: []
-                                })
+                                 HeatMap._Y: [],
+                                 HeatMap._W: [],
+                                 HeatMap._H: [],
+                                 HeatMap._D: []
+                                 })
         glyphm = Rect(x=HeatMap._X,
                       y=HeatMap._Y,
                       width=HeatMap._W,
@@ -74,9 +73,11 @@ class HeatMap(object):
         fig.add_glyph(srcm, glyphm)
 
         hover = HoverTool()
-        hover.tooltips = [("Loss cut Price Offset", "@" + HeatMap._X + "{0.00000}"),
-                          ("Thresh", "@" + HeatMap._Y + "{0.00000}"),
-                          ("Sum of pips", "@" + HeatMap._D + "{0.00000}")]
+        hover.tooltips = [
+            ("Loss cut Price Offset", "@" + HeatMap._X + "{0.00000}"),
+            ("Thresh", "@" + HeatMap._Y + "{0.00000}"),
+            ("Sum of pips", "@" + HeatMap._D + "{0.00000}")
+            ]
         hover.renderers = [ren]
         fig.add_tools(hover)
 
@@ -110,7 +111,7 @@ class HeatMap(object):
     def yaxis_label(self, ylabel):
         self._fig.yaxis.axis_label = ylabel
 
-    def update(self, map3d, ylist, xstep, ystep):
+    def update(self, map3d, xlist, ylist, xstep, ystep):
 
         ofsx = xstep / 2
         ofsy = ystep / 2
@@ -139,19 +140,16 @@ class HeatMap(object):
         self.__cm.low = d.min()
         self.__cm.high = d.max()
 
-        strx = x[0] - ofsx
-        endx = x[-1] + ofsx
+        strx = min(x) - ofsx
+        endx = max(x) + ofsx
         self._fig.x_range.update(start=strx, end=endx, bounds=(strx, endx))
 
-        stry = y[0] - ofsy
-        endy = y[-1] + ofsy
+        stry = min(y) - ofsy
+        endy = max(y) + ofsy
         self._fig.y_range.update(start=stry, end=endy, bounds=(stry, endy))
 
-        pw = self.__FIG_WIDTH
-        ph = int(pw * (endy - stry) / (endx - strx))
-
-        self._fig.width = pw
-        self._fig.height = ph
+        self._fig.width = int(len(xlist)) * 10 + 150
+        self._fig.height = int(len(ylist)) * 10
 
         self._df_y = pd.Series(ylist + ofsy)
         self._xrng = [strx, endx]
@@ -173,6 +171,7 @@ class HeatMap(object):
                  HeatMap._D: []
                  }
         self.__src.data = dict_
+        self.__srcm.data = dict_
         self._upflg = False
 
 

@@ -44,7 +44,7 @@ class HeatMapSim(HeatMap):
         return self.__lgs.fig
 
     def update(self, map3d, xlist, ylist, htmap, xstep, ystep):
-        super().update(map3d, ylist, xstep, ystep)
+        super().update(map3d, xlist, ylist, xstep, ystep)
 
         MARGIN = 0.1
 
@@ -837,16 +837,12 @@ class GapFill(object):
 
     def __make_map(self, df_, xlist, ylist):
 
-        df = df_.copy()
-
         zlist_map = []
         map3d = np.empty((0, 3))
         cnt = 0
         for th in ylist:
             # 閾値未満
-            df = df[df[GapFill.LBL_GAPPRI] < th]
-            print(df)
-
+            df = df_[df_[GapFill.LBL_GAPPRI] < th].copy()
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 
             zlist = []
