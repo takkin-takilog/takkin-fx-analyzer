@@ -789,20 +789,22 @@ class GapFill(object):
 
             minstep = OandaIns.normalize(inst_id, pow(0.1, minunit))
 
-            th_min = 0
-            th_max = df[GapFill.LBL_MAXOPNRNG].max()
-
+            maxgp = df[GapFill.LBL_GAPPRI].max()
             ystep = minstep * THIN_COE
-            ylist = np.arange(th_min, th_max, ystep)
+            if maxgp < ystep:
+                end = ystep * 10
+            else:
+                end = maxgp * 1.2
+            ylist = np.arange(0, end, ystep)
 
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 
             maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
-            if minstep < maxop:
-                RANG_GAIN = 0.5
-                end = maxop + minstep * int(maxop / minstep * RANG_GAIN)
+            xstep = minstep * THIN_COE
+            if maxop < xstep:
+                end = xstep * 10
             else:
-                end = minstep * 100
+                end = maxop * 1.3
 
             xstep = ystep
             xlist = np.arange(0, end, xstep)
@@ -842,7 +844,8 @@ class GapFill(object):
         cnt = 0
         for th in ylist:
             # 閾値未満
-            df = df[th <= df[GapFill.LBL_MAXOPNRNG]]
+            df = df[df[GapFill.LBL_GAPPRI] < th]
+            print(df)
 
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 

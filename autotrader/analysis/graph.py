@@ -22,7 +22,7 @@ class HeatMap(object):
             fig (figure) : フィギュアオブジェクト[figure object]
             color_ (str) : カラーコード[Color code(ex "#E73B3A")]
         """
-        self.__FIG_WIDTH = 600
+        self.__FIG_WIDTH = 100
 
         mapper = LinearColorMapper(palette="Plasma256", low=0, high=1)
 
