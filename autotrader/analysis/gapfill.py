@@ -54,6 +54,8 @@ class HeatMapSim(HeatMap):
         self.__lgs.update_range(x_range, z_range)
 
         self.__xlist = xlist
+        self.__ylist = ylist
+        self.__ystep = ystep
         self.__htmap = htmap
 
     def __cb_mousemove(self, event):
@@ -62,18 +64,27 @@ class HeatMapSim(HeatMap):
             df_y = self._df_y
             xrng = self._xrng
             xlist = self.__xlist
+            ylist = self.__ylist
             htmap = self.__htmap
+            ystep = self.__ystep
 
             idxmin = np.abs(df_y - event.y).idxmin()
             y = df_y[idxmin]
             self._hline.update(xrng, y)
             self.__lgs.update(xlist, htmap[idxmin])
 
+            str_ = round(ylist[idxmin], OandaIns.min_unit_max())
+            end_ = round(str_ + ystep, OandaIns.min_unit_max())
+            th_pos = " (Thresh: " + str(str_) + " - " + str(end_) + ")"
+            self.__lgs.update_title(th_pos)
+
 
 class LineGraphSim(LineGraphAbs):
 
     def __init__(self, title, color):
         super().__init__(title, color)
+
+        self.__TITLE = title
 
         self._fig.add_tools(CrosshairTool(line_color="pink",
                                           line_alpha=0.5,
@@ -101,6 +112,9 @@ class LineGraphSim(LineGraphAbs):
         str_ = z_range[0]
         end_ = z_range[1]
         self._fig.y_range.update(start=str_, end=end_)
+
+    def update_title(self, th_pos):
+        self._fig.title.text = self.__TITLE + th_pos
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -296,14 +310,6 @@ class GapFill(object):
 
         self.__txtin_gapprith = TextInput(value="", title="Gap Price Th:",
                                           width=200)
-
-        # simulation graph
-        """
-        self.__linegraphsim = LineGraphSim(title="profit graph",
-                                           color="yellow")
-        self.__linegraphsim.xaxis_label("Loss Cut Price Offset")
-        self.__linegraphsim.yaxis_label("Sum of Pips")
-        """
 
         self.__hm = HeatMapSim("Profit Heatmap")
 
@@ -770,7 +776,7 @@ class GapFill(object):
             th_min = 0
             th_max = df[GapFill.LBL_MAXOPNRNG].max()
 
-            ystep = minstep*10
+            ystep = minstep * 10
             ylist = np.arange(th_min, th_max, ystep)
 
             df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
@@ -824,6 +830,4 @@ class GapFill(object):
                 print("Sim: {}/{}" .format(cnt, len(ylist)))
                 map_.append(zlist)
 
-            # self.__linegraphsim.update(xlist, map_[0])
-            print(map3d)
             self.__hm.update(map3d, xlist, ylist, map_, xstep, ystep)

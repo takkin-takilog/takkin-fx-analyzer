@@ -22,11 +22,13 @@ class HeatMap(object):
             fig (figure) : フィギュアオブジェクト[figure object]
             color_ (str) : カラーコード[Color code(ex "#E73B3A")]
         """
+        self.__FIG_WIDTH = 600
+
         mapper = LinearColorMapper(palette="Plasma256", low=0, high=1)
 
         fig = figure(title=title,
-                     plot_width=200,
-                     plot_height=200,
+                     plot_width=self.__FIG_WIDTH,
+                     plot_height=self.__FIG_WIDTH,
                      tools="",
                      toolbar_location=None,
                      #match_aspect=True
@@ -55,9 +57,9 @@ class HeatMap(object):
         ren = fig.add_glyph(src, glyph)
 
         hover = HoverTool()
-        hover.tooltips = [("Loss cut Price Offset", "@" + HeatMap._X),
-                          ("Thresh", "@" + HeatMap._H),
-                          ("Sum of pips", "@" + HeatMap._D)]
+        hover.tooltips = [("Loss cut Price Offset", "@" + HeatMap._X + "{0.00000}"),
+                          ("Thresh", "@" + HeatMap._Y + "{0.00000}"),
+                          ("Sum of pips", "@" + HeatMap._D + "{0.00000}")]
         hover.renderers = [ren]
         fig.add_tools(hover)
 
@@ -90,7 +92,7 @@ class HeatMap(object):
     def yaxis_label(self, ylabel):
         self._fig.yaxis.axis_label = ylabel
 
-    def update(self, map3d, zlist, xstep, ystep):
+    def update(self, map3d, ylist, xstep, ystep):
 
         ofsx = xstep / 2
         ofsy = ystep / 2
@@ -118,13 +120,13 @@ class HeatMap(object):
         endy = y[-1] + ofsy
         self._fig.y_range.update(start=stry, end=endy, bounds=(stry, endy))
 
-        pw = 600
+        pw = self.__FIG_WIDTH
         ph = int(pw * (endy - stry) / (endx - strx))
 
         self._fig.width = pw
         self._fig.height = ph
 
-        self._df_y = pd.Series(zlist + ofsy)
+        self._df_y = pd.Series(ylist + ofsy)
         self._xrng = [strx, endx]
 
         self._upflg = True

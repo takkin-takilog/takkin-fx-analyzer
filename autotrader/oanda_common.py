@@ -252,6 +252,14 @@ class OandaIns(object):
         minunit = cls.list[inst_id].min_unit
         return round(value, minunit)
 
+    @classmethod
+    def min_unit_max(cls):
+
+        minunitlist = []
+        for obj in cls.list:
+            minunitlist.append(obj.min_unit)
+        return max(minunitlist)
+
 
 class OandaRsp(object):
     """ OandaRspMsg
