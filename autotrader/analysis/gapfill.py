@@ -491,7 +491,7 @@ class GapFill(object):
 
     def __update_hist(self, df, minunit):
 
-        dfvld = df[df[GapFill.LBL_VALID] == utl.TRUE].copy()
+        dfvld = df[df[GapFill.LBL_VALID] == utl.TRUE]
 
         # ========== Gap prie hist ==========
         # Gap prie hist all
