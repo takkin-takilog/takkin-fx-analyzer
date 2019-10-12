@@ -77,7 +77,7 @@ class HeatMap(object):
             ("Loss cut Price Offset", "@" + HeatMap._X + "{0.00000}"),
             ("Thresh", "@" + HeatMap._Y + "{0.00000}"),
             ("Sum of pips", "@" + HeatMap._D + "{0.00000}")
-            ]
+        ]
         hover.renderers = [ren]
         fig.add_tools(hover)
 

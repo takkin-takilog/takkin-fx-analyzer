@@ -49,6 +49,7 @@ class HeatMapSim(HeatMap):
         MARGIN = 0.1
 
         d = map3d[:, 2]
+
         x_leng = (max(xlist) - min(xlist)) * MARGIN
         x_range = (min(xlist) - x_leng, max(xlist) + x_leng)
 
@@ -90,6 +91,16 @@ class HeatMapSim(HeatMap):
             end_ = round(str_ + ystep, OandaIns.min_unit_max())
             th_pos = " (Thresh: " + str(str_) + " - " + str(end_) + ")"
             self.__lgs.update_title(th_pos)
+
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        super().clear()
+        self.__lgs.clear()
 
 
 class LineGraphSim(LineGraphAbs):
@@ -435,8 +446,8 @@ class GapFill(object):
         lsct = self.__txtin_losscut
         gpth = self.__txtin_gapprith
 
-        wgr1 = row(children=[hm, line])
-        wgr2 = row(children=[lsct, gpth])
+        wgr1 = row(children=[lsct, gpth])
+        wgr2 = row(children=[hm, line])
 
         wid3 = column(children=[simrun,
                                 wgr1,
@@ -627,7 +638,7 @@ class GapFill(object):
         # 窓埋め前の最大開き幅
         ext2_df = aft_df[aft_df.index <= filltime]
         if ext2_df.empty:
-            maxopngap = 0
+            maxopngap = 0.0
         else:
             if flgdir_up is True:
                 maxopnpri = ext2_df[cs.LBL_HIGH].max()
@@ -661,6 +672,10 @@ class GapFill(object):
         戻り値[Returns]:
             なし[None]
         """
+        self.__txtin_losscut.value = ""
+        self.__txtin_gapprith.value = ""
+        self.__hm.clear()
+        self.__hm.clear()
 
         # 月曜のみを抽出する
         # Extract only Monday
@@ -787,59 +802,64 @@ class GapFill(object):
             # ・スプレッド < Gap Price
             df = dfmst[dfmst[GapFill.LBL_VALID] == utl.TRUE].copy()
 
-            minstep = OandaIns.normalize(inst_id, pow(0.1, minunit))
+            if not df.empty:
+                minstep = OandaIns.normalize(inst_id, pow(0.1, minunit))
 
-            maxgp = df[GapFill.LBL_GAPPRI].max()
-            ystep = minstep * THIN_COE
-            if maxgp < ystep:
-                end = ystep * 10
-            else:
-                end = maxgp * 1.2
-            ylist = np.arange(0, end, ystep)
+                maxgp = df[GapFill.LBL_GAPPRI].max()
+                mingp = df[GapFill.LBL_GAPPRI].min()
+                ystep = minstep * THIN_COE
+                if maxgp < ystep:
+                    end = ystep * 10
+                else:
+                    end = maxgp * 1.2
+                ylist = np.arange(0, end, ystep)
+                ylist = np.array([i for i in ylist if mingp < i])
 
-            df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
+                df_flg1 = df[GapFill.LBL_RESULT] == GapFill.RSL_SUCCESS
 
-            maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
-            xstep = minstep * THIN_COE
-            if maxop < xstep:
-                end = xstep * 10
-            else:
-                end = maxop * 1.3
+                maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
+                xstep = minstep * THIN_COE
+                if maxop < xstep:
+                    end = xstep * 10
+                else:
+                    end = maxop * 1.3
 
-            xstep = ystep
-            xlist = np.arange(0, end, xstep)
+                xstep = ystep
+                xlist = np.arange(0, end, xstep)
 
-            map_, map3d = self.__make_map(df, xlist, ylist)
-            self.__hm.update(map3d, xlist, ylist, map_, xstep, ystep)
+                htmap, map3d = self.__make_map(df, xlist, ylist)
 
-            x_max = self.__hm.max_coordinate[0]
-            y_max = self.__hm.max_coordinate[1]
-            x_max_str = x_max - xstep
-            y_max_str = y_max - ystep
-            x_max_end = x_max + xstep
-            y_max_end = y_max + ystep
+                self.__hm.update(map3d, xlist, ylist, htmap, xstep, ystep)
 
-            x_max_str = utl.limit_lower(x_max_str, xlist[0])
-            y_max_str = utl.limit_lower(y_max_str, ylist[0])
-            x_max_end = utl.limit_upper(x_max_end, xlist[-1])
-            y_max_end = utl.limit_upper(y_max_end, ylist[-1])
+                x_max = self.__hm.max_coordinate[0]
+                y_max = self.__hm.max_coordinate[1]
+                x_max_str = x_max - xstep
+                y_max_str = y_max - ystep
+                x_max_end = x_max + xstep
+                y_max_end = y_max + ystep
 
-            xmaxlist = np.arange(x_max_str, x_max_end, minstep)
-            ymaxlist = np.arange(y_max_str, y_max_end, minstep)
-            map_, map3d = self.__make_map(df, xmaxlist, ymaxlist)
+                x_max_str = utl.limit_lower(x_max_str, xlist[0])
+                y_max_str = utl.limit_lower(y_max_str, ylist[0])
+                x_max_end = utl.limit_upper(x_max_end, xlist[-1])
+                y_max_end = utl.limit_upper(y_max_end, ylist[-1])
 
-            x = map3d[:, 0]
-            y = map3d[:, 1]
-            d = map3d[:, 2]
-            maxidx = np.argmax(d)
-            self.__txtin_losscut.value = str(x[maxidx])
-            self.__txtin_gapprith.value = str(y[maxidx])
+                xmaxlist = np.arange(x_max_str, x_max_end, minstep)
+                ymaxlist = np.arange(y_max_str, y_max_end, minstep)
+                htmap, map3d = self.__make_map(df, xmaxlist, ymaxlist)
+
+                x = map3d[:, 0]
+                y = map3d[:, 1]
+                d = map3d[:, 2]
+                maxidx = np.argmax(d)
+                self.__txtin_losscut.value = str(x[maxidx])
+                self.__txtin_gapprith.value = str(y[maxidx])
 
     def __make_map(self, df_, xlist, ylist):
 
         zlist_map = []
         map3d = np.empty((0, 3))
         cnt = 0
+
         for th in ylist:
             # 閾値未満
             df = df_[df_[GapFill.LBL_GAPPRI] < th].copy()
@@ -857,22 +877,14 @@ class GapFill(object):
                 losssum = (losscut + lossdf[GapFill.LBL_SPREAD]).sum()
                 # 合計損益を計算
                 prolossum = profitsum - losssum
-                """
-                minunit = 3
-                print("ロスカット：{}, 利益：{}, 損失：{}, 合計：{}" .format(round(losscut, minunit),
-                                                              round(
-                                                                  profitsum, minunit),
-                                                              round(
-                                                                  losssum, minunit),
-                                                              round(prolossum, minunit)))
-                """
                 zlist.append(prolossum)
 
                 nda = np.array([losscut, th, prolossum])
                 map3d = np.vstack((map3d, nda))
 
+            zlist_map.append(zlist)
+
             cnt = cnt + 1
             print("Sim: {}/{}" .format(cnt, len(ylist)))
-            zlist_map.append(zlist)
 
         return zlist_map, map3d
