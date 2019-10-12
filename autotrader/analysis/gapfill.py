@@ -32,7 +32,7 @@ class HeatMapSim(HeatMap):
         self.__lgs = LineGraphSim(title="Profit Graph",
                                   color="yellow")
         self.__lgs.xaxis_label("Loss Cut Price Offset")
-        self.__lgs.yaxis_label("Sum of Pips")
+        self.__lgs.yaxis_label("Sum of Price")
 
         self._fig.on_event(events.MouseMove, self.__cb_mousemove)
 
@@ -89,7 +89,8 @@ class HeatMapSim(HeatMap):
 
             str_ = round(ylist[idxmin], OandaIns.min_unit_max())
             end_ = round(str_ + ystep, OandaIns.min_unit_max())
-            th_pos = " (Thresh: " + str(str_) + " - " + str(end_) + ")"
+            th_pos = " (Gap Price Thresh: " + \
+                str(str_) + " - " + str(end_) + ")"
             self.__lgs.update_title(th_pos)
 
     def clear(self):
@@ -338,7 +339,7 @@ class GapFill(object):
         self.__hm = HeatMapSim("Profit Heatmap")
 
         self.__hm.xaxis_label("Loss Cut Price Offset")
-        self.__hm.yaxis_label("Thresh")
+        self.__hm.yaxis_label("Gap Price Thresh")
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
