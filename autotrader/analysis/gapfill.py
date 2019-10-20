@@ -281,7 +281,7 @@ class GapFill(object):
             TableColumn(field=self.TBLLBL_RSLT, title="Result"),
             TableColumn(field=self.TBLLBL_FILLTIME, title="Fill-Gap Time",
                         formatter=DateFormatter(format="%R")),
-            TableColumn(field=self.TBLLBL_MAXOPNRNG, title="Open Max Range",
+            TableColumn(field=self.TBLLBL_MAXOPNRNG, title="Max Open Range",
                         formatter=NumberFormatter(format="0[.]00000")),
         ]
 
@@ -392,7 +392,7 @@ class GapFill(object):
 
         hist = HorizontalHistogram(title=title_, color="lime")
         hist.xaxis_label("回数")
-        hist.yaxis_label("Gap Price")
+        hist.yaxis_label("Max Open Range")
 
         hover = HoverTool()
         hover.tooltips = [("回数", "@" + HorizontalHistogram.RIGHT),
