@@ -3,8 +3,8 @@ import pandas as pd
 from bokeh.models.glyphs import Line
 from bokeh.models import ColumnDataSource, Range1d
 from bokeh.plotting import figure
-from autotrader.bokeh_common import AxisTyp
 import autotrader.config as cfg
+from autotrader.bokeh_common import AxisTyp
 
 
 class SimpleMovingAverage(object):

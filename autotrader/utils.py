@@ -1,5 +1,9 @@
 import datetime
 import copy
+import numpy as np
+
+TRUE = 1
+FALSE = 0
 
 
 class DateTimeManager(object):
@@ -31,3 +35,49 @@ class DateTimeManager(object):
     @property
     def gmt(self):
         return self.__dtgmt
+
+
+def limit_upper(input_val, upper_val):
+    """"入力値に上限を設定する[limit upper value]
+    引数[Args]:
+        input_val : 入力値[input value]
+        upper_val : 上限値[upper value]
+    戻り値[Returns]:
+        [limited value]
+    """
+    if upper_val < input_val:
+        ret = upper_val
+    else:
+        ret = input_val
+    return ret
+
+
+def limit_lower(input_val, lower_val):
+    """"入力値に下限を設定する[limit lower value]
+    引数[Args]:
+        input_val : 入力値[input value]
+        upper_val : 下限値[lower value]
+    戻り値[Returns]:
+        [limited value]
+    """
+    if input_val < lower_val:
+        ret = lower_val
+    else:
+        ret = input_val
+    return ret
+
+
+def normalzie(x, amin=0, amax=1):
+    """"正規化する[normalzie]
+    引数[Args]:
+        x : 入力値[input value]
+        amin : 正規化下限値[normalzie lower value]
+        amax : 正規化上限値[normalzie upper value]
+    戻り値[Returns]:
+        [normalzied value]
+    """
+    xmax = x.max()
+    xmin = x.min()
+    if xmin == xmax:
+        return np.ones_like(x)
+    return (amax - amin) * (x - xmin) / (xmax - xmin) + amin

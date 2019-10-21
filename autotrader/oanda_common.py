@@ -1,5 +1,5 @@
 import pandas.tseries.offsets as offsets
-import datetime
+import datetime as dt
 
 
 class OandaEnv(object):
@@ -89,18 +89,68 @@ class OandaGrn(object):
             return dt + offsets.MonthOffset(1 * cls.__OFS_MAG)
 
     @classmethod
-    def convert_dtfmt(cls, granularity, dt, dt_ofs=datetime.timedelta(),
+    def offset_min_unit(cls, dt, granularity):
+        ofs = 0
+        if granularity == cls.S5:
+            ofs = offsets.Second(5)
+        elif granularity == cls.S10:
+            ofs = offsets.Second(10)
+        elif granularity == cls.S15:
+            ofs = offsets.Second(15)
+        elif granularity == cls.S30:
+            ofs = offsets.Second(30)
+        elif granularity == cls.M1:
+            ofs = offsets.Minute(1)
+        elif granularity == cls.M2:
+            ofs = offsets.Minute(2)
+        elif granularity == cls.M3:
+            ofs = offsets.Minute(3)
+        elif granularity == cls.M4:
+            ofs = offsets.Minute(4)
+        elif granularity == cls.M5:
+            ofs = offsets.Minute(5)
+        elif granularity == cls.M10:
+            ofs = offsets.Minute(10)
+        elif granularity == cls.M15:
+            ofs = offsets.Minute(15)
+        elif granularity == cls.M30:
+            ofs = offsets.Minute(30)
+        elif granularity == cls.H1:
+            ofs = offsets.Hour(1)
+        elif granularity == cls.H2:
+            ofs = offsets.Hour(2)
+        elif granularity == cls.H3:
+            ofs = offsets.Hour(3)
+        elif granularity == cls.H4:
+            ofs = offsets.Hour(4)
+        elif granularity == cls.H6:
+            ofs = offsets.Hour(6)
+        elif granularity == cls.H8:
+            ofs = offsets.Hour(8)
+        elif granularity == cls.H12:
+            ofs = offsets.Hour(12)
+        elif granularity == cls.D:
+            ofs = offsets.Day(1)
+        elif granularity == cls.W:
+            ofs = offsets.Week(1)
+        elif granularity == cls.M:
+            ofs = offsets.MonthOffset(1)
+
+        return dt + ofs
+
+    @classmethod
+    def convert_dtfmt(cls, granularity, dt_, dt_ofs=dt.timedelta(),
                       fmt="%Y-%m-%dT%H:%M:00.000000000Z"):
         """"日付フォーマットの変換メソッド
         引数[Args]:
             granularity (str): 時間足[Candle stick granularity]
-            dt (str): DT_FMT形式でフォーマットされた日付
+            dt_ (str): DT_FMT形式でフォーマットされた日付
         戻り値[Returns]:
             tf_dt (str): 変換後の日付
         """
         hour_ = 0
         minute_ = 0
-        tdt = datetime.datetime.strptime(dt, fmt) + dt_ofs
+        tdt = dt.datetime.strptime(dt_, fmt) + dt_ofs
         if granularity == cls.D:
             pass
         elif granularity == cls.H12:
@@ -142,9 +192,29 @@ class OandaGrn(object):
             hour_ = tdt.hour
             minute_ = 1 * (tdt.minute // 1)
 
-        tf_dt = datetime.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
+        tf_dt = dt.datetime(tdt.year, tdt.month, tdt.day, hour_, minute_)
 
         return tf_dt
+
+
+class InsInfo(object):
+
+    def __init__(self, disp_name, oanda_name, minunit):
+        self.__disp_name = disp_name
+        self.__oanda_name = oanda_name
+        self.__minunit = minunit
+
+    @property
+    def disp_name(self):
+        return self.__disp_name
+
+    @property
+    def oanda_name(self):
+        return self.__oanda_name
+
+    @property
+    def min_unit(self):
+        return self.__minunit
 
 
 class OandaIns(object):
@@ -156,6 +226,40 @@ class OandaIns(object):
     EUR_JPY = "EUR_JPY"
     EUR_USD = "EUR_USD"
 
+    list = [InsInfo("USD-JPY", "USD_JPY", 3),
+            InsInfo("EUR-JPY", "EUR_JPY", 3),
+            InsInfo("EUR-USD", "EUR_USD", 5)
+            ]
+
+    @classmethod
+    def get_id_from_dispname(cls, disp_name):
+
+        for id_, obj in enumerate(cls.list):
+            if disp_name == obj.disp_name:
+                break
+        return id_
+
+    @classmethod
+    def get_dispname_list(cls):
+
+        namelist = []
+        for obj in cls.list:
+            namelist.append(obj.disp_name)
+        return namelist
+
+    @classmethod
+    def normalize(cls, inst_id, value):
+        minunit = cls.list[inst_id].min_unit
+        return round(value, minunit)
+
+    @classmethod
+    def min_unit_max(cls):
+
+        minunitlist = []
+        for obj in cls.list:
+            minunitlist.append(obj.min_unit)
+        return max(minunitlist)
+
 
 class OandaRsp(object):
     """ OandaRspMsg
@@ -166,6 +270,8 @@ class OandaRsp(object):
     TIME = "time"
     VLM = "volume"
     MID = "mid"
+    BID = "bid"
+    ASK = "ask"
     OPN = "o"
     HIG = "h"
     LOW = "l"

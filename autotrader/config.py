@@ -1,6 +1,6 @@
-import configparser
 import os
 import sys
+import configparser
 
 # アクティベート
 ITEM_SMA_ACT = 'sma_act'
