@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Select
 from bokeh.layouts import row, column, layout, widgetbox
 from autotrader.analysis.gapfill import GapFill
+from autotrader.analysis.ttm_goto import TTMGoto
 from autotrader.oanda_common import OandaGrn, OandaIns
 
 
@@ -169,18 +171,13 @@ def get_overall_layout():
     wslgr = _slc_gran
     wdgbx1 = widgetbox(children=[wslin, wslgr, dtwdg], sizing_mode="fixed")
 
-    from bokeh.models import Panel, Tabs
-    from bokeh.plotting import figure
+    # ========== Tab1：窓埋め ==========
+    gapfill = _angf.get_layout()
+    tab1 = Panel(child=gapfill, title="窓埋め")
 
-    layfg = _anafg.get_layout()
-
-    tab1 = Panel(child=layfg, title="窓埋め")
-
-    p2 = figure(plot_width=300, plot_height=300,
-                sizing_mode="stretch_width")
-    p2.line([1, 2, 3, 4, 5], [6, 7, 2, 4, 5],
-            line_width=3, color="navy", alpha=0.5)
-    tab2 = Panel(child=p2, title="サンプル")
+    # ========== Tab2：仲値＆ゴトー日 ==========
+    ttmgoto = _antg.get_layout()
+    tab2 = Panel(child=ttmgoto, title="仲値＆ゴトー日")
 
     tabs = Tabs(tabs=[tab1, tab2], sizing_mode="stretch_width")
 
@@ -343,4 +340,7 @@ _dtwdg_str = DateTimeWidget("開始", _gran,
 _dtwdg_end = DateTimeWidget("終了", _gran)
 
 # 窓埋め解析
-_anafg = GapFill()
+_angf = GapFill()
+
+# 仲値(TTM)とゴトー日
+_antg = TTMGoto()
