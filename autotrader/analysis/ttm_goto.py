@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import Button
 from bokeh.models.widgets import TableColumn, DataTable
@@ -85,13 +85,11 @@ class TTMGoto(object):
         dfsmm = self.__dfsmm
         dfsmm = dfsmm.drop(range(len(dfsmm)))
 
-        # 月曜のみを抽出する
-        # Extract only Monday
-        now = datetime.now() - timedelta(hours=9)
-        str_ = ana.get_datetime_str()
-        str_ = utl.limit_upper(str_, now)
-        end_ = ana.get_datetime_end()
-        end_ = utl.limit_upper(end_, now)
+        yesterday = date.today() - timedelta(days=1)
+        str_ = ana.get_date_str()
+        str_ = utl.limit_upper(str_, yesterday)
+        end_ = ana.get_date_end()
+        end_ = utl.limit_upper(end_, yesterday)
 
         print("Start:{}" .format(str_))
         print("End:  {}" .format(end_))

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 from bokeh import events
 from bokeh.models import ColumnDataSource
 from bokeh.models import CrosshairTool, HoverTool
@@ -680,17 +680,18 @@ class GapFill(object):
 
         # 月曜のみを抽出する
         # Extract only Monday
-        now = datetime.now() - timedelta(hours=9)
-        str_ = ana.get_datetime_str()
-        str_ = utl.limit_upper(str_, now)
-        end_ = ana.get_datetime_end()
-        end_ = utl.limit_upper(end_, now) + timedelta(days=1)
+        yesterday = date.today() - timedelta(days=1)
+        str_ = ana.get_date_str()
+        str_ = utl.limit_upper(str_, yesterday)
+        end_ = ana.get_date_end()
+        end_ = utl.limit_upper(end_, yesterday)
 
         mondaylist = []
         for n in range((end_ - str_).days):
             day = str_ + timedelta(n)
             if day.weekday() == 0:
-                mondaylist.append(day)
+                dt = datetime.combine(day, time())
+                mondaylist.append(dt)
 
         if not mondaylist:
             print("リストは空です")

@@ -2,7 +2,6 @@ import copy
 import jpholiday
 from datetime import timedelta
 import numpy as np
-from astropy.wcs.docstrings import delta
 
 TRUE = 1
 FALSE = 0
@@ -85,28 +84,48 @@ def normalzie(x, amin=0, amax=1):
     return (amax - amin) * (x - xmin) / (xmax - xmin) + amin
 
 
-def extract_workdays(startday, endday):
+def extract_workdays(str_date, end_date):
     """"平日のみを抽出する[extract workdays]
     引数[Args]:
-        startday : 開始日[start day]
-        endday : 終了日[end day]
+        str_date : 開始日[start date]
+        end_date : 終了日[end date]
     戻り値[Returns]:
         workdays list
     """
     workdays = []
     print("-----------------")
-    for n in range((endday - startday + timedelta(days=1)).days):
-        day_ = startday + timedelta(n)
-        if (day_.weekday() < 5) or jpholiday.is_holiday(day_.day):
-            workdays.append(day_)
+    for n in range((end_date - str_date + timedelta(days=1)).days):
+        date_ = str_date + timedelta(n)
+        if (date_.weekday() < 5) and not jpholiday.is_holiday(date_):
+            workdays.append(date_)
 
     return workdays
 
+
 if __name__ == "__main__":
     import datetime
-    end_ = datetime.datetime.now()
-    str_ = end_ - timedelta(days=30)
 
-    extract_workdays(str_, end_)
+    str_ = datetime.date(2019, 10, 1)
+    end_ = datetime.date(2019, 10, 26)
 
+    print(type(str_))
 
+    workdayslist = extract_workdays(str_, end_)
+
+    for wday in workdayslist:
+
+        is_ = jpholiday.is_holiday(wday)
+
+        # 曜日判定
+        if wday.weekday() == 0:
+            week = "月"
+        elif wday.weekday() == 1:
+            week = "火"
+        elif wday.weekday() == 2:
+            week = "水"
+        elif wday.weekday() == 3:
+            week = "木"
+        elif wday.weekday() == 4:
+            week = "金"
+
+        print("{}: week:{}, Goto:{}" .format(wday, week, is_))
