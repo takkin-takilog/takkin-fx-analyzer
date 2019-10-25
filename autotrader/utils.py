@@ -1,6 +1,8 @@
-import datetime
 import copy
+import jpholiday
+from datetime import timedelta
 import numpy as np
+from astropy.wcs.docstrings import delta
 
 TRUE = 1
 FALSE = 0
@@ -14,7 +16,7 @@ class DateTimeManager(object):
     TZ_ASIATOKYO = 1    # Asia/Tokyo
     TZ_GMT = 2          # Greenwich Mean Time
 
-    __TMDLT = datetime.timedelta(hours=9)
+    __TMDLT = timedelta(hours=9)
 
     def __init__(self, dt_, tz_=TZ_ASIATOKYO):
         """"コンストラクタ[Constructor]
@@ -81,3 +83,30 @@ def normalzie(x, amin=0, amax=1):
     if xmin == xmax:
         return np.ones_like(x)
     return (amax - amin) * (x - xmin) / (xmax - xmin) + amin
+
+
+def extract_workdays(startday, endday):
+    """"平日のみを抽出する[extract workdays]
+    引数[Args]:
+        startday : 開始日[start day]
+        endday : 終了日[end day]
+    戻り値[Returns]:
+        workdays list
+    """
+    workdays = []
+    print("-----------------")
+    for n in range((endday - startday + timedelta(days=1)).days):
+        day_ = startday + timedelta(n)
+        if (day_.weekday() < 5) or jpholiday.is_holiday(day_.day):
+            workdays.append(day_)
+
+    return workdays
+
+if __name__ == "__main__":
+    import datetime
+    end_ = datetime.datetime.now()
+    str_ = end_ - timedelta(days=30)
+
+    extract_workdays(str_, end_)
+
+
