@@ -105,27 +105,44 @@ def extract_workdays(str_date, end_date):
 if __name__ == "__main__":
     import datetime
 
-    str_ = datetime.date(2019, 10, 1)
-    end_ = datetime.date(2019, 10, 26)
+    str_ = datetime.date(2019, 7, 1)
+    end_ = datetime.date(2019, 10, 3)
 
-    print(type(str_))
+    weekdict = {0:"月", 1:"火", 2:"水", 3:"木",
+                4:"金", 5:"土", 6:"日"}
+    mltfivelist = [5, 10, 15, 20, 25, 30]
 
-    workdayslist = extract_workdays(str_, end_)
+    nextdate = end_ + timedelta(days=1)
+    nextmonth = nextdate.month
 
-    for wday in workdayslist:
+    lastday_flg = False
+    gotoday_flg = False
+    workdayslist = []
 
-        is_ = jpholiday.is_holiday(wday)
+    for n in range((end_ - str_ + timedelta(days=1)).days):
+        date_ = end_ - timedelta(n)
+        weekdayno = date_.weekday()
+        we = weekdict[weekdayno]
 
-        # 曜日判定
-        if wday.weekday() == 0:
-            week = "月"
-        elif wday.weekday() == 1:
-            week = "火"
-        elif wday.weekday() == 2:
-            week = "水"
-        elif wday.weekday() == 3:
-            week = "木"
-        elif wday.weekday() == 4:
-            week = "金"
+        # 月末判定
+        if not date_.month == nextmonth:
+            lastday_flg = True
 
-        print("{}: week:{}, Goto:{}" .format(wday, week, is_))
+        # ゴトー日判定
+        if date_.day in mltfivelist:
+            gotoday_flg = True
+
+        # 平日判定
+        if (weekdayno < 5) and not jpholiday.is_holiday(date_):
+
+            if lastday_flg or gotoday_flg:
+                target = "○"
+                lastday_flg = False
+                gotoday_flg = False
+            else:
+                target = "×"
+
+            print("{}:{}:{}"  .format(date_, we, target))
+
+        nextmonth = date_.month
+

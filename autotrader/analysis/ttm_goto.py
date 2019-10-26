@@ -1,10 +1,11 @@
 import pandas as pd
+import jpholiday
 from datetime import date, timedelta
 from bokeh.models import ColumnDataSource
 from bokeh.models.widgets import Button
 from bokeh.models.widgets import TableColumn, DataTable
-from bokeh.models.widgets import DateFormatter, NumberFormatter
-from bokeh.layouts import layout, widgetbox
+from bokeh.models.widgets import DateFormatter
+from bokeh.layouts import layout
 import autotrader.analyzer as ana
 import autotrader.utils as utl
 
@@ -17,6 +18,10 @@ class TTMGoto(object):
     LBL_DATE = "data"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
+
+    _WEEK_DICT = {0: "月", 1: "火", 2: "水", 3: "木",
+                  4: "金", 5: "土", 6: "日"}
+    _MLT_FIVE_LIST = [5, 10, 15, 20, 25, 30]
 
     def __init__(self):
         """"コンストラクタ[Constructor]
@@ -94,50 +99,50 @@ class TTMGoto(object):
         print("Start:{}" .format(str_))
         print("End:  {}" .format(end_))
 
-        workdayslist = utl.extract_workdays(str_, end_)
+        nextdate = end_ + timedelta(days=1)
+        nextmonth = nextdate.month
 
-        for wday in workdayslist:
+        lastday_flg = False
+        gotoday_flg = False
 
-            # 曜日判定
-            if wday.weekday() == 0:
-                week = "月"
-            elif wday.weekday() == 1:
-                week = "火"
-            elif wday.weekday() == 2:
-                week = "水"
-            elif wday.weekday() == 3:
-                week = "木"
-            elif wday.weekday() == 4:
-                week = "金"
+        for n in range((end_ - str_ + timedelta(days=1)).days):
+            date_ = end_ - timedelta(n)
+            weekdayno = date_.weekday()
+
+            # 月末判定
+            if not date_.month == nextmonth:
+                lastday_flg = True
 
             # ゴトー日判定
-            #gotoflg = self.__judge_gotoday(wday)
+            if date_.day in self._MLT_FIVE_LIST:
+                gotoday_flg = True
 
+            # 平日判定
+            if (weekdayno < 5) and not jpholiday.is_holiday(date_):
 
-            # 出力
-            record = pd.Series([wday,
-                                week,
-                                "○"],
-                               index=self.__dfsmm.columns)
+                if lastday_flg or gotoday_flg:
+                    target = "○"
+                    lastday_flg = False
+                    gotoday_flg = False
+                else:
+                    target = "×"
 
-            dfsmm = dfsmm.append(record,  ignore_index=True)
+                # 出力
+                record = pd.Series([date_,
+                                    self._WEEK_DICT[weekdayno],
+                                    target],
+                                   index=dfsmm.columns)
+                dfsmm = dfsmm.append(record,  ignore_index=True)
+
+            nextmonth = date_.month
+
+        dfsmm = dfsmm.sort_values(by=TTMGoto.LBL_DATE).reset_index(drop=True)
 
         self.__src.data = {
             self.TBLLBL_DATE: dfsmm[TTMGoto.LBL_DATE].tolist(),
             self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].tolist(),
             self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].tolist(),
         }
-    """
-    def __judge_gotoday(self, wday):
-
-        gotolist = [5, 10, 15, 20, 25]
-
-        if ((wday.day == 5) or ( (wday.weekday() == 4) or ( (wday.day == 3) or (wday.day == 4)))) or
-            ((wday.day == 10) or ( (wday.weekday() == 4) or ( (wday.day == 9) or (wday.day == 8))))
-
-        :
-    """
-
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
