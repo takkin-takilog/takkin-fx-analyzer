@@ -104,6 +104,7 @@ def extract_workdays(str_date, end_date):
 
 if __name__ == "__main__":
     import datetime
+    import pandas as pd
 
     str_ = datetime.date(2019, 7, 1)
     end_ = datetime.date(2019, 10, 3)
@@ -148,8 +149,19 @@ if __name__ == "__main__":
 
         print(date_)
 
-        tm = datetime.time(0, 0)
-        print(type(tm))
-        str_ = datetime.datetime.combine(date_, tm)
-        print(str_)
+    df = pd.DataFrame(columns=['A', 'B'])
+
+    re = pd.Series([10, 20], index=df.columns, name = "aaa")
+    df = df.append(re)
+    re = pd.Series([11, 21], index=df.columns, name = "bbb")
+    df = df.append(re)
+
+    print(df)
+
+    print(df.index)
+
+    df.drop(index=df.index, inplace=True)
+    print("aaaaaa")
+    print(df)
+
 

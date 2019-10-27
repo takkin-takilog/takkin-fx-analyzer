@@ -63,7 +63,6 @@ class TTMGoto(object):
             - 仲根(TTM)とゴトー日クラス[TTM and Goto day class]
     """
 
-    #LBL_DATE = "date"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
 
@@ -143,7 +142,7 @@ class TTMGoto(object):
         print("Called cb_btn_run")
 
         dfsmm = self.__dfsmm
-        dfsmm.drop(range(len(dfsmm)), inplace=True)
+        dfsmm.drop(index=dfsmm.index, inplace=True)
         self.__csdlist = []
 
         yesterday = dt.date.today() - dt.timedelta(days=1)

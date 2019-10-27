@@ -217,7 +217,6 @@ class GapFill(object):
             - 窓埋めクラス[Gap-Fill class]
     """
 
-    LBL_DATA = "Data"
     LBL_RESULT = "Result"
     LBL_DIR = "Direction"
     LBL_CLOSEPRI = "Close Price"
@@ -295,8 +294,7 @@ class GapFill(object):
         self.__csc = CandleStickChart()
         self.__csdlist = []
 
-        cols = [GapFill.LBL_DATA,
-                GapFill.LBL_RESULT,
+        cols = [GapFill.LBL_RESULT,
                 GapFill.LBL_DIR,
                 GapFill.LBL_CLOSEPRI,
                 GapFill.LBL_OPENPRI,
@@ -652,8 +650,7 @@ class GapFill(object):
         vldflg = (spread / 2) < gap_pri
 
         # 出力
-        record = pd.Series([monday,
-                            rst,
+        record = pd.Series([rst,
                             dir_,
                             close_pri,
                             open_pri,
@@ -662,7 +659,8 @@ class GapFill(object):
                             filltime,
                             maxopngap,
                             vldflg],
-                           index=self.__dfsmm.columns)
+                           index=self.__dfsmm.columns,
+                           name=monday)
 
         return jdg_flg, record
 
@@ -701,7 +699,7 @@ class GapFill(object):
             self.__csdlist = []
             validmondaylist = []
             rsllist = []
-            dfsmm.drop(range(len(dfsmm)), inplace=True)
+            dfsmm.drop(index=dfsmm.index, inplace=True)
             cnt = 0
             for monday in mondaylist:
                 str_ = monday + timedelta(days=-3, hours=20)
@@ -739,7 +737,7 @@ class GapFill(object):
 
                     validmondaylist.append(monday)
                     self.__csdlist.append(csd)
-                    dfsmm = dfsmm.append(record,  ignore_index=True)
+                    dfsmm = dfsmm.append(record)
 
                 cnt = cnt + 1
                 print("Fill-Gap Analyzing...  ( {} / {} )"
