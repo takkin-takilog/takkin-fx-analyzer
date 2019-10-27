@@ -122,8 +122,7 @@ class CandleStickChartBase(object):
                            x_axis_type=AxisTyp.X_DATETIME,
                            tools=tools_,
                            background_fill_color=self.__BG_COLOR,
-                           sizing_mode="stretch_width",
-                           title="Gap-Fill Candlestick Chart ( 1 hour )")
+                           sizing_mode="stretch_width")
         self._fig.xaxis.axis_label = "Date Time"
         self._fig.grid.grid_line_alpha = 0.3
         self._fig.x_range = Range1d()

@@ -146,3 +146,10 @@ if __name__ == "__main__":
 
         nextmonth = date_.month
 
+        print(date_)
+
+        tm = datetime.time(0, 0)
+        print(type(tm))
+        str_ = datetime.datetime.combine(date_, tm)
+        print(str_)
+

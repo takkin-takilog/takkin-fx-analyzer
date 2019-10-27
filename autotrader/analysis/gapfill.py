@@ -159,6 +159,7 @@ class CandleStickChart(CandleStickChartBase):
         self.__OPEN_COLOR = "#54FFEE"
 
         super().__init__()
+        self._fig.title.text = "Gap-Fill Candlestick Chart ( 1 hour )"
 
         # プロット設定
         self._fig.toolbar_location = "right"
@@ -700,7 +701,7 @@ class GapFill(object):
             self.__csdlist = []
             validmondaylist = []
             rsllist = []
-            dfsmm = dfsmm.drop(range(len(dfsmm)))
+            dfsmm.drop(range(len(dfsmm)), inplace=True)
             cnt = 0
             for monday in mondaylist:
                 str_ = monday + timedelta(days=-3, hours=20)

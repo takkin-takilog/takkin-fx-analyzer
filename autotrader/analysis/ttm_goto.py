@@ -1,13 +1,61 @@
 import pandas as pd
 import jpholiday
-from datetime import date, timedelta
-from bokeh.models import ColumnDataSource
+import datetime as dt
+from bokeh.models import ColumnDataSource, CrosshairTool, HoverTool
 from bokeh.models.widgets import Button
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
-from bokeh.layouts import layout
+from bokeh.layouts import layout, widgetbox, row, column, gridplot
+from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
+import autotrader.analysis.candlestick as cs
+from autotrader.utils import DateTimeManager
+from autotrader.oanda_common import OandaGrn, OandaIns
+from autotrader.analysis.candlestick import CandleStickChartBase
+from autotrader.analysis.candlestick import CandleStickData
+from autotrader.analysis.candlestick import CandleGlyph
+
+
+class CandleStickChart(CandleStickChartBase):
+    """ CandleStickChart
+            - ローソク足チャート定義クラス[Candle stick chart definition class]
+    """
+
+    def __init__(self):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            なし[None]
+        """
+        # Hbar Label
+        self.__Y = "y"
+        self.__X = "x"
+        self.__CLOSE_COLOR = "#FFEE55"
+        self.__OPEN_COLOR = "#54FFEE"
+
+        super().__init__()
+        self._fig.title.text = "TTM Candlestick Chart ( 10 minutes )"
+
+        # プロット設定
+        self._fig.toolbar_location = "right"
+        self._fig.add_tools(CrosshairTool(line_color="pink",
+                                          line_alpha=0.5))
+
+        hover = HoverTool()
+        hover.formatters = {CandleGlyph.XDT: "datetime"}
+        hover.tooltips = [(cs.LBL_TIME, "@" + CandleGlyph.XDT + "{%F %R}"),
+                          (cs.LBL_HIGH, "@" + CandleGlyph.YHI),
+                          (cs.LBL_OPEN, "@" + CandleGlyph.YOP),
+                          (cs.LBL_CLOSE, "@" + CandleGlyph.YCL),
+                          (cs.LBL_LOW, "@" + CandleGlyph.YLO)]
+        hover.renderers = [self._glyinc.render,
+                           self._glydec.render,
+                           self._glyequ.render]
+        self._fig.add_tools(hover)
+
+    def set_dataframe(self, csd):
+
+        super().set_dataframe(csd)
 
 
 class TTMGoto(object):
@@ -15,7 +63,7 @@ class TTMGoto(object):
             - 仲根(TTM)とゴトー日クラス[TTM and Goto day class]
     """
 
-    LBL_DATE = "data"
+    #LBL_DATE = "date"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
 
@@ -35,8 +83,7 @@ class TTMGoto(object):
                                 default_size=200)
         self.__btn_run.on_click(self.__cb_btn_run)
 
-        cols = [TTMGoto.LBL_DATE,
-                TTMGoto.LBL_WEEK,
+        cols = [TTMGoto.LBL_WEEK,
                 TTMGoto.LBL_GOTO]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
@@ -45,6 +92,7 @@ class TTMGoto(object):
         self.TBLLBL_WEEK = "week"
         self.TBLLBL_GOTO = "goto-day"
 
+        # データテーブル初期化
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
                                        self.TBLLBL_WEEK: [],
                                        self.TBLLBL_GOTO: []
@@ -63,6 +111,10 @@ class TTMGoto(object):
                                height=200)
         self.__src.selected.on_change("indices", self.__cb_dttbl)
 
+        # ローソク足チャート初期化
+        self.__csc = CandleStickChart()
+        self.__csdlist = []
+
     def get_layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
@@ -72,8 +124,11 @@ class TTMGoto(object):
         """
         btnrun = self.__btn_run
         tbl = self.__tbl
+        cscfig = self.__csc.fig
 
-        layout_ = layout(children=[[btnrun], [tbl]],
+        tblfig = widgetbox(children=[tbl, cscfig], sizing_mode="stretch_width")
+
+        layout_ = layout(children=[[btnrun], [tblfig]],
                          sizing_mode="stretch_width")
         return(layout_)
 
@@ -88,9 +143,10 @@ class TTMGoto(object):
         print("Called cb_btn_run")
 
         dfsmm = self.__dfsmm
-        dfsmm = dfsmm.drop(range(len(dfsmm)))
+        dfsmm.drop(range(len(dfsmm)), inplace=True)
+        self.__csdlist = []
 
-        yesterday = date.today() - timedelta(days=1)
+        yesterday = dt.date.today() - dt.timedelta(days=1)
         str_ = ana.get_date_str()
         str_ = utl.limit_upper(str_, yesterday)
         end_ = ana.get_date_end()
@@ -99,14 +155,14 @@ class TTMGoto(object):
         print("Start:{}" .format(str_))
         print("End:  {}" .format(end_))
 
-        nextdate = end_ + timedelta(days=1)
+        nextdate = end_ + dt.timedelta(days=1)
         nextmonth = nextdate.month
 
         lastday_flg = False
         gotoday_flg = False
 
-        for n in range((end_ - str_ + timedelta(days=1)).days):
-            date_ = end_ - timedelta(n)
+        for n in range((end_ - str_ + dt.timedelta(days=1)).days):
+            date_ = end_ - dt.timedelta(n)
             weekdayno = date_.weekday()
 
             # 月末判定
@@ -128,21 +184,49 @@ class TTMGoto(object):
                     target = "×"
 
                 # 出力
-                record = pd.Series([date_,
-                                    self._WEEK_DICT[weekdayno],
+                record = pd.Series([self._WEEK_DICT[weekdayno],
                                     target],
-                                   index=dfsmm.columns)
-                dfsmm = dfsmm.append(record,  ignore_index=True)
+                                   index=dfsmm.columns,
+                                   name=date_)
+                dfsmm = dfsmm.append(record)
 
             nextmonth = date_.month
 
-        dfsmm = dfsmm.sort_values(by=TTMGoto.LBL_DATE).reset_index(drop=True)
+        dfsmm.sort_index(inplace=True)
 
+        if dfsmm.empty:
+            print("リストは空です")
+        else:
+
+            inst_id = ana.get_instrument_id()
+            inst = OandaIns.list[inst_id].oanda_name
+            gran = OandaGrn.M10
+
+            for date_ in dfsmm.index:
+                str_ = dt.datetime.combine(date_, dt.time(0, 0))
+                end_ = dt.datetime.combine(date_, dt.time(10, 0))
+                dtmstr = DateTimeManager(str_)
+                dtmend = DateTimeManager(end_)
+
+                try:
+                    csd = CandleStickData(gran, inst, dtmstr, dtmend)
+                except V20Error as v20err:
+                    print("-----V20Error: {}".format(v20err))
+                except ConnectionError as cerr:
+                    print("----- ConnectionError: {}".format(cerr))
+                except Exception as excp:
+                    print("----- Exception: {}".format(excp))
+
+                self.__csdlist.append(csd)
+
+        # 表示更新
         self.__src.data = {
-            self.TBLLBL_DATE: dfsmm[TTMGoto.LBL_DATE].tolist(),
+            self.TBLLBL_DATE: dfsmm.index.tolist(),
             self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].tolist(),
             self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].tolist(),
         }
+
+        self.__dfsmm = dfsmm
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
@@ -155,4 +239,4 @@ class TTMGoto(object):
             なし[None]
         """
         idx = new[0]
-        print("Table Idx: {}" .format(idx))
+        self.__csc.set_dataframe(self.__csdlist[idx])
