@@ -18,7 +18,7 @@ from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.graph import VerLine
 
 
-class CandleStickChart(CandleStickChartBase):
+class CandleStickChartAbs(CandleStickChartBase):
     """ CandleStickChart
             - ローソク足チャート定義クラス[Candle stick chart definition class]
     """
@@ -34,11 +34,7 @@ class CandleStickChart(CandleStickChartBase):
         self.__CLOSE_COLOR = "#FFEE55"
         self.__OPEN_COLOR = "#54FFEE"
 
-        self.__TM0954 = dt.time(9, 54)
-        self.__TM1030 = dt.time(10, 30)
-
         super().__init__()
-        self._fig.title.text = "TTM Candlestick Chart ( 5 minutes )"
 
         # プロット設定
         self._fig.toolbar_location = "right"
@@ -57,20 +53,64 @@ class CandleStickChart(CandleStickChartBase):
                            self._glyequ.render]
         self._fig.add_tools(hover)
 
+    def set_dataframe(self, csd):
+        super().set_dataframe(csd)
+
+
+class CandleStickChart5M(CandleStickChartAbs):
+    """ CandleStickChart
+            - ローソク足チャート定義クラス[Candle stick chart definition class]
+    """
+
+    def __init__(self):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            なし[None]
+        """
+        self.__TM0954 = dt.time(9, 54)
+        self.__TM1030 = dt.time(10, 30)
+
+        super().__init__()
+        self._fig.title.text = "TTM Candlestick Chart ( 5 minutes )"
+
         self.__vl1 = VerLine(self._fig, "pink", line_width=2)
         self.__vl2 = VerLine(self._fig, "yellow", line_width=2)
 
-    def set_dataframe(self, csd):
-
+    def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
 
-        dattm_ = csd.df.index[0]
-        dat_ = dt.date(dattm_.year, dattm_.month, dattm_.day)
+        dat_ = dt.date(date_.year, date_.month, date_.day)
         y_pri = self._fig.y_range
         x_dttm = dt.datetime.combine(dat_, self.__TM0954)
         self.__vl1.update(x_dttm, y_pri.start, y_pri.end)
         x_dttm = dt.datetime.combine(dat_, self.__TM1030)
         self.__vl2.update(x_dttm, y_pri.start, y_pri.end)
+
+
+class CandleStickChart1H(CandleStickChartAbs):
+    """ CandleStickChart
+            - ローソク足チャート定義クラス[Candle stick chart definition class]
+    """
+
+    def __init__(self):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            なし[None]
+        """
+        self.__TM0954 = dt.time(9, 54)
+
+        super().__init__()
+        self._fig.title.text = "TTM Candlestick Chart ( 1 hour )"
+
+        self.__vl1 = VerLine(self._fig, "pink", line_width=2)
+
+    def set_dataframe(self, date_, csd):
+        super().set_dataframe(csd)
+
+        dat_ = dt.date(date_.year, date_.month, date_.day)
+        y_pri = self._fig.y_range
+        x_dttm = dt.datetime.combine(dat_, self.__TM0954)
+        self.__vl1.update(x_dttm, y_pri.start, y_pri.end)
 
 
 class TTMGoto(object):
@@ -126,10 +166,10 @@ class TTMGoto(object):
         self.__src.selected.on_change("indices", self.__cb_dttbl)
 
         # ローソク足チャート初期化
-        self.__csc1 = CandleStickChart()
+        self.__csc1 = CandleStickChart5M()
         self.__csdlist1 = []
 
-        self.__csc2 = CandleStickChart()
+        self.__csc2 = CandleStickChart1H()
         self.__csdlist2 = []
 
     def get_layout(self):
@@ -144,7 +184,10 @@ class TTMGoto(object):
         cscfig1 = self.__csc1.fig
         cscfig2 = self.__csc2.fig
 
-        tblfig = widgetbox(children=[tbl, cscfig1], sizing_mode="stretch_width")
+        cscfigs = row(children=[cscfig1, cscfig2], sizing_mode="stretch_width")
+
+        tblfig = widgetbox(children=[tbl, cscfigs],
+                           sizing_mode="stretch_width")
 
         layout_ = layout(children=[[btnrun], [tblfig]],
                          sizing_mode="stretch_width")
@@ -239,6 +282,21 @@ class TTMGoto(object):
                 self.__csdlist1.append(csd)
 
                 # チャート2
+                str_ = dt.datetime.combine(date_, dt.time(0, 0)) - dt.timedelta(days=5)
+                end_ = dt.datetime.combine(date_, dt.time(15, 0))
+                dtmstr = DateTimeManager(str_)
+                dtmend = DateTimeManager(end_)
+                gran = OandaGrn.H1
+
+                try:
+                    csd = CandleStickData(gran, inst, dtmstr, dtmend)
+                except V20Error as v20err:
+                    print("-----V20Error: {}".format(v20err))
+                except ConnectionError as cerr:
+                    print("----- ConnectionError: {}".format(cerr))
+                except Exception as excp:
+                    print("----- Exception: {}".format(excp))
+                self.__csdlist2.append(csd)
 
         # 表示更新
         self.__src.data = {
@@ -260,4 +318,5 @@ class TTMGoto(object):
             なし[None]
         """
         idx = new[0]
-        self.__csc1.set_dataframe(self.__csdlist1[idx])
+        self.__csc1.set_dataframe(self.__dfsmm.index[idx], self.__csdlist1[idx])
+        self.__csc2.set_dataframe(self.__dfsmm.index[idx], self.__csdlist2[idx])
