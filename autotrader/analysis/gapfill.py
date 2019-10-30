@@ -291,8 +291,8 @@ class GapFill(object):
                                height=200)
         self.__src.selected.on_change('indices', self.__cb_dttbl)
 
-        self.__csc = CandleStickChart()
-        self.__csdlist = []
+        self.__csc1 = CandleStickChart()
+        self.__csdlist1 = []
 
         cols = [GapFill.LBL_RESULT,
                 GapFill.LBL_DIR,
@@ -349,7 +349,7 @@ class GapFill(object):
         """
         btnrun = self.__btn_run
         tbl = self.__tbl
-        fig = self.__csc.fig
+        fig = self.__csc1.fig
 
         tblfig = widgetbox(children=[tbl, fig], sizing_mode='stretch_width')
 
@@ -696,7 +696,7 @@ class GapFill(object):
             print("リストは空です")
         else:
             dfsmm = self.__dfsmm
-            self.__csdlist = []
+            self.__csdlist1 = []
             validmondaylist = []
             rsllist = []
             dfsmm.drop(index=dfsmm.index, inplace=True)
@@ -736,7 +736,7 @@ class GapFill(object):
                         rsllist.append("失敗")
 
                     validmondaylist.append(monday)
-                    self.__csdlist.append(csd)
+                    self.__csdlist1.append(csd)
                     dfsmm = dfsmm.append(record)
 
                 cnt = cnt + 1
@@ -773,7 +773,7 @@ class GapFill(object):
             なし[None]
         """
         idx = new[0]
-        self.__csc.set_dataframe(self.__csdlist[idx], self.__dfsmm.iloc[idx])
+        self.__csc1.set_dataframe(self.__csdlist1[idx], self.__dfsmm.iloc[idx])
 
     def __cb_btn_simrun(self):
         """Widget Button(シミュレーション実行)コールバックメソッド

@@ -15,6 +15,7 @@ from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
+from autotrader.analysis.graph import VerLine
 
 
 class CandleStickChart(CandleStickChartBase):
@@ -33,8 +34,11 @@ class CandleStickChart(CandleStickChartBase):
         self.__CLOSE_COLOR = "#FFEE55"
         self.__OPEN_COLOR = "#54FFEE"
 
+        self.__TM0954 = dt.time(9, 54)
+        self.__TM1030 = dt.time(10, 30)
+
         super().__init__()
-        self._fig.title.text = "TTM Candlestick Chart ( 10 minutes )"
+        self._fig.title.text = "TTM Candlestick Chart ( 5 minutes )"
 
         # プロット設定
         self._fig.toolbar_location = "right"
@@ -53,9 +57,20 @@ class CandleStickChart(CandleStickChartBase):
                            self._glyequ.render]
         self._fig.add_tools(hover)
 
+        self.__vl1 = VerLine(self._fig, "pink", line_width=2)
+        self.__vl2 = VerLine(self._fig, "yellow", line_width=2)
+
     def set_dataframe(self, csd):
 
         super().set_dataframe(csd)
+
+        dattm_ = csd.df.index[0]
+        dat_ = dt.date(dattm_.year, dattm_.month, dattm_.day)
+        y_pri = self._fig.y_range
+        x_dttm = dt.datetime.combine(dat_, self.__TM0954)
+        self.__vl1.update(x_dttm, y_pri.start, y_pri.end)
+        x_dttm = dt.datetime.combine(dat_, self.__TM1030)
+        self.__vl2.update(x_dttm, y_pri.start, y_pri.end)
 
 
 class TTMGoto(object):
@@ -111,8 +126,11 @@ class TTMGoto(object):
         self.__src.selected.on_change("indices", self.__cb_dttbl)
 
         # ローソク足チャート初期化
-        self.__csc = CandleStickChart()
-        self.__csdlist = []
+        self.__csc1 = CandleStickChart()
+        self.__csdlist1 = []
+
+        self.__csc2 = CandleStickChart()
+        self.__csdlist2 = []
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -123,9 +141,10 @@ class TTMGoto(object):
         """
         btnrun = self.__btn_run
         tbl = self.__tbl
-        cscfig = self.__csc.fig
+        cscfig1 = self.__csc1.fig
+        cscfig2 = self.__csc2.fig
 
-        tblfig = widgetbox(children=[tbl, cscfig], sizing_mode="stretch_width")
+        tblfig = widgetbox(children=[tbl, cscfig1], sizing_mode="stretch_width")
 
         layout_ = layout(children=[[btnrun], [tblfig]],
                          sizing_mode="stretch_width")
@@ -143,7 +162,8 @@ class TTMGoto(object):
 
         dfsmm = self.__dfsmm
         dfsmm.drop(index=dfsmm.index, inplace=True)
-        self.__csdlist = []
+        self.__csdlist1 = []
+        self.__csdlist2 = []
 
         yesterday = dt.date.today() - dt.timedelta(days=1)
         str_ = ana.get_date_str()
@@ -199,13 +219,14 @@ class TTMGoto(object):
 
             inst_id = ana.get_instrument_id()
             inst = OandaIns.list[inst_id].oanda_name
-            gran = OandaGrn.M10
 
             for date_ in dfsmm.index:
+                # チャート1
                 str_ = dt.datetime.combine(date_, dt.time(0, 0))
-                end_ = dt.datetime.combine(date_, dt.time(10, 0))
+                end_ = dt.datetime.combine(date_, dt.time(12, 0))
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
+                gran = OandaGrn.M5
 
                 try:
                     csd = CandleStickData(gran, inst, dtmstr, dtmend)
@@ -215,8 +236,9 @@ class TTMGoto(object):
                     print("----- ConnectionError: {}".format(cerr))
                 except Exception as excp:
                     print("----- Exception: {}".format(excp))
+                self.__csdlist1.append(csd)
 
-                self.__csdlist.append(csd)
+                # チャート2
 
         # 表示更新
         self.__src.data = {
@@ -238,4 +260,4 @@ class TTMGoto(object):
             なし[None]
         """
         idx = new[0]
-        self.__csc.set_dataframe(self.__csdlist[idx])
+        self.__csc1.set_dataframe(self.__csdlist1[idx])
