@@ -16,6 +16,7 @@ from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.graph import VerLine
+from autotrader.technical import SimpleMovingAverage
 
 
 class CandleStickChartAbs(CandleStickChartBase):
@@ -76,6 +77,8 @@ class CandleStickChart5M(CandleStickChartAbs):
         self.__vl1 = VerLine(self._fig, "pink", line_width=2)
         self.__vl2 = VerLine(self._fig, "yellow", line_width=2)
 
+        self.__sma = SimpleMovingAverage(self._fig)
+
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
 
@@ -85,6 +88,10 @@ class CandleStickChart5M(CandleStickChartAbs):
         self.__vl1.update(x_dttm, y_pri.start, y_pri.end)
         x_dttm = dt.datetime.combine(dat_, self.__TM1030)
         self.__vl2.update(x_dttm, y_pri.start, y_pri.end)
+
+        self.__sma.update_shr(csd.df, 5)
+        self.__sma.update_mdl(csd.df, 20)
+        self.__sma.update_lng(csd.df, 75)
 
 
 class CandleStickChart1H(CandleStickChartAbs):
