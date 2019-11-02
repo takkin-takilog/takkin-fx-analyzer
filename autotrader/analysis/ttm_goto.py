@@ -174,10 +174,10 @@ class TTMGoto(object):
 
         # ローソク足チャート初期化
         self.__csc1 = CandleStickChart5M()
-        self.__csdlist1 = []
+        self.__csdlist_5m = []
 
         self.__csc2 = CandleStickChart1H()
-        self.__csdlist2 = []
+        self.__csdlist_1h = []
 
     def get_layout(self):
         """レイアウトを取得する[get layout]
@@ -212,8 +212,8 @@ class TTMGoto(object):
 
         dfsmm = self.__dfsmm
         dfsmm.drop(index=dfsmm.index, inplace=True)
-        self.__csdlist1 = []
-        self.__csdlist2 = []
+        self.__csdlist_5m = []
+        self.__csdlist_1h = []
 
         yesterday = dt.date.today() - dt.timedelta(days=1)
         str_ = ana.get_date_str()
@@ -269,6 +269,7 @@ class TTMGoto(object):
 
             inst_id = ana.get_instrument_id()
             inst = OandaIns.list[inst_id].oanda_name
+            invalid_date = []
 
             for date_ in dfsmm.index:
                 # チャート1
@@ -286,7 +287,34 @@ class TTMGoto(object):
                     print("----- ConnectionError: {}".format(cerr))
                 except Exception as excp:
                     print("----- Exception: {}".format(excp))
-                self.__csdlist1.append(csd)
+                self.__csdlist_5m.append(csd)
+
+                # 始値 - 最安値
+                strtm = dt.time(hour=9, minute=55)
+                strdttm = str(dt.datetime.combine(date_, strtm))
+                endtm = dt.time(hour=10, minute=25)
+                enddttm = str(dt.datetime.combine(date_, endtm))
+
+                try:
+                    # 始値
+                    openpri = csd.df.loc[strdttm, cs.LBL_OPEN]
+                    df1 = csd.df[strdttm:enddttm]
+                except KeyError:
+                    invalid_date.append(date_)
+                    continue
+
+                minidx = df1[cs.LBL_LOW].idxmin()
+                minpri = df1[cs.LBL_LOW].min()
+                df2 = df1[:minidx]
+                maxpri = df2[cs.LBL_HIGH].max()
+
+                print("Open Price: {} " .format(openpri))
+                print("Low Price: {} " .format(minpri))
+                print("High Price: {} " .format(maxpri))
+
+
+
+                # 最高値 - 始値
 
                 # チャート2
                 str_ = dt.datetime.combine(date_, dt.time(0, 0)) - dt.timedelta(days=5)
@@ -303,7 +331,12 @@ class TTMGoto(object):
                     print("----- ConnectionError: {}".format(cerr))
                 except Exception as excp:
                     print("----- Exception: {}".format(excp))
-                self.__csdlist2.append(csd)
+                self.__csdlist_1h.append(csd)
+
+        if invalid_date:
+            print("-----[Caution] Invalid Date found")
+            print(invalid_date)
+            dfsmm.drop(index=invalid_date, inplace=True)
 
         # 表示更新
         self.__src.data = {
@@ -325,5 +358,5 @@ class TTMGoto(object):
             なし[None]
         """
         idx = new[0]
-        self.__csc1.set_dataframe(self.__dfsmm.index[idx], self.__csdlist1[idx])
-        self.__csc2.set_dataframe(self.__dfsmm.index[idx], self.__csdlist2[idx])
+        self.__csc1.set_dataframe(self.__dfsmm.index[idx], self.__csdlist_5m[idx])
+        self.__csc2.set_dataframe(self.__dfsmm.index[idx], self.__csdlist_1h[idx])
