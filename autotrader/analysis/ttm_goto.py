@@ -212,6 +212,11 @@ class TTMGoto(object):
 
         dfsmm = self.__dfsmm
         dfsmm.drop(index=dfsmm.index, inplace=True)
+
+        cols = [TTMGoto.LBL_WEEK,
+                TTMGoto.LBL_GOTO]
+        dfgoto = pd.DataFrame(columns=cols)
+
         self.__csdlist_5m = []
         self.__csdlist_1h = []
 
@@ -255,23 +260,22 @@ class TTMGoto(object):
                 # 出力
                 record = pd.Series([self._WEEK_DICT[weekdayno],
                                     target],
-                                   index=dfsmm.columns,
+                                   index=dfgoto.columns,
                                    name=date_)
-                dfsmm = dfsmm.append(record)
+                dfgoto = dfgoto.append(record)
 
             nextmonth = date_.month
 
-        dfsmm.sort_index(inplace=True)
+        dfgoto.sort_index(inplace=True)
 
-        if dfsmm.empty:
+        if dfgoto.empty:
             print("リストは空です")
         else:
 
             inst_id = ana.get_instrument_id()
             inst = OandaIns.list[inst_id].oanda_name
-            invalid_date = []
 
-            for date_ in dfsmm.index:
+            for date_, row_ in dfgoto.iterrows():
                 # チャート1
                 str_ = dt.datetime.combine(date_, dt.time(0, 0))
                 end_ = dt.datetime.combine(date_, dt.time(12, 0))
@@ -280,14 +284,16 @@ class TTMGoto(object):
                 gran = OandaGrn.M5
 
                 try:
-                    csd = CandleStickData(gran, inst, dtmstr, dtmend)
+                    csd5m = CandleStickData(gran, inst, dtmstr, dtmend)
                 except V20Error as v20err:
                     print("-----V20Error: {}".format(v20err))
+                    continue
                 except ConnectionError as cerr:
                     print("----- ConnectionError: {}".format(cerr))
+                    continue
                 except Exception as excp:
                     print("----- Exception: {}".format(excp))
-                self.__csdlist_5m.append(csd)
+                    continue
 
                 # 始値 - 最安値
                 strtm = dt.time(hour=9, minute=55)
@@ -297,21 +303,21 @@ class TTMGoto(object):
 
                 try:
                     # 始値
-                    openpri = csd.df.loc[strdttm, cs.LBL_OPEN]
-                    df1 = csd.df[strdttm:enddttm]
+                    openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
+                    df5m = csd5m.df[strdttm:enddttm]
                 except KeyError:
-                    invalid_date.append(date_)
+                    print("-----[Caution] Invalid Date found:[{}]"
+                          .format(str(date_)))
                     continue
 
-                minidx = df1[cs.LBL_LOW].idxmin()
-                minpri = df1[cs.LBL_LOW].min()
-                df2 = df1[:minidx]
+                minidx = df5m[cs.LBL_LOW].idxmin()
+                minpri = df5m[cs.LBL_LOW].min()
+                df2 = df5m[:minidx]
                 maxpri = df2[cs.LBL_HIGH].max()
 
                 print("Open Price: {} " .format(openpri))
                 print("Low Price: {} " .format(minpri))
                 print("High Price: {} " .format(maxpri))
-
 
 
                 # 最高値 - 始値
@@ -324,19 +330,26 @@ class TTMGoto(object):
                 gran = OandaGrn.H1
 
                 try:
-                    csd = CandleStickData(gran, inst, dtmstr, dtmend)
+                    csd1h = CandleStickData(gran, inst, dtmstr, dtmend)
                 except V20Error as v20err:
                     print("-----V20Error: {}".format(v20err))
+                    continue
                 except ConnectionError as cerr:
                     print("----- ConnectionError: {}".format(cerr))
+                    continue
                 except Exception as excp:
                     print("----- Exception: {}".format(excp))
-                self.__csdlist_1h.append(csd)
+                    continue
 
-        if invalid_date:
-            print("-----[Caution] Invalid Date found")
-            print(invalid_date)
-            dfsmm.drop(index=invalid_date, inplace=True)
+                self.__csdlist_5m.append(csd5m)
+                self.__csdlist_1h.append(csd1h)
+
+                # 出力
+                record = pd.Series([row_[TTMGoto.LBL_WEEK],
+                                    row_[TTMGoto.LBL_GOTO]],
+                                   index=dfsmm.columns,
+                                   name=date_)
+                dfsmm = dfsmm.append(record)
 
         # 表示更新
         self.__src.data = {
