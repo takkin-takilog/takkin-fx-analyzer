@@ -127,6 +127,8 @@ class TTMGoto(object):
 
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
+    LBL_DIFL = "diff-low-price"
+    LBL_DIFH = "diff-high-price"
 
     _WEEK_DICT = {0: "月", 1: "火", 2: "水", 3: "木",
                   4: "金", 5: "土", 6: "日"}
@@ -145,25 +147,33 @@ class TTMGoto(object):
         self.__btn_run.on_click(self.__cb_btn_run)
 
         cols = [TTMGoto.LBL_WEEK,
-                TTMGoto.LBL_GOTO]
+                TTMGoto.LBL_GOTO,
+                TTMGoto.LBL_DIFL,
+                TTMGoto.LBL_DIFH]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
         # Widget DataTable:
         self.TBLLBL_DATE = "date"
         self.TBLLBL_WEEK = "week"
         self.TBLLBL_GOTO = "goto-day"
+        self.TBLLBL_DIFL = "diff-low-price"
+        self.TBLLBL_DIFH = "diff-high-price"
 
         # データテーブル初期化
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
                                        self.TBLLBL_WEEK: [],
-                                       self.TBLLBL_GOTO: []
+                                       self.TBLLBL_GOTO: [],
+                                       self.TBLLBL_DIFL: [],
+                                       self.TBLLBL_DIFH: [],
                                        })
 
         cols = [
             TableColumn(field=self.TBLLBL_DATE, title="Date",
                         formatter=DateFormatter()),
             TableColumn(field=self.TBLLBL_WEEK, title="Week"),
-            TableColumn(field=self.TBLLBL_GOTO, title="goto-day"),
+            TableColumn(field=self.TBLLBL_GOTO, title="Goto Day"),
+            TableColumn(field=self.TBLLBL_DIFL, title="Diff Low Price"),
+            TableColumn(field=self.TBLLBL_DIFH, title="Diff High Price"),
         ]
 
         self.__tbl = DataTable(source=self.__src,
@@ -345,8 +355,13 @@ class TTMGoto(object):
                 self.__csdlist_1h.append(csd1h)
 
                 # 出力
+                inst_id = ana.get_instrument_id()
+                unit = OandaIns.list[inst_id].min_unit
+
                 record = pd.Series([row_[TTMGoto.LBL_WEEK],
-                                    row_[TTMGoto.LBL_GOTO]],
+                                    row_[TTMGoto.LBL_GOTO],
+                                    round(openpri - minpri, unit),
+                                    round(maxpri - openpri, unit)],
                                    index=dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
@@ -356,6 +371,8 @@ class TTMGoto(object):
             self.TBLLBL_DATE: dfsmm.index.tolist(),
             self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].tolist(),
             self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].tolist(),
+            self.TBLLBL_DIFL: dfsmm[TTMGoto.LBL_DIFL].tolist(),
+            self.TBLLBL_DIFH: dfsmm[TTMGoto.LBL_DIFH].tolist(),
         }
 
         self.__dfsmm = dfsmm
