@@ -2,10 +2,11 @@ import pandas as pd
 import jpholiday
 import datetime as dt
 from bokeh.models import ColumnDataSource, CrosshairTool, HoverTool
-from bokeh.models.widgets import Button
+from bokeh.models import Panel, Tabs
+from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
-from bokeh.layouts import layout, widgetbox, row, column, gridplot
+from bokeh.layouts import layout, widgetbox, row
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
@@ -206,9 +207,25 @@ class TTMGoto(object):
         tblfig = widgetbox(children=[tbl, cscfigs],
                            sizing_mode="stretch_width")
 
-        layout_ = layout(children=[[btnrun], [tblfig]],
+        tabs = self.__create_result_tabs()
+
+        layout_ = layout(children=[[btnrun], [tblfig], [tabs]],
                          sizing_mode="stretch_width")
         return(layout_)
+
+    def __create_result_tabs(self):
+
+        # Tab1の設定
+        txtin = TextInput(value="",
+                          title="Sample",
+                          width=200)
+
+        tab1 = Panel(child=txtin, title="Summary")
+
+        # タブ生成
+        tabs = Tabs(tabs=[tab1])
+
+        return tabs
 
     def __cb_btn_run(self):
         """Widget Button(実行)コールバックメソッド
@@ -329,11 +346,11 @@ class TTMGoto(object):
                 print("Low Price: {} " .format(minpri))
                 print("High Price: {} " .format(maxpri))
 
-
                 # 最高値 - 始値
 
                 # チャート2
-                str_ = dt.datetime.combine(date_, dt.time(0, 0)) - dt.timedelta(days=5)
+                str_ = dt.datetime.combine(
+                    date_, dt.time(0, 0)) - dt.timedelta(days=5)
                 end_ = dt.datetime.combine(date_, dt.time(15, 0))
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
@@ -388,5 +405,7 @@ class TTMGoto(object):
             なし[None]
         """
         idx = new[0]
-        self.__csc1.set_dataframe(self.__dfsmm.index[idx], self.__csdlist_5m[idx])
-        self.__csc2.set_dataframe(self.__dfsmm.index[idx], self.__csdlist_1h[idx])
+        self.__csc1.set_dataframe(
+            self.__dfsmm.index[idx], self.__csdlist_5m[idx])
+        self.__csc2.set_dataframe(
+            self.__dfsmm.index[idx], self.__csdlist_1h[idx])
