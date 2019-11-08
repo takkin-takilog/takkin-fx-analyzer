@@ -339,8 +339,7 @@ class TTMGoto(object):
 
                 minidx = df5m[cs.LBL_LOW].idxmin()
                 minpri = df5m[cs.LBL_LOW].min()
-                df2 = df5m[:minidx]
-                maxpri = df2[cs.LBL_HIGH].max()
+                maxpri = df5m[:minidx][cs.LBL_HIGH].max()
 
                 print("Open Price: {} " .format(openpri))
                 print("Low Price: {} " .format(minpri))
