@@ -236,6 +236,9 @@ class TTMGoto(object):
             なし[None]
         """
         print("Called cb_btn_run")
+        LBL_DIF_HI = "diff-high"
+        LBL_DIF_LO = "diff-low"
+        LBL_DIF_CL = "diff-close"
 
         dfsmm = self.__dfsmm
         dfsmm.drop(index=dfsmm.index, inplace=True)
@@ -301,6 +304,9 @@ class TTMGoto(object):
 
             inst_id = ana.get_instrument_id()
             inst = OandaIns.list[inst_id].oanda_name
+            dfhi = pd.DataFrame()
+            dflo = pd.DataFrame()
+            dfcl = pd.DataFrame()
 
             for date_, row_ in dfgoto.iterrows():
                 # チャート1
@@ -331,7 +337,7 @@ class TTMGoto(object):
                 try:
                     # 始値
                     openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
-                    df5m = csd5m.df[strdttm:enddttm]
+                    df5m = csd5m.df[strdttm:enddttm].copy()
                 except KeyError:
                     print("-----[Caution] Invalid Date found:[{}]"
                           .format(str(date_)))
@@ -346,6 +352,20 @@ class TTMGoto(object):
                 print("High Price: {} " .format(maxpri))
 
                 # 最高値 - 始値
+                idxnew = [s.time() for s in df5m.index]
+                idxdict = dict(zip(df5m.index, idxnew))
+                df5m.rename(index=idxdict, inplace=True)
+
+                tmp = df5m[cs.LBL_HIGH] - df5m[cs.LBL_OPEN]
+                srhi = pd.Series(tmp, name=date_)
+                tmp = df5m[cs.LBL_LOW] - df5m[cs.LBL_OPEN]
+                srlo = pd.Series(tmp, name=date_)
+                tmp = df5m[cs.LBL_CLOSE] - df5m[cs.LBL_OPEN]
+                srcl = pd.Series(tmp, name=date_)
+
+                dfhi = dfhi.append(srhi)
+                dflo = dflo.append(srlo)
+                dfcl = dfcl.append(srcl)
 
                 # チャート2
                 str_ = dt.datetime.combine(
@@ -381,6 +401,16 @@ class TTMGoto(object):
                                    index=dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
+
+            print("------ dfhi ------")
+            dftmp = dfhi.T.sort_index()
+            print(dftmp)
+            print("------ dflo ------")
+            dftmp = dflo.T.sort_index()
+            print(dftmp)
+            print("------ dfcl ------")
+            dftmp = dfcl.T.sort_index()
+            print(dftmp)
 
         # 表示更新
         self.__src.data = {
