@@ -126,6 +126,7 @@ class TTMGoto(object):
             - 仲根(TTM)とゴトー日クラス[TTM and Goto day class]
     """
 
+    LBL_DATE = "date"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
     LBL_DIFL = "diff-low-price"
@@ -205,12 +206,12 @@ class TTMGoto(object):
         cscfigs = row(children=[cscfig1, cscfig2], sizing_mode="stretch_width")
 
         tblfig = widgetbox(children=[tbl, cscfigs],
-                           sizing_mode="stretch_width")
+                           sizing_mode="fixed")
 
         tabs = self.__create_result_tabs()
 
         layout_ = layout(children=[[btnrun], [tblfig], [tabs]],
-                         sizing_mode="stretch_width")
+                         sizing_mode="fixed")
         return(layout_)
 
     def __create_result_tabs(self):
@@ -408,9 +409,10 @@ class TTMGoto(object):
                 tmp = df[cs.LBL_CLOSE] - df[cs.LBL_OPEN]
                 srcl = pd.Series(tmp, name=date_)
 
-                dfhi = dfhi.append(srhi)
-                dflo = dflo.append(srlo)
-                dfcl = dfcl.append(srcl)
+                dd = pd.Series(date_, index=[TTMGoto.LBL_DATE])
+                dfhi = dfhi.append(pd.concat([dd, row_, srhi]), ignore_index=True)
+                dflo = dflo.append(pd.concat([dd, row_, srlo]), ignore_index=True)
+                dfcl = dfcl.append(pd.concat([dd, row_, srcl]), ignore_index=True)
 
                 # *************** 出力 ***************
                 inst_id = ana.get_instrument_id()
@@ -425,14 +427,35 @@ class TTMGoto(object):
                 dfsmm = dfsmm.append(record)
 
             print("------ dfhi ------")
-            dftmp = dfhi.sort_index()
+            print(dfhi)
+            dftmp = dfhi.set_index([TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
+            hiave = dftmp.mean()
+            histd = dftmp.std(ddof=0)
             print(dftmp)
+            print("＜平均＞")
+            print(hiave)
+            print("＜標準偏差＞")
+            print(histd)
+
             print("------ dflo ------")
-            dftmp = dflo.sort_index()
+            dftmp = dflo.set_index([TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
+            loave = dftmp.mean()
+            lostd = dftmp.std(ddof=0)
             print(dftmp)
+            print("＜平均＞")
+            print(loave)
+            print("＜標準偏差＞")
+            print(lostd)
+
             print("------ dfcl ------")
-            dftmp = dfcl.sort_index()
+            dftmp = dfcl.set_index([TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
+            clave = dftmp.mean()
+            clstd = dftmp.std(ddof=0)
             print(dftmp)
+            print("＜平均＞")
+            print(clave)
+            print("＜標準偏差＞")
+            print(clstd)
 
         # 表示更新
         self.__src.data = {
@@ -444,6 +467,8 @@ class TTMGoto(object):
         }
 
         self.__dfsmm = dfsmm
+
+        exit()
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
