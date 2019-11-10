@@ -309,7 +309,7 @@ class TTMGoto(object):
             dfcl = pd.DataFrame()
 
             for date_, row_ in dfgoto.iterrows():
-                # チャート1
+                # *************** 5分足チャート ***************
                 str_ = dt.datetime.combine(date_, dt.time(0, 0))
                 end_ = dt.datetime.combine(date_, dt.time(12, 0))
                 dtmstr = DateTimeManager(str_)
@@ -337,7 +337,7 @@ class TTMGoto(object):
                 try:
                     # 始値
                     openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
-                    df5m = csd5m.df[strdttm:enddttm].copy()
+                    df5m = csd5m.df[strdttm:enddttm]
                 except KeyError:
                     print("-----[Caution] Invalid Date found:[{}]"
                           .format(str(date_)))
@@ -347,27 +347,13 @@ class TTMGoto(object):
                 minpri = df5m[cs.LBL_LOW].min()
                 maxpri = df5m[:minidx][cs.LBL_HIGH].max()
 
+                self.__csdlist_5m.append(csd5m)
+
                 print("Open Price: {} " .format(openpri))
                 print("Low Price: {} " .format(minpri))
                 print("High Price: {} " .format(maxpri))
 
-                # 最高値 - 始値
-                idxnew = [s.time() for s in df5m.index]
-                idxdict = dict(zip(df5m.index, idxnew))
-                df5m.rename(index=idxdict, inplace=True)
-
-                tmp = df5m[cs.LBL_HIGH] - df5m[cs.LBL_OPEN]
-                srhi = pd.Series(tmp, name=date_)
-                tmp = df5m[cs.LBL_LOW] - df5m[cs.LBL_OPEN]
-                srlo = pd.Series(tmp, name=date_)
-                tmp = df5m[cs.LBL_CLOSE] - df5m[cs.LBL_OPEN]
-                srcl = pd.Series(tmp, name=date_)
-
-                dfhi = dfhi.append(srhi)
-                dflo = dflo.append(srlo)
-                dfcl = dfcl.append(srcl)
-
-                # チャート2
+                # *************** 1時間足チャート ***************
                 str_ = dt.datetime.combine(
                     date_, dt.time(0, 0)) - dt.timedelta(days=5)
                 end_ = dt.datetime.combine(date_, dt.time(15, 0))
@@ -387,10 +373,46 @@ class TTMGoto(object):
                     print("----- Exception: {}".format(excp))
                     continue
 
-                self.__csdlist_5m.append(csd5m)
                 self.__csdlist_1h.append(csd1h)
 
-                # 出力
+                # *************** 5分足統計データ ***************
+                str_ = dt.datetime.combine(date_, dt.time(0, 0))
+                end_ = dt.datetime.combine(date_, dt.time(12, 0))
+                dtmstr = DateTimeManager(str_)
+                dtmend = DateTimeManager(end_)
+                gran = OandaGrn.M5
+
+                try:
+                    csd5m = CandleStickData(gran, inst, dtmstr, dtmend)
+                except V20Error as v20err:
+                    print("-----V20Error: {}".format(v20err))
+                    continue
+                except ConnectionError as cerr:
+                    print("----- ConnectionError: {}".format(cerr))
+                    continue
+                except Exception as excp:
+                    print("----- Exception: {}".format(excp))
+                    continue
+
+                df = csd5m.df
+
+                # 集計
+                idxnew = [s.time() for s in df.index]
+                idxdict = dict(zip(df.index, idxnew))
+                df.rename(index=idxdict, inplace=True)
+
+                tmp = df[cs.LBL_HIGH] - df[cs.LBL_OPEN]
+                srhi = pd.Series(tmp, name=date_)
+                tmp = df[cs.LBL_LOW] - df[cs.LBL_OPEN]
+                srlo = pd.Series(tmp, name=date_)
+                tmp = df[cs.LBL_CLOSE] - df[cs.LBL_OPEN]
+                srcl = pd.Series(tmp, name=date_)
+
+                dfhi = dfhi.append(srhi)
+                dflo = dflo.append(srlo)
+                dfcl = dfcl.append(srcl)
+
+                # *************** 出力 ***************
                 inst_id = ana.get_instrument_id()
                 unit = OandaIns.list[inst_id].min_unit
 
@@ -403,13 +425,13 @@ class TTMGoto(object):
                 dfsmm = dfsmm.append(record)
 
             print("------ dfhi ------")
-            dftmp = dfhi.T.sort_index()
+            dftmp = dfhi.sort_index()
             print(dftmp)
             print("------ dflo ------")
-            dftmp = dflo.T.sort_index()
+            dftmp = dflo.sort_index()
             print(dftmp)
             print("------ dfcl ------")
-            dftmp = dfcl.T.sort_index()
+            dftmp = dfcl.sort_index()
             print(dftmp)
 
         # 表示更新
