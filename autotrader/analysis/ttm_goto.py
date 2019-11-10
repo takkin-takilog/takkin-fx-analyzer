@@ -75,8 +75,8 @@ class CandleStickChart5M(CandleStickChartAbs):
         super().__init__()
         self._fig.title.text = "TTM Candlestick Chart ( 5 minutes )"
 
-        self.__vl1 = VerLine(self._fig, "pink", line_width=2)
-        self.__vl2 = VerLine(self._fig, "yellow", line_width=2)
+        self.__vl1 = VerLine(self._fig, "pink", line_width=1)
+        self.__vl2 = VerLine(self._fig, "yellow", line_width=1)
 
         self.__sma = SimpleMovingAverage(self._fig)
 
@@ -110,7 +110,7 @@ class CandleStickChart1H(CandleStickChartAbs):
         super().__init__()
         self._fig.title.text = "TTM Candlestick Chart ( 1 hour )"
 
-        self.__vl1 = VerLine(self._fig, "pink", line_width=2)
+        self.__vl1 = VerLine(self._fig, "pink", line_width=1)
 
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
@@ -132,8 +132,12 @@ class TTMGoto(object):
     LBL_DIFL = "diff-low-price"
     LBL_DIFH = "diff-high-price"
 
+    FALSE = 0
+    TRUE = 1
+
     _WEEK_DICT = {0: "月", 1: "火", 2: "水", 3: "木",
                   4: "金", 5: "土", 6: "日"}
+    _GOTO_DICT = {FALSE: "×", TRUE: "○"}
     _MLT_FIVE_LIST = [5, 10, 15, 20, 25, 30]
 
     def __init__(self):
@@ -237,10 +241,6 @@ class TTMGoto(object):
             なし[None]
         """
         print("Called cb_btn_run")
-        LBL_DIF_HI = "diff-high"
-        LBL_DIF_LO = "diff-low"
-        LBL_DIF_CL = "diff-close"
-
         dfsmm = self.__dfsmm
         dfsmm.drop(index=dfsmm.index, inplace=True)
 
@@ -282,14 +282,14 @@ class TTMGoto(object):
             if (weekdayno < 5) and not jpholiday.is_holiday(date_):
 
                 if lastday_flg or gotoday_flg:
-                    target = "○"
+                    target = TTMGoto.TRUE
                     lastday_flg = False
                     gotoday_flg = False
                 else:
-                    target = "×"
+                    target = TTMGoto.FALSE
 
                 # 出力
-                record = pd.Series([self._WEEK_DICT[weekdayno],
+                record = pd.Series([weekdayno,
                                     target],
                                    index=dfgoto.columns,
                                    name=date_)
@@ -309,7 +309,7 @@ class TTMGoto(object):
             dflo = pd.DataFrame()
             dfcl = pd.DataFrame()
 
-            for date_, row_ in dfgoto.iterrows():
+            for date_, srrow in dfgoto.iterrows():
                 # *************** 5分足チャート ***************
                 str_ = dt.datetime.combine(date_, dt.time(0, 0))
                 end_ = dt.datetime.combine(date_, dt.time(12, 0))
@@ -409,28 +409,33 @@ class TTMGoto(object):
                 tmp = df[cs.LBL_CLOSE] - df[cs.LBL_OPEN]
                 srcl = pd.Series(tmp, name=date_)
 
-                dd = pd.Series(date_, index=[TTMGoto.LBL_DATE])
-                dfhi = dfhi.append(pd.concat([dd, row_, srhi]), ignore_index=True)
-                dflo = dflo.append(pd.concat([dd, row_, srlo]), ignore_index=True)
-                dfcl = dfcl.append(pd.concat([dd, row_, srcl]), ignore_index=True)
+                srdt = pd.Series(date_, index=[TTMGoto.LBL_DATE])
+                dfhi = dfhi.append(
+                    pd.concat([srdt, srrow, srhi]), ignore_index=True)
+                dflo = dflo.append(
+                    pd.concat([srdt, srrow, srlo]), ignore_index=True)
+                dfcl = dfcl.append(
+                    pd.concat([srdt, srrow, srcl]), ignore_index=True)
 
                 # *************** 出力 ***************
                 inst_id = ana.get_instrument_id()
                 unit = OandaIns.list[inst_id].min_unit
 
-                record = pd.Series([row_[TTMGoto.LBL_WEEK],
-                                    row_[TTMGoto.LBL_GOTO],
+                record = pd.Series([self._WEEK_DICT[srrow[TTMGoto.LBL_WEEK]],
+                                    self._GOTO_DICT[srrow[TTMGoto.LBL_GOTO]],
                                     round(openpri - minpri, unit),
                                     round(maxpri - openpri, unit)],
                                    index=dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
 
+            idx = [TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
+            level_ = [TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
             print("------ dfhi ------")
             print(dfhi)
-            dftmp = dfhi.set_index([TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
-            hiave = dftmp.mean()
-            histd = dftmp.std(ddof=0)
+            dftmp = dfhi.set_index(idx)
+            hiave = dftmp.mean(level=level_)
+            histd = dftmp.std(ddof=0, level=level_)
             print(dftmp)
             print("＜平均＞")
             print(hiave)
@@ -438,9 +443,10 @@ class TTMGoto(object):
             print(histd)
 
             print("------ dflo ------")
-            dftmp = dflo.set_index([TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
-            loave = dftmp.mean()
-            lostd = dftmp.std(ddof=0)
+            print(dflo)
+            dftmp = dflo.set_index(idx)
+            loave = dftmp.mean(level=level_)
+            lostd = dftmp.std(ddof=0, level=level_)
             print(dftmp)
             print("＜平均＞")
             print(loave)
@@ -448,9 +454,10 @@ class TTMGoto(object):
             print(lostd)
 
             print("------ dfcl ------")
-            dftmp = dfcl.set_index([TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
-            clave = dftmp.mean()
-            clstd = dftmp.std(ddof=0)
+            print(dfcl)
+            dftmp = dfcl.set_index(idx)
+            clave = dftmp.mean(level=level_)
+            clstd = dftmp.std(ddof=0, level=level_)
             print(dftmp)
             print("＜平均＞")
             print(clave)
@@ -465,10 +472,7 @@ class TTMGoto(object):
             self.TBLLBL_DIFL: dfsmm[TTMGoto.LBL_DIFL].tolist(),
             self.TBLLBL_DIFH: dfsmm[TTMGoto.LBL_DIFH].tolist(),
         }
-
         self.__dfsmm = dfsmm
-
-        exit()
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
