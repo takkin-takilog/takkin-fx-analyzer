@@ -6,7 +6,7 @@ from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
-from bokeh.models.glyphs import VBar, Line
+from bokeh.models.glyphs import VBar, Line, Circle
 from bokeh.plotting import figure
 from bokeh.layouts import layout, widgetbox, row
 from oandapyV20.exceptions import V20Error
@@ -27,8 +27,10 @@ class DiffChart(object):
             - 差分チャート定義クラス[Difference chart definition class]
     """
 
-    X_TM = "x_time"
-    Y_PR = "y_price"
+    X_TIME = "x_time"
+    Y_PRHI = "y_pri_hi"
+    Y_PRLO = "y_pri_lo"
+    Y_PRCL = "y_pri_cl"
 
     def __init__(self, title):
         """"コンストラクタ[Constructor]
@@ -46,44 +48,50 @@ class DiffChart(object):
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "diff price"
 
-        dict_ = {DiffChart.X_TM: [],
-                 DiffChart.Y_PR: []}
+        dict_ = {DiffChart.X_TIME: [],
+                 DiffChart.Y_PRHI: [],
+                 DiffChart.Y_PRLO: [],
+                 DiffChart.Y_PRCL: []}
+        src = ColumnDataSource(dict_)
 
         # ----- Diff high price -----
-        srchi = ColumnDataSource(dict_)
-        vbarhi = VBar(x=DiffChart.X_TM,
-                      top=DiffChart.Y_PR,
+        vbarhi = VBar(x=DiffChart.X_TIME,
+                      top=DiffChart.Y_PRHI,
                       width=0.9,
                       fill_color="green", line_color="white",
                       line_alpha=0.5, fill_alpha=0.5)
-        renhi = fig.add_glyph(srchi, vbarhi)
+        renhi = fig.add_glyph(src, vbarhi)
 
         # ----- Diff high price -----
-        srclo = ColumnDataSource(dict_)
-        vbarlo = VBar(x=DiffChart.X_TM,
-                      top=DiffChart.Y_PR,
+        vbarlo = VBar(x=DiffChart.X_TIME,
+                      top=DiffChart.Y_PRLO,
                       width=0.9,
                       fill_color="red", line_color="white",
                       line_alpha=0.5, fill_alpha=0.5)
-        renlo = fig.add_glyph(srclo, vbarlo)
+        renlo = fig.add_glyph(src, vbarlo)
 
         # ----- Diff close price -----
-        srccl = ColumnDataSource(dict_)
-        vbarcl = Line(x=DiffChart.X_TM,
-                      y=DiffChart.Y_PR,
+        vbarcl = Line(x=DiffChart.X_TIME,
+                      y=DiffChart.Y_PRCL,
                       line_color="cyan", line_width=2,
                       line_alpha=1.0)
-        rencl = fig.add_glyph(srccl, vbarcl)
+        fig.add_glyph(src, vbarcl)
+
+        circl = Circle(x=DiffChart.X_TIME,
+                       y=DiffChart.Y_PRCL,
+                       size=10,
+                       line_width=0,
+                       fill_color="cyan",
+                       fill_alpha=1.0)
+        rencl = fig.add_glyph(src, circl)
 
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
 
         self.__fig = fig
-        self.__srchi = srchi
+        self.__src = src
         self.__renhi = renhi
-        self.__srclo = srclo
         self.__renlo = renlo
-        self.__srccl = srccl
         self.__rencl = rencl
 
     @property
@@ -136,17 +144,11 @@ class DiffChart(object):
         prilolist = [-5, -6, -7]
         pricllist = [2, -1, 4]
 
-        dict_ = {DiffChart.X_TM: timelist,
-                 DiffChart.Y_PR: prihilist}
-        self.__srchi.data = dict_
-
-        dict_ = {DiffChart.X_TM: timelist,
-                 DiffChart.Y_PR: prilolist}
-        self.__srclo.data = dict_
-
-        dict_ = {DiffChart.X_TM: timelist,
-                 DiffChart.Y_PR: pricllist}
-        self.__srccl.data = dict_
+        dict_ = {DiffChart.X_TIME: timelist,
+                 DiffChart.Y_PRHI: prihilist,
+                 DiffChart.Y_PRLO: prilolist,
+                 DiffChart.Y_PRCL: pricllist}
+        self.__src.data = dict_
 
         self.__fig.x_range.factors = timelist
 
@@ -157,10 +159,11 @@ class DiffChart(object):
         戻り値[Returns]:
             なし[None]
         """
-        dict_ = {DiffChart.X_TM: [],
-                 DiffChart.Y_PR: [],
-                 DiffChart.Y_PRI_LO: []}
-        self.__srchi.data = dict_
+        dict_ = {DiffChart.X_TIME: [],
+                 DiffChart.Y_PRHI: [],
+                 DiffChart.Y_PRLO: [],
+                 DiffChart.Y_PRCL: []}
+        self.__src.data = dict_
 
 
 class CandleStickChartAbs(CandleStickChartBase):
