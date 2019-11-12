@@ -6,6 +6,8 @@ from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
+from bokeh.models.glyphs import VBar, Line
+from bokeh.plotting import figure
 from bokeh.layouts import layout, widgetbox, row
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
@@ -18,6 +20,147 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.graph import VerLine
 from autotrader.technical import SimpleMovingAverage
+
+
+class DiffChart(object):
+    """ DiffChart
+            - 差分チャート定義クラス[Difference chart definition class]
+    """
+
+    X_TM = "x_time"
+    Y_PR = "y_price"
+
+    def __init__(self, title):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            fig (figure) : フィギュアオブジェクト[figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
+        """
+        BG_COLOR = "#2E2E2E"  # Background color
+
+        fig = figure(title=title,
+                     x_range=[],
+                     plot_height=400,
+                     tools='',
+                     background_fill_color=BG_COLOR)
+        fig.xaxis.axis_label = "time"
+        fig.yaxis.axis_label = "diff price"
+
+        dict_ = {DiffChart.X_TM: [],
+                 DiffChart.Y_PR: []}
+
+        # ----- Diff high price -----
+        srchi = ColumnDataSource(dict_)
+        vbarhi = VBar(x=DiffChart.X_TM,
+                      top=DiffChart.Y_PR,
+                      width=0.9,
+                      fill_color="green", line_color="white",
+                      line_alpha=0.5, fill_alpha=0.5)
+        renhi = fig.add_glyph(srchi, vbarhi)
+
+        # ----- Diff high price -----
+        srclo = ColumnDataSource(dict_)
+        vbarlo = VBar(x=DiffChart.X_TM,
+                      top=DiffChart.Y_PR,
+                      width=0.9,
+                      fill_color="red", line_color="white",
+                      line_alpha=0.5, fill_alpha=0.5)
+        renlo = fig.add_glyph(srclo, vbarlo)
+
+        # ----- Diff close price -----
+        srccl = ColumnDataSource(dict_)
+        vbarcl = Line(x=DiffChart.X_TM,
+                      y=DiffChart.Y_PR,
+                      line_color="cyan", line_width=2,
+                      line_alpha=1.0)
+        rencl = fig.add_glyph(srccl, vbarcl)
+
+        fig.grid.grid_line_color = "white"
+        fig.grid.grid_line_alpha = 0.3
+
+        self.__fig = fig
+        self.__srchi = srchi
+        self.__renhi = renhi
+        self.__srclo = srclo
+        self.__renlo = renlo
+        self.__srccl = srccl
+        self.__rencl = rencl
+
+    @property
+    def render_hi(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__renhi
+
+    @property
+    def render_lo(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__renlo
+
+    @property
+    def render_cl(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__rencl
+
+    @property
+    def fig(self):
+        """モデルを取得する[get model]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            self.__fig (object) : model object
+        """
+        return self.__fig
+
+    def update(self):
+        print("called update")
+        timelist = ['0:00', '1:00', '2:00']
+        prihilist = [8, 5, 7]
+        prilolist = [-5, -6, -7]
+        pricllist = [2, -1, 4]
+
+        dict_ = {DiffChart.X_TM: timelist,
+                 DiffChart.Y_PR: prihilist}
+        self.__srchi.data = dict_
+
+        dict_ = {DiffChart.X_TM: timelist,
+                 DiffChart.Y_PR: prilolist}
+        self.__srclo.data = dict_
+
+        dict_ = {DiffChart.X_TM: timelist,
+                 DiffChart.Y_PR: pricllist}
+        self.__srccl.data = dict_
+
+        self.__fig.x_range.factors = timelist
+
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        dict_ = {DiffChart.X_TM: [],
+                 DiffChart.Y_PR: [],
+                 DiffChart.Y_PRI_LO: []}
+        self.__srchi.data = dict_
 
 
 class CandleStickChartAbs(CandleStickChartBase):
@@ -489,3 +632,13 @@ class TTMGoto(object):
             self.__dfsmm.index[idx], self.__csdlist_5m[idx])
         self.__csc2.set_dataframe(
             self.__dfsmm.index[idx], self.__csdlist_1h[idx])
+
+
+if __name__ == "__main__":
+    from bokeh.io import show
+
+    dc = DiffChart("test")
+
+    dc.update()
+
+    show(dc.fig)
