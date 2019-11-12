@@ -139,10 +139,18 @@ class DiffChart(object):
 
     def update(self):
         print("called update")
-        timelist = ['0:00', '1:00', '2:00']
-        prihilist = [8, 5, 7]
-        prilolist = [-5, -6, -7]
-        pricllist = [2, -1, 4]
+        timelist = ['0:00', '1:00', '2:00', '3:00', '4:00',
+                    '5:00', '6:00', '7:00', '8:00', '9:00',
+                    '10:00', '11:00', '12:00']
+        prihilist = [8.9, 9.0, 8.9, 8.7, 8.4,
+                     8.5, 9.8, 8.5, 8.0, 7.8,
+                     7.7, 7.6, 7.5]
+        prilolist = [-6.5, -6.6, -6.9, -6.2, -6.1,
+                     -6.2, -5.8, -5.5, -5.6, -6.1,
+                     -6.9, -7.1, -6.5]
+        pricllist = [3.5, 2.6, -0.9, -1.2, -2.1,
+                     -1.2, 0.8, 1.5, 3.6, 4.1,
+                     3.9, -1.1, -3.5]
 
         dict_ = {DiffChart.X_TIME: timelist,
                  DiffChart.Y_PRHI: prihilist,
@@ -640,7 +648,7 @@ class TTMGoto(object):
 if __name__ == "__main__":
     from bokeh.io import show
 
-    dc = DiffChart("test")
+    dc = DiffChart("Diff chart")
 
     dc.update()
 
