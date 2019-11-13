@@ -51,7 +51,7 @@ class DiffChart(object):
 
         fig = figure(title=title,
                      x_range=[],
-                     plot_height=400,
+                     plot_height=200,
                      tools='',
                      background_fill_color=BG_COLOR)
         fig.xaxis.axis_label = "time"
@@ -146,7 +146,8 @@ class DiffChart(object):
         """
         return self.__fig
 
-    def update(self):
+    def update(self, df):
+        """
         print("called update")
         timelist = ['0:00', '1:00', '2:00', '3:00', '4:00',
                     '5:00', '6:00', '7:00', '8:00', '9:00',
@@ -166,11 +167,14 @@ class DiffChart(object):
         sr3 = pd.Series(pricllist, index=timelist, name=DiffChart.LBL_MEAN_CL)
 
         df = pd.concat([sr1, sr2, sr3], axis=1)
+        """
+        print(df)
+        timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
 
-        dict_ = {DiffChart.X_TIME: df.index.tolist(),
+        dict_ = {DiffChart.X_TIME: timelist,
                  DiffChart.Y_PRHI: df[DiffChart.LBL_MEAN_HI].tolist(),
                  DiffChart.Y_PRLO: df[DiffChart.LBL_MEAN_LO].tolist(),
-                 DiffChart.Y_PRCL: df[DiffChart.LBL_MEAN_CL].tolist(),}
+                 DiffChart.Y_PRCL: df[DiffChart.LBL_MEAN_CL].tolist(), }
         self.__src.data = dict_
 
         self.__fig.x_range.factors = timelist
@@ -365,22 +369,13 @@ class TTMGoto(object):
         self.__csdlist_1h = []
 
         # 集計結果
-        CHART_TITLE_LIST = ["Diff chart [MON]:[Not Goto]",
-                            "Diff chart [MON]:[Goto]",
-                            "Diff chart [TUE]:[Not Goto]",
-                            "Diff chart [TUE]:[Goto]",
-                            "Diff chart [WED]:[Not Goto]",
-                            "Diff chart [WED]:[Goto]",
-                            "Diff chart [THU]:[Not Goto]",
-                            "Diff chart [THU]:[Goto]",
-                            "Diff chart [FRI]:[Not Goto]",
-                            "Diff chart [FRI]:[Goto]"
-                            ]
         diffchrlist = []
-        for title in CHART_TITLE_LIST:
-            print(title)
-            diffchrlist.append(DiffChart(title))
-
+        for i in TTMGoto._WEEK_DICT.keys():
+            for j in TTMGoto._GOTO_DICT.keys():
+                week = TTMGoto._WEEK_DICT[i]
+                goto = TTMGoto._GOTO_DICT[j]
+                str = "Diff chart [" + week + "]:[" + goto + "]"
+                diffchrlist.append(DiffChart(str))
         self.__diffchrlist = diffchrlist
 
         # Mean list: 0:High, 1:Low, 2:Close
@@ -413,19 +408,19 @@ class TTMGoto(object):
     def __create_result_tabs(self):
 
         # Tab1の設定
-        gridview = gridplot(
-            [
-                [TextInput(value="月", width=50), TextInput(value="×", width=50), None],
-                [TextInput(value="月", width=50), TextInput(value="○", width=50), None],
-                [TextInput(value="火", width=50), TextInput(value="×", width=50), None],
-                [TextInput(value="火", width=50), TextInput(value="○", width=50), None],
-                [TextInput(value="水", width=50), TextInput(value="×", width=50), None],
-                [TextInput(value="水", width=50), TextInput(value="○", width=50), None],
-                [TextInput(value="木", width=50), TextInput(value="×", width=50), None],
-                [TextInput(value="木", width=50), TextInput(value="○", width=50), None],
-                [TextInput(value="金", width=50), TextInput(value="×", width=50), None],
-                [TextInput(value="金", width=50), TextInput(value="○", width=50), None],
-            ])
+
+        plotlist = []
+        for i in TTMGoto._WEEK_DICT.keys():
+            for j in TTMGoto._GOTO_DICT.keys():
+                week = TTMGoto._WEEK_DICT[i]
+                goto = TTMGoto._GOTO_DICT[j]
+                plot = self.__diffchrlist[i * len(TTMGoto._GOTO_DICT) + j]
+                obj = [TextInput(value=week, width=50),
+                       TextInput(value=goto, width=50),
+                       plot.fig]
+                plotlist.append(obj)
+
+        gridview = gridplot(plotlist)
 
         tab1 = Panel(child=gridview, title="Summary")
 
@@ -684,9 +679,14 @@ class TTMGoto(object):
                         srcl.name = DiffChart.LBL_MEAN_CL
                     except KeyError as e:
                         print("{} are not exist!" .format(e))
+                        dfsumm = pd.DataFrame()
                     else:
                         dfsumm = pd.concat([srhi, srlo, srcl], axis=1)
                         print(dfsumm)
+                    finally:
+                        self.__meanlist.append(dfsumm)
+                    diffchr = self.__diffchrlist[i * len(TTMGoto._GOTO_DICT) + j]
+                    diffchr.update(dfsumm)
 
         # 表示更新
         self.__src.data = {
