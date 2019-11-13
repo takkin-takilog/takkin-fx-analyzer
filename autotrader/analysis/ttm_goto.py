@@ -8,7 +8,7 @@ from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
 from bokeh.models.glyphs import VBar, Line, Circle
 from bokeh.plotting import figure
-from bokeh.layouts import layout, widgetbox, row
+from bokeh.layouts import layout, widgetbox, row, gridplot
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
@@ -20,6 +20,8 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.graph import VerLine
 from autotrader.technical import SimpleMovingAverage
+from bs4.element import nonwhitespace_re
+from dask.dataframe.core import DataFrame
 
 
 class DiffChart(object):
@@ -31,6 +33,13 @@ class DiffChart(object):
     Y_PRHI = "y_pri_hi"
     Y_PRLO = "y_pri_lo"
     Y_PRCL = "y_pri_cl"
+
+    LBL_MEAN_HI = "mean_high"
+    LBL_MEAN_LO = "mean_low"
+    LBL_MEAN_CL = "mean_close"
+    LBL_STD_HI = "std_high"
+    LBL_STD_LO = "std_low"
+    LBL_STD_CL = "std_close"
 
     def __init__(self, title):
         """"コンストラクタ[Constructor]
@@ -152,10 +161,16 @@ class DiffChart(object):
                      -1.2, 0.8, 1.5, 3.6, 4.1,
                      3.9, -1.1, -3.5]
 
-        dict_ = {DiffChart.X_TIME: timelist,
-                 DiffChart.Y_PRHI: prihilist,
-                 DiffChart.Y_PRLO: prilolist,
-                 DiffChart.Y_PRCL: pricllist}
+        sr1 = pd.Series(prihilist, index=timelist, name=DiffChart.LBL_MEAN_HI)
+        sr2 = pd.Series(prilolist, index=timelist, name=DiffChart.LBL_MEAN_LO)
+        sr3 = pd.Series(pricllist, index=timelist, name=DiffChart.LBL_MEAN_CL)
+
+        df = pd.concat([sr1, sr2, sr3], axis=1)
+
+        dict_ = {DiffChart.X_TIME: df.index.tolist(),
+                 DiffChart.Y_PRHI: df[DiffChart.LBL_MEAN_HI].tolist(),
+                 DiffChart.Y_PRLO: df[DiffChart.LBL_MEAN_LO].tolist(),
+                 DiffChart.Y_PRCL: df[DiffChart.LBL_MEAN_CL].tolist(),}
         self.__src.data = dict_
 
         self.__fig.x_range.factors = timelist
@@ -290,7 +305,7 @@ class TTMGoto(object):
     TRUE = 1
 
     _WEEK_DICT = {0: "月", 1: "火", 2: "水", 3: "木",
-                  4: "金", 5: "土", 6: "日"}
+                  4: "金"}
     _GOTO_DICT = {FALSE: "×", TRUE: "○"}
     _MLT_FIVE_LIST = [5, 10, 15, 20, 25, 30]
 
@@ -349,6 +364,29 @@ class TTMGoto(object):
         self.__csc2 = CandleStickChart1H()
         self.__csdlist_1h = []
 
+        # 集計結果
+        CHART_TITLE_LIST = ["Diff chart [MON]:[Not Goto]",
+                            "Diff chart [MON]:[Goto]",
+                            "Diff chart [TUE]:[Not Goto]",
+                            "Diff chart [TUE]:[Goto]",
+                            "Diff chart [WED]:[Not Goto]",
+                            "Diff chart [WED]:[Goto]",
+                            "Diff chart [THU]:[Not Goto]",
+                            "Diff chart [THU]:[Goto]",
+                            "Diff chart [FRI]:[Not Goto]",
+                            "Diff chart [FRI]:[Goto]"
+                            ]
+        diffchrlist = []
+        for title in CHART_TITLE_LIST:
+            print(title)
+            diffchrlist.append(DiffChart(title))
+
+        self.__diffchrlist = diffchrlist
+
+        # Mean list: 0:High, 1:Low, 2:Close
+        self.__meanlist = []
+        self.__stdlist = []
+
     def get_layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
@@ -375,11 +413,21 @@ class TTMGoto(object):
     def __create_result_tabs(self):
 
         # Tab1の設定
-        txtin = TextInput(value="",
-                          title="Sample",
-                          width=200)
+        gridview = gridplot(
+            [
+                [TextInput(value="月", width=50), TextInput(value="×", width=50), None],
+                [TextInput(value="月", width=50), TextInput(value="○", width=50), None],
+                [TextInput(value="火", width=50), TextInput(value="×", width=50), None],
+                [TextInput(value="火", width=50), TextInput(value="○", width=50), None],
+                [TextInput(value="水", width=50), TextInput(value="×", width=50), None],
+                [TextInput(value="水", width=50), TextInput(value="○", width=50), None],
+                [TextInput(value="木", width=50), TextInput(value="×", width=50), None],
+                [TextInput(value="木", width=50), TextInput(value="○", width=50), None],
+                [TextInput(value="金", width=50), TextInput(value="×", width=50), None],
+                [TextInput(value="金", width=50), TextInput(value="○", width=50), None],
+            ])
 
-        tab1 = Panel(child=txtin, title="Summary")
+        tab1 = Panel(child=gridview, title="Summary")
 
         # タブ生成
         tabs = Tabs(tabs=[tab1])
@@ -404,6 +452,9 @@ class TTMGoto(object):
 
         self.__csdlist_5m = []
         self.__csdlist_1h = []
+
+        self.__meanlist = []
+        self.__stdlist = []
 
         yesterday = dt.date.today() - dt.timedelta(days=1)
         str_ = ana.get_date_str()
@@ -564,6 +615,7 @@ class TTMGoto(object):
                 srcl = pd.Series(tmp, name=date_)
 
                 srdt = pd.Series(date_, index=[TTMGoto.LBL_DATE])
+
                 dfhi = dfhi.append(
                     pd.concat([srdt, srrow, srhi]), ignore_index=True)
                 dflo = dflo.append(
@@ -588,6 +640,7 @@ class TTMGoto(object):
             print("------ dfhi ------")
             print(dfhi)
             dftmp = dfhi.set_index(idx)
+            dftmp.sort_index(axis=1, inplace=True)
             hiave = dftmp.mean(level=level_)
             histd = dftmp.std(ddof=0, level=level_)
             print(dftmp)
@@ -599,6 +652,7 @@ class TTMGoto(object):
             print("------ dflo ------")
             print(dflo)
             dftmp = dflo.set_index(idx)
+            dftmp.sort_index(axis=1, inplace=True)
             loave = dftmp.mean(level=level_)
             lostd = dftmp.std(ddof=0, level=level_)
             print(dftmp)
@@ -610,6 +664,7 @@ class TTMGoto(object):
             print("------ dfcl ------")
             print(dfcl)
             dftmp = dfcl.set_index(idx)
+            dftmp.sort_index(axis=1, inplace=True)
             clave = dftmp.mean(level=level_)
             clstd = dftmp.std(ddof=0, level=level_)
             print(dftmp)
@@ -617,6 +672,21 @@ class TTMGoto(object):
             print(clave)
             print("＜標準偏差＞")
             print(clstd)
+
+            for i in TTMGoto._WEEK_DICT.keys():
+                for j in TTMGoto._GOTO_DICT.keys():
+                    try:
+                        srhi = hiave.loc[(i, j), :]
+                        srhi.name = DiffChart.LBL_MEAN_HI
+                        srlo = loave.loc[(i, j), :]
+                        srlo.name = DiffChart.LBL_MEAN_LO
+                        srcl = clave.loc[(i, j), :]
+                        srcl.name = DiffChart.LBL_MEAN_CL
+                    except KeyError as e:
+                        print("{} are not exist!" .format(e))
+                    else:
+                        dfsumm = pd.concat([srhi, srlo, srcl], axis=1)
+                        print(dfsumm)
 
         # 表示更新
         self.__src.data = {
