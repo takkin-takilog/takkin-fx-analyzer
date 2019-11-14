@@ -1,3 +1,4 @@
+from math import pi
 import pandas as pd
 import jpholiday
 import datetime as dt
@@ -6,7 +7,7 @@ from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
-from bokeh.models.glyphs import VBar, Line, Circle
+from bokeh.models.glyphs import VBar, Line
 from bokeh.plotting import figure
 from bokeh.layouts import layout, widgetbox, row, gridplot
 from oandapyV20.exceptions import V20Error
@@ -20,8 +21,6 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.graph import VerLine
 from autotrader.technical import SimpleMovingAverage
-from bs4.element import nonwhitespace_re
-from dask.dataframe.core import DataFrame
 
 
 class DiffChart(object):
@@ -51,11 +50,13 @@ class DiffChart(object):
 
         fig = figure(title=title,
                      x_range=[],
-                     plot_height=200,
+                     plot_height=400,
+                     plot_width=1500,
                      tools='',
                      background_fill_color=BG_COLOR)
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "diff price"
+        fig.xaxis.major_label_orientation = pi / 2
 
         dict_ = {DiffChart.X_TIME: [],
                  DiffChart.Y_PRHI: [],
@@ -84,15 +85,7 @@ class DiffChart(object):
                       y=DiffChart.Y_PRCL,
                       line_color="cyan", line_width=2,
                       line_alpha=1.0)
-        fig.add_glyph(src, vbarcl)
-
-        circl = Circle(x=DiffChart.X_TIME,
-                       y=DiffChart.Y_PRCL,
-                       size=10,
-                       line_width=0,
-                       fill_color="cyan",
-                       fill_alpha=1.0)
-        rencl = fig.add_glyph(src, circl)
+        rencl = fig.add_glyph(src, vbarcl)
 
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
@@ -147,28 +140,6 @@ class DiffChart(object):
         return self.__fig
 
     def update(self, df):
-        """
-        print("called update")
-        timelist = ['0:00', '1:00', '2:00', '3:00', '4:00',
-                    '5:00', '6:00', '7:00', '8:00', '9:00',
-                    '10:00', '11:00', '12:00']
-        prihilist = [8.9, 9.0, 8.9, 8.7, 8.4,
-                     8.5, 9.8, 8.5, 8.0, 7.8,
-                     7.7, 7.6, 7.5]
-        prilolist = [-6.5, -6.6, -6.9, -6.2, -6.1,
-                     -6.2, -5.8, -5.5, -5.6, -6.1,
-                     -6.9, -7.1, -6.5]
-        pricllist = [3.5, 2.6, -0.9, -1.2, -2.1,
-                     -1.2, 0.8, 1.5, 3.6, 4.1,
-                     3.9, -1.1, -3.5]
-
-        sr1 = pd.Series(prihilist, index=timelist, name=DiffChart.LBL_MEAN_HI)
-        sr2 = pd.Series(prilolist, index=timelist, name=DiffChart.LBL_MEAN_LO)
-        sr3 = pd.Series(pricllist, index=timelist, name=DiffChart.LBL_MEAN_CL)
-
-        df = pd.concat([sr1, sr2, sr3], axis=1)
-        """
-        print(df)
         timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
 
         dict_ = {DiffChart.X_TIME: timelist,
@@ -374,8 +345,8 @@ class TTMGoto(object):
             for j in TTMGoto._GOTO_DICT.keys():
                 week = TTMGoto._WEEK_DICT[i]
                 goto = TTMGoto._GOTO_DICT[j]
-                str = "Diff chart [" + week + "]:[" + goto + "]"
-                diffchrlist.append(DiffChart(str))
+                str_ = "Diff chart [" + week + "]:[" + goto + "]"
+                diffchrlist.append(DiffChart(str_))
         self.__diffchrlist = diffchrlist
 
         # Mean list: 0:High, 1:Low, 2:Close
@@ -679,12 +650,14 @@ class TTMGoto(object):
                         srcl.name = DiffChart.LBL_MEAN_CL
                     except KeyError as e:
                         print("{} are not exist!" .format(e))
-                        dfsumm = pd.DataFrame()
+                        col = [srhi.name, srlo.name, srcl.name]
+                        dfsumm = pd.DataFrame(index=hiave.T.index,
+                                              columns=col)
                     else:
                         dfsumm = pd.concat([srhi, srlo, srcl], axis=1)
-                        print(dfsumm)
                     finally:
                         self.__meanlist.append(dfsumm)
+
                     diffchr = self.__diffchrlist[i * len(TTMGoto._GOTO_DICT) + j]
                     diffchr.update(dfsumm)
 
