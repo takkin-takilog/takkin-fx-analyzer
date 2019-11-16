@@ -1,7 +1,7 @@
 from datetime import timedelta, date
 from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Select
-from bokeh.layouts import row, column, layout, widgetbox
+from bokeh.layouts import row, column, layout
 from autotrader.analysis.gapfill import GapFill
 from autotrader.analysis.ttm_goto import TTMGoto
 from autotrader.oanda_common import OandaIns
@@ -76,7 +76,7 @@ def get_overall_layout():
     dtwdg_end = _dtwdg_end.get_layout()
     dtwdg = row(children=[dtwdg_str, dtwdg_end])
     wslin = _slc_inst
-    wdgbx1 = widgetbox(children=[wslin, dtwdg], sizing_mode="fixed")
+    wdgbx1 = column(children=[wslin, dtwdg], sizing_mode="fixed")
 
     # ========== Tab1：窓埋め ==========
     gapfill = _angf.get_layout()

@@ -776,7 +776,7 @@ class Viewer(object):
         """
         opord = self.__opord.widget
         oppos = self.__oppos.widget
-        opbk = row(children=[opord, oppos], sizing_mode='fixed')
+        opbk = row(children=[opord, oppos], sizing_mode="fixed")
 
         chrt = self.__cs.fig_main
         rang = self.__cs.fig_range

@@ -8,7 +8,7 @@ from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.models.glyphs import Line
-from bokeh.layouts import layout, widgetbox, row, column, gridplot
+from bokeh.layouts import widgetbox, row, column, gridplot
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
@@ -351,11 +351,11 @@ class GapFill(object):
         tbl = self.__tbl
         fig = self.__csc1.fig
 
-        tblfig = widgetbox(children=[tbl, fig], sizing_mode='stretch_width')
+        tblfig = column(children=[tbl, fig], sizing_mode='stretch_width')
 
         tabs = self.__create_result_tabs()
 
-        layout_ = layout(children=[[btnrun], [tblfig], [tabs]],
+        layout_ = column(children=[btnrun, tblfig, tabs],
                          sizing_mode='stretch_width')
         return(layout_)
 

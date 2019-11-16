@@ -9,7 +9,7 @@ from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
 from bokeh.models.glyphs import VBar, Line
 from bokeh.plotting import figure
-from bokeh.layouts import layout, widgetbox, row, gridplot
+from bokeh.layouts import layout, widgetbox, row, gridplot, column
 from oandapyV20.exceptions import V20Error
 import autotrader.analyzer as ana
 import autotrader.utils as utl
@@ -367,13 +367,13 @@ class TTMGoto(object):
 
         cscfigs = row(children=[cscfig1, cscfig2], sizing_mode="stretch_width")
 
-        tblfig = widgetbox(children=[tbl, cscfigs],
-                           sizing_mode="fixed")
+        tblfig = column(children=[tbl, cscfigs],
+                        sizing_mode="stretch_width")
 
         tabs = self.__create_result_tabs()
 
-        layout_ = layout(children=[[btnrun], [tblfig], [tabs]],
-                         sizing_mode="fixed")
+        layout_ = column(children=[btnrun, tblfig, tabs],
+                         sizing_mode="stretch_width")
         return(layout_)
 
     def __create_result_tabs(self):
@@ -391,7 +391,7 @@ class TTMGoto(object):
                        plot.fig]
                 plotlist.append(obj)
 
-        gridview = gridplot(plotlist)
+        gridview = gridplot(plotlist, sizing_mode="stretch_width")
 
         tab1 = Panel(child=gridview, title="Summary")
 
