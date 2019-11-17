@@ -28,12 +28,13 @@ class HeatMap(object):
         mapper = LinearColorMapper(palette="Plasma256", low=0, high=1)
 
         fig = figure(title=title,
-                     plot_width=self.__FIG_WIDTH,
-                     plot_height=self.__FIG_WIDTH,
+                     #plot_width=self.__FIG_WIDTH,
+                     #plot_height=self.__FIG_WIDTH,
                      tools="",
                      toolbar_location=None,
                      background_fill_color="black",
-                     )
+                     match_aspect=True,
+                     aspect_scale=1)
         fig.xgrid.visible = False
         fig.ygrid.visible = False
 
@@ -153,8 +154,11 @@ class HeatMap(object):
         endy = max(y) + ofsy
         self._fig.y_range.update(start=stry, end=endy, bounds=(stry, endy))
 
-        self._fig.width = int(len(xlist)) * 10 + 150
-        self._fig.height = int(len(ylist)) * 10
+        #self._fig.plot_width = int(len(xlist)) * 100 + 150
+        #self._fig.height = int(len(ylist)) * 10
+        #self._fig.frame_width = int(len(xlist)) * 10
+        self._fig.match_aspect = True
+        self._fig.aspect_scale=1
 
         self._df_y = pd.Series(ylist + ofsy)
         self._xrng = [strx, endx]
