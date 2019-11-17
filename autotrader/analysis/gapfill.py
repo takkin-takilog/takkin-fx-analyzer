@@ -707,8 +707,8 @@ class GapFill(AnalysisAbs):
         for n in range((end_ - str_).days):
             day = str_ + dt.timedelta(n)
             if day.weekday() == 0:
-                dt = dt.datetime.combine(day, dt.time())
-                mondaylist.append(dt)
+                dtmo = dt.datetime.combine(day, dt.time())
+                mondaylist.append(dtmo)
 
         if not mondaylist:
             print("リストは空です")

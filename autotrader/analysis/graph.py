@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource, Range1d
 from bokeh.models import LinearColorMapper, ColorBar, HoverTool
+from bokeh.models import NumeralTickFormatter
 from bokeh.models.glyphs import Quad, Line, Rect
 from bokeh.plotting import figure
 from bokeh.transform import transform
@@ -139,6 +140,10 @@ class HeatMap(object):
 
         self.__cm.low = d.min()
         self.__cm.high = d.max()
+
+        # TODO: 桁数を自動で設定できるようにする
+        self._fig.xaxis.formatter=NumeralTickFormatter(format="0.0000")
+        self._fig.yaxis.formatter=NumeralTickFormatter(format="0.0000")
 
         strx = min(x) - ofsx
         endx = max(x) + ofsx

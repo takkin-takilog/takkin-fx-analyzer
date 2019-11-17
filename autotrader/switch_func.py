@@ -48,4 +48,13 @@ _btn_view.on_click(_cb_btn_view)
 
 _sel = row(children=[_slc_view, _btn_view])
 
-_layout = layout(children=[_sel])
+_layout = layout(children=[_sel], sizing_mode="stretch_width")
+
+
+if __name__ == "__main__":
+    from bokeh.io import show
+
+    #lay = _vi.layout
+    lay = _gf.layout
+    #lay = _ttm.layout
+    show(lay)
