@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta, date, time
+import datetime as dt
 from bokeh import events
 from bokeh.models import ColumnDataSource
 from bokeh.models import CrosshairTool, HoverTool
@@ -240,7 +240,8 @@ class GapFill(AnalysisAbs):
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__HIST_DIV = 50
 
-        self.__dtwdg_str = DateWidget("開始", date.today() - timedelta(days=30))
+        diffdate = dt.date.today() - dt.timedelta(days=30)
+        self.__dtwdg_str = DateWidget("開始", diffdate)
         self.__dtwdg_end = DateWidget("終了",)
 
         # Widget Button:解析実行[Run analysis]
@@ -592,10 +593,10 @@ class GapFill(AnalysisAbs):
 
     def ___check_candlestickdata(self, df, monday):
         # 終値
-        pre_df = df[df.index < (monday - timedelta(days=1))]
+        pre_df = df[df.index < (monday - dt.timedelta(days=1))]
 
         # 始値
-        aft_df = df[df.index > (monday - timedelta(days=1))]
+        aft_df = df[df.index > (monday - dt.timedelta(days=1))]
 
         if pre_df.empty or aft_df.empty:
             flg = False
@@ -615,11 +616,11 @@ class GapFill(AnalysisAbs):
                             false: 窓埋め失敗[Filling Gap fail]
         """
         # 終値
-        pre_df = df[df.index < (monday - timedelta(days=1))]
+        pre_df = df[df.index < (monday - dt.timedelta(days=1))]
         close_pri = pre_df.at[pre_df.index[-1], cs.LBL_CLOSE]
 
         # 始値
-        aft_df = df[df.index > (monday - timedelta(days=1))]
+        aft_df = df[df.index > (monday - dt.timedelta(days=1))]
         open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
 
         # スプレッド
@@ -646,7 +647,7 @@ class GapFill(AnalysisAbs):
         if ext_df.empty:
             jdg_flg = False
             rst = GapFill.RSL_FAIL
-            filltime = datetime(year=1985, month=12, day=31)
+            filltime = dt.datetime(year=1985, month=12, day=31)
         else:
             jdg_flg = True
             rst = GapFill.RSL_SUCCESS
@@ -696,7 +697,7 @@ class GapFill(AnalysisAbs):
 
         # 月曜のみを抽出する
         # Extract only Monday
-        yesterday = date.today() - timedelta(days=1)
+        yesterday = dt.date.today() - dt.timedelta(days=1)
         str_ = self.__dtwdg_str.date
         str_ = utl.limit_upper(str_, yesterday)
         end_ = self.__dtwdg_end.date
@@ -704,9 +705,9 @@ class GapFill(AnalysisAbs):
 
         mondaylist = []
         for n in range((end_ - str_).days):
-            day = str_ + timedelta(n)
+            day = str_ + dt.timedelta(n)
             if day.weekday() == 0:
-                dt = datetime.combine(day, time())
+                dt = dt.datetime.combine(day, dt.time())
                 mondaylist.append(dt)
 
         if not mondaylist:
@@ -719,8 +720,8 @@ class GapFill(AnalysisAbs):
             dfsmm.drop(index=dfsmm.index, inplace=True)
             cnt = 0
             for monday in mondaylist:
-                str_ = monday + timedelta(days=-3, hours=20)
-                end_ = monday + timedelta(days=1)
+                str_ = monday + dt.timedelta(days=-3, hours=20)
+                end_ = monday + dt.timedelta(days=1)
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
 

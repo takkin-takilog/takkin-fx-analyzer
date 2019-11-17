@@ -2,6 +2,7 @@ from bokeh.models.widgets import Button, Select
 from bokeh.layouts import layout, row
 import autotrader.viewer as _viewer
 from autotrader.analysis.gapfill import GapFill
+from autotrader.analysis.ttm_goto import TTMGoto
 
 
 def _cb_btn_view(self):
@@ -22,12 +23,13 @@ def get_rootmodel():
 
 _vi = _viewer.Viewer()
 _gf = GapFill()
+_ttm = TTMGoto()
 
 # set each callback function
 _SELECT_DICT = {
     "Candlestick chart": _vi.layout,
     "Analysis - Gap Fill": _gf.layout,
-    "Analysis - TTM & Goto-Day": 2
+    "Analysis - TTM & Goto-Day": _ttm.layout
 }
 
 

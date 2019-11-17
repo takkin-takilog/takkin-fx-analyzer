@@ -11,7 +11,6 @@ from bokeh.models.glyphs import VBar, Line
 from bokeh.plotting import figure
 from bokeh.layouts import layout, widgetbox, row, gridplot, column
 from oandapyV20.exceptions import V20Error
-import autotrader.analyzer as ana
 import autotrader.utils as utl
 import autotrader.analysis.candlestick as cs
 from autotrader.utils import DateTimeManager
@@ -21,6 +20,7 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.analysis.graph import VerLine
 from autotrader.technical import SimpleMovingAverage
+from autotrader.analysis.base import AnalysisAbs, DateWidget
 
 
 class DiffChart(object):
@@ -265,7 +265,7 @@ class CandleStickChart1H(CandleStickChartAbs):
         self.__vl1.update(x_dttm, y_pri.start, y_pri.end)
 
 
-class TTMGoto(object):
+class TTMGoto(AnalysisAbs):
     """ TTMGoto
             - 仲根(TTM)とゴトー日クラス[TTM and Goto day class]
     """
@@ -289,6 +289,12 @@ class TTMGoto(object):
         引数[Args]:
             なし[None]
         """
+        super().__init__()
+
+        diffdate = dt.date.today() - dt.timedelta(days=30)
+        self.__dtwdg_str = DateWidget("開始", diffdate)
+        self.__dtwdg_end = DateWidget("終了",)
+
         # Widget Button:解析実行[Run analysis]
         self.__btn_run = Button(label="解析実行",
                                 button_type="success",
@@ -353,7 +359,8 @@ class TTMGoto(object):
         self.__meanlist = []
         self.__stdlist = []
 
-    def get_layout(self):
+    @property
+    def layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
             None
@@ -423,9 +430,9 @@ class TTMGoto(object):
         self.__stdlist = []
 
         yesterday = dt.date.today() - dt.timedelta(days=1)
-        str_ = ana.get_date_str()
+        str_ = self.__dtwdg_str.date
         str_ = utl.limit_upper(str_, yesterday)
-        end_ = ana.get_date_end()
+        end_ = self.__dtwdg_end.date
         end_ = utl.limit_upper(end_, yesterday)
 
         print("Start:{}" .format(str_))
@@ -474,7 +481,7 @@ class TTMGoto(object):
             print("リストは空です")
         else:
 
-            inst_id = ana.get_instrument_id()
+            inst_id = self.instrument_id
             inst = OandaIns.list[inst_id].oanda_name
             dfhi = pd.DataFrame()
             dflo = pd.DataFrame()
@@ -590,7 +597,7 @@ class TTMGoto(object):
                     pd.concat([srdt, srrow, srcl]), ignore_index=True)
 
                 # *************** 出力 ***************
-                inst_id = ana.get_instrument_id()
+                inst_id = self.instrument_id
                 unit = OandaIns.list[inst_id].min_unit
 
                 record = pd.Series([self._WEEK_DICT[srrow[TTMGoto.LBL_WEEK]],
@@ -658,7 +665,8 @@ class TTMGoto(object):
                     finally:
                         self.__meanlist.append(dfsumm)
 
-                    diffchr = self.__diffchrlist[i * len(TTMGoto._GOTO_DICT) + j]
+                    diffchr = self.__diffchrlist[i *
+                                                 len(TTMGoto._GOTO_DICT) + j]
                     diffchr.update(dfsumm)
 
         # 表示更新
