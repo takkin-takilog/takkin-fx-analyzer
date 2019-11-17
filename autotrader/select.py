@@ -1,10 +1,8 @@
-from bokeh.models import Panel, Tabs
+from bokeh.models.widgets import Button, Select
+from bokeh.layouts import layout, row
 import autotrader.viewer as _viewer
-import autotrader.analyzer as an
-from bokeh.models.widgets import Slider, RadioGroup, Button
-from bokeh.models.widgets import Select, CheckboxGroup
-from bokeh.layouts import layout, widgetbox, row, gridplot, column
-import autotrader.analyzer as an
+from autotrader.analysis.gapfill import GapFill
+
 
 def _cb_btn_view(self):
     del _layout.children[1:]
@@ -23,12 +21,12 @@ def get_rootmodel():
 
 
 _vi = _viewer.Viewer()
-
+_gf = GapFill()
 
 # set each callback function
 _SELECT_DICT = {
-    "Candlestick chart": _vi.get_overall_layout(),
-    "Analysis - Gap Fill": an.get_overall_layout(),
+    "Candlestick chart": _vi.layout,
+    "Analysis - Gap Fill": _gf.layout,
     "Analysis - TTM & Goto-Day": 2
 }
 

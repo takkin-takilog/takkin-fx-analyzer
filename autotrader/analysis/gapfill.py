@@ -10,7 +10,6 @@ from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.models.glyphs import Line
 from bokeh.layouts import widgetbox, row, column, gridplot
 from oandapyV20.exceptions import V20Error
-import autotrader.analyzer as ana
 import autotrader.utils as utl
 import autotrader.analysis.candlestick as cs
 from autotrader.utils import DateTimeManager
@@ -21,6 +20,7 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.graph import HorizontalHistogram
 from autotrader.analysis.graph import HorizontalHistogramTwo
 from autotrader.analysis.graph import LineGraphAbs, HeatMap
+from autotrader.analysis.base import AnalysisAbs, DateWidget
 
 
 class HeatMapSim(HeatMap):
@@ -212,7 +212,7 @@ class CandleStickChart(CandleStickChartBase):
                                   self.__Y: [opnpri, opnpri]}
 
 
-class GapFill(object):
+class GapFill(AnalysisAbs):
     """ GapFill
             - 窓埋めクラス[Gap-Fill class]
     """
@@ -235,8 +235,13 @@ class GapFill(object):
         引数[Args]:
             なし[None]
         """
+        super().__init__()
+
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__HIST_DIV = 50
+
+        self.__dtwdg_str = DateWidget("開始", date.today() - timedelta(days=30))
+        self.__dtwdg_end = DateWidget("終了",)
 
         # Widget Button:解析実行[Run analysis]
         self.__btn_run = Button(label="解析実行",
@@ -340,13 +345,21 @@ class GapFill(object):
         self.__hm.xaxis_label("Loss Cut Price Offset")
         self.__hm.yaxis_label("Gap Price Thresh")
 
-    def get_layout(self):
+    @property
+    def layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
             None
         戻り値[Returns]:
             layout (layout) : レイアウト[layout]
         """
+        dtwdg_str = self.__dtwdg_str.widget
+        dtwdg_end = self.__dtwdg_end.widget
+        dtwdg = row(children=[dtwdg_str, dtwdg_end])
+        wslin = self._slc_inst
+
+        wdgbx1 = column(children=[wslin, dtwdg], sizing_mode="fixed")
+
         btnrun = self.__btn_run
         tbl = self.__tbl
         fig = self.__csc1.fig
@@ -355,8 +368,12 @@ class GapFill(object):
 
         tabs = self.__create_result_tabs()
 
-        layout_ = column(children=[btnrun, tblfig, tabs],
-                         sizing_mode='stretch_width')
+        wdgbx2 = column(children=[btnrun, tblfig, tabs],
+                        sizing_mode='stretch_width')
+
+        layout_ = row(children=[wdgbx1, wdgbx2],
+                      sizing_mode='stretch_width')
+
         return(layout_)
 
     def __generate_gapprice_hist(self, title_):
@@ -680,9 +697,9 @@ class GapFill(object):
         # 月曜のみを抽出する
         # Extract only Monday
         yesterday = date.today() - timedelta(days=1)
-        str_ = ana.get_date_str()
+        str_ = self.__dtwdg_str.date
         str_ = utl.limit_upper(str_, yesterday)
-        end_ = ana.get_date_end()
+        end_ = self.__dtwdg_end.date
         end_ = utl.limit_upper(end_, yesterday)
 
         mondaylist = []
@@ -707,7 +724,7 @@ class GapFill(object):
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
 
-                inst_id = ana.get_instrument_id()
+                inst_id = self.instrument_id
                 inst = OandaIns.list[inst_id].oanda_name
                 gran = OandaGrn.H1
 
@@ -788,7 +805,7 @@ class GapFill(object):
         if self.__dfsmm.empty:
             print("空です")
         else:
-            inst_id = ana.get_instrument_id()
+            inst_id = self.instrument_id
             minunit = OandaIns.list[inst_id].min_unit
 
             dfmst = self.__dfsmm[[GapFill.LBL_RESULT,
