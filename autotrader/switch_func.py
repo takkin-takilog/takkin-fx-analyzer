@@ -55,6 +55,6 @@ if __name__ == "__main__":
     from bokeh.io import show
 
     #lay = _vi.layout
-    lay = _gf.layout
-    #lay = _ttm.layout
+    #lay = _gf.layout
+    lay = _ttm.layout
     show(lay)

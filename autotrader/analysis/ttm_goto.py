@@ -2,6 +2,7 @@ from math import pi
 import pandas as pd
 import jpholiday
 import datetime as dt
+from bokeh.models import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs
 from bokeh.models.widgets import Button, TextInput
@@ -50,13 +51,13 @@ class DiffChart(object):
 
         fig = figure(title=title,
                      x_range=[],
-                     plot_height=400,
-                     plot_width=1500,
+                     plot_height=300,
                      tools='',
                      background_fill_color=BG_COLOR)
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "diff price"
         fig.xaxis.major_label_orientation = pi / 2
+        fig.yaxis.formatter = NumeralTickFormatter(format="0[.]00000")
 
         dict_ = {DiffChart.X_TIME: [],
                  DiffChart.Y_PRHI: [],
@@ -367,6 +368,13 @@ class TTMGoto(AnalysisAbs):
         戻り値[Returns]:
             layout (layout) : レイアウト[layout]
         """
+        dtwdg_str = self.__dtwdg_str.widget
+        dtwdg_end = self.__dtwdg_end.widget
+        dtwdg = row(children=[dtwdg_str, dtwdg_end])
+        wslin = self._slc_inst
+
+        wdgbx1 = column(children=[wslin, dtwdg], sizing_mode="fixed")
+
         btnrun = self.__btn_run
         tbl = self.__tbl
         cscfig1 = self.__csc1.fig
@@ -379,8 +387,12 @@ class TTMGoto(AnalysisAbs):
 
         tabs = self.__create_result_tabs()
 
-        layout_ = column(children=[btnrun, tblfig, tabs],
-                         sizing_mode="stretch_width")
+        wdgbx2 = column(children=[btnrun, tblfig, tabs],
+                        sizing_mode="stretch_width")
+
+        layout_ = row(children=[wdgbx1, wdgbx2],
+                      sizing_mode="stretch_width")
+
         return(layout_)
 
     def __create_result_tabs(self):
@@ -390,15 +402,10 @@ class TTMGoto(AnalysisAbs):
         plotlist = []
         for i in TTMGoto._WEEK_DICT.keys():
             for j in TTMGoto._GOTO_DICT.keys():
-                week = TTMGoto._WEEK_DICT[i]
-                goto = TTMGoto._GOTO_DICT[j]
                 plot = self.__diffchrlist[i * len(TTMGoto._GOTO_DICT) + j]
-                obj = [TextInput(value=week, width=50),
-                       TextInput(value=goto, width=50),
-                       plot.fig]
-                plotlist.append(obj)
+                plotlist.append([plot.fig])
 
-        gridview = gridplot(plotlist, sizing_mode="stretch_width")
+        gridview = gridplot(children=plotlist, sizing_mode="stretch_width")
 
         tab1 = Panel(child=gridview, title="Summary")
 
@@ -555,7 +562,7 @@ class TTMGoto(AnalysisAbs):
                 self.__csdlist_1h.append(csd1h)
 
                 # *************** 5分足統計データ ***************
-                str_ = dt.datetime.combine(date_, dt.time(0, 0))
+                str_ = dt.datetime.combine(date_, dt.time(7, 0))
                 end_ = dt.datetime.combine(date_, dt.time(12, 0))
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
