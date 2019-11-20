@@ -7,6 +7,7 @@ from bokeh.models import NumeralTickFormatter
 from bokeh.models.glyphs import Quad, Line, Rect
 from bokeh.plotting import figure
 from bokeh.transform import transform
+from autotrader.oanda_common import OandaIns
 
 
 class HeatMap(object):
@@ -91,7 +92,7 @@ class HeatMap(object):
                              label_standoff=12,
                              border_line_color=None,
                              location=(0, 0))
-        fig.add_layout(color_bar, 'right')
+        fig.add_layout(color_bar, "right")
 
         self._fig = fig
         self.__src = src
@@ -111,7 +112,9 @@ class HeatMap(object):
     def yaxis_label(self, ylabel):
         self._fig.yaxis.axis_label = ylabel
 
-    def update(self, map3d, xlist, ylist, xstep, ystep):
+    def update(self, map3d, xlist, ylist, xstep, ystep, inst_id):
+
+        MARGIN_COE = 0.9  # マージン係数
 
         ofsx = xstep / 2
         ofsy = ystep / 2
@@ -119,8 +122,8 @@ class HeatMap(object):
         x = map3d[:, 0] + ofsx
         y = map3d[:, 1] + ofsy
         d = map3d[:, 2]
-        w = [xstep * 0.9] * len(map3d)
-        h = [ystep * 0.9] * len(map3d)
+        w = [xstep * MARGIN_COE] * len(map3d)
+        h = [ystep * MARGIN_COE] * len(map3d)
 
         self.__src.data = {HeatMap._X: x,
                            HeatMap._Y: y,
@@ -140,9 +143,9 @@ class HeatMap(object):
         self.__cm.low = d.min()
         self.__cm.high = d.max()
 
-        # TODO: 桁数を自動で設定できるようにする
-        self._fig.xaxis.formatter=NumeralTickFormatter(format="0.0000")
-        self._fig.yaxis.formatter=NumeralTickFormatter(format="0.0000")
+        fmt = OandaIns.format(inst_id)
+        self._fig.xaxis.formatter = NumeralTickFormatter(format=fmt)
+        self._fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
 
         strx = min(x) - ofsx
         endx = max(x) + ofsx
@@ -198,7 +201,7 @@ class LineGraphAbs(metaclass=ABCMeta):
         fig = figure(title=title,
                      plot_height=400,
                      plot_width=400,
-                     tools='',
+                     tools="",
                      background_fill_color=self.__BG_COLOR)
 
         fig.x_range = Range1d()
@@ -280,7 +283,7 @@ class HistogramAbs(metaclass=ABCMeta):
         fig = figure(title=title,
                      plot_height=400,
                      plot_width=400,
-                     tools='',
+                     tools="",
                      background_fill_color=self.__BG_COLOR)
 
         self._src = ColumnDataSource({HistogramAbs.LEFT: [],
@@ -367,7 +370,7 @@ class HistogramTwoAbs(metaclass=ABCMeta):
         fig = figure(title=title,
                      plot_height=400,
                      plot_width=400,
-                     tools='',
+                     tools="",
                      background_fill_color=self.__BG_COLOR)
 
         self._src1 = ColumnDataSource({HistogramAbs.LEFT: [],

@@ -598,12 +598,13 @@ class TTMGoto(AnalysisAbs):
 
                 # *************** 出力 ***************
                 inst_id = self.instrument_id
-                unit = OandaIns.list[inst_id].min_unit
+                opmin = OandaIns.normalize(inst_id, openpri - minpri)
+                maxop = OandaIns.normalize(inst_id, maxpri - openpri)
 
                 record = pd.Series([self._WEEK_DICT[srrow[TTMGoto.LBL_WEEK]],
                                     self._GOTO_DICT[srrow[TTMGoto.LBL_GOTO]],
-                                    round(openpri - minpri, unit),
-                                    round(maxpri - openpri, unit)],
+                                    opmin,
+                                    maxop],
                                    index=dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)

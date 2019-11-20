@@ -1,3 +1,4 @@
+from math import pi
 import pandas as pd
 import numpy as np
 import datetime as dt
@@ -5,6 +6,7 @@ from bokeh import events
 from bokeh.models import ColumnDataSource
 from bokeh.models import CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs
+from bokeh.models import NumeralTickFormatter
 from bokeh.models.widgets import Button, TextInput, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.models.glyphs import Line
@@ -35,6 +37,7 @@ class HeatMapSim(HeatMap):
         self.__lgs.yaxis_label("Sum of Price")
 
         self._fig.on_event(events.MouseMove, self.__cb_mousemove)
+        self._fig.xaxis.major_label_orientation = pi / 4
 
         self.__x_min = 0
         self.__y_min = 0
@@ -43,8 +46,8 @@ class HeatMapSim(HeatMap):
     def linegraph_fig(self):
         return self.__lgs.fig
 
-    def update(self, map3d, xlist, ylist, htmap, xstep, ystep):
-        super().update(map3d, xlist, ylist, xstep, ystep)
+    def update(self, map3d, xlist, ylist, htmap, xstep, ystep, inst_id):
+        super().update(map3d, xlist, ylist, xstep, ystep, inst_id)
 
         MARGIN = 0.1
 
@@ -121,6 +124,11 @@ class LineGraphSim(LineGraphAbs):
         hover.renderers = [self._ren]
         hover.mode = "vline"
         self._fig.add_tools(hover)
+
+        self._fig.xaxis.formatter = NumeralTickFormatter(format="0[.]00000")
+        self._fig.yaxis.formatter = NumeralTickFormatter(format="0[.]00000")
+
+        self._fig.xaxis.major_label_orientation = pi / 4
 
     def update(self, xlist, zlist):
         self._src.data = {
@@ -247,7 +255,7 @@ class GapFill(AnalysisAbs):
         # Widget Button:解析実行[Run analysis]
         self.__btn_run = Button(label="解析実行",
                                 button_type="success",
-                                sizing_mode='fixed',
+                                sizing_mode="fixed",
                                 default_size=200)
         self.__btn_run.on_click(self.__cb_btn_run)
 
@@ -295,7 +303,7 @@ class GapFill(AnalysisAbs):
                                columns=cols,
                                fit_columns=True,
                                height=200)
-        self.__src.selected.on_change('indices', self.__cb_dttbl)
+        self.__src.selected.on_change("indices", self.__cb_dttbl)
 
         self.__csc1 = CandleStickChart()
         self.__csdlist1 = []
@@ -331,7 +339,7 @@ class GapFill(AnalysisAbs):
         # ---------- Income simulation ----------
         self.__btn_simrun = Button(label="シミュレーション実行",
                                    button_type="success",
-                                   sizing_mode='fixed',
+                                   sizing_mode="fixed",
                                    default_size=200)
         self.__btn_simrun.on_click(self.__cb_btn_simrun)
 
@@ -365,15 +373,15 @@ class GapFill(AnalysisAbs):
         tbl = self.__tbl
         fig = self.__csc1.fig
 
-        tblfig = column(children=[tbl, fig], sizing_mode='stretch_width')
+        tblfig = column(children=[tbl, fig], sizing_mode="stretch_width")
 
         tabs = self.__create_result_tabs()
 
         wdgbx2 = column(children=[btnrun, tblfig, tabs],
-                        sizing_mode='stretch_width')
+                        sizing_mode="stretch_width")
 
         layout_ = row(children=[wdgbx1, wdgbx2],
-                      sizing_mode='stretch_width')
+                      sizing_mode="stretch_width")
 
         return(layout_)
 
@@ -802,6 +810,8 @@ class GapFill(AnalysisAbs):
             なし[None]
         """
         THIN_COE = 10   # 間引き係数
+        MARGIN_COE = 1.3  # マージン係数
+        MIN_DISP_AMP = 10  # 最低表示倍率係数
 
         if self.__dfsmm.empty:
             print("空です")
@@ -828,9 +838,9 @@ class GapFill(AnalysisAbs):
                 mingp = df[GapFill.LBL_GAPPRI].min()
                 ystep = minstep * THIN_COE
                 if maxgp < ystep:
-                    end = ystep * 10
+                    end = ystep * MIN_DISP_AMP
                 else:
-                    end = maxgp * 1.2
+                    end = maxgp * MARGIN_COE
                 ylist = np.arange(0, end, ystep)
                 ylist = np.array([i for i in ylist if mingp < i])
 
@@ -839,16 +849,17 @@ class GapFill(AnalysisAbs):
                 maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
                 xstep = minstep * THIN_COE
                 if maxop < xstep:
-                    end = xstep * 10
+                    end = xstep * MIN_DISP_AMP
                 else:
-                    end = maxop * 1.3
+                    end = maxop * MARGIN_COE
 
                 xstep = ystep
                 xlist = np.arange(0, end, xstep)
 
                 htmap, map3d = self.__make_map(df, xlist, ylist)
 
-                self.__hm.update(map3d, xlist, ylist, htmap, xstep, ystep)
+                self.__hm.update(map3d, xlist, ylist, htmap,
+                                 xstep, ystep, inst_id)
 
                 x_max = self.__hm.max_coordinate[0]
                 y_max = self.__hm.max_coordinate[1]
@@ -870,8 +881,11 @@ class GapFill(AnalysisAbs):
                 y = map3d[:, 1]
                 d = map3d[:, 2]
                 maxidx = np.argmax(d)
-                self.__txtin_losscut.value = str(x[maxidx])
-                self.__txtin_gapprith.value = str(y[maxidx])
+
+                losscut = OandaIns.normalize(inst_id, x[maxidx])
+                gapprith = OandaIns.normalize(inst_id, y[maxidx])
+                self.__txtin_losscut.value = str(losscut)
+                self.__txtin_gapprith.value = str(gapprith)
 
     def __make_map(self, df_, xlist, ylist):
 
