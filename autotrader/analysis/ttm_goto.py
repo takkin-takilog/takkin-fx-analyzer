@@ -348,13 +348,18 @@ class TTMGoto(AnalysisAbs):
 
         # 集計結果
         diffchrlist = []
+        diffsummlist = []
         for i in TTMGoto._WEEK_DICT.keys():
             for j in TTMGoto._GOTO_DICT.keys():
                 week = TTMGoto._WEEK_DICT[i]
                 goto = TTMGoto._GOTO_DICT[j]
-                str_ = "Diff chart [" + week + "]:[" + goto + "]"
+                str_ = "Diff-chart Week[" + week + "]:Goto[" + goto + "]"
                 diffchrlist.append(DiffChart(str_))
+                txtin_cnt = TextInput(
+                    value="", title="サンプル数:", width=100, sizing_mode="fixed")
+                diffsummlist.append(txtin_cnt)
         self.__diffchrlist = diffchrlist
+        self.__diffsummlist = diffsummlist
 
         # Mean list: 0:High, 1:Low, 2:Close
         self.__meanlist = []
@@ -402,8 +407,10 @@ class TTMGoto(AnalysisAbs):
         plotlist = []
         for i in TTMGoto._WEEK_DICT.keys():
             for j in TTMGoto._GOTO_DICT.keys():
-                plot = self.__diffchrlist[i * len(TTMGoto._GOTO_DICT) + j]
-                plotlist.append([plot.fig])
+                pos = i * len(TTMGoto._GOTO_DICT) + j
+                summ = self.__diffsummlist[pos]
+                plot = self.__diffchrlist[pos]
+                plotlist.append([summ, plot.fig])
 
         gridview = gridplot(children=plotlist, sizing_mode="stretch_width")
 
@@ -441,9 +448,6 @@ class TTMGoto(AnalysisAbs):
         str_ = utl.limit_upper(str_, yesterday)
         end_ = self.__dtwdg_end.date
         end_ = utl.limit_upper(end_, yesterday)
-
-        print("Start:{}" .format(str_))
-        print("End:  {}" .format(end_))
 
         nextdate = end_ + dt.timedelta(days=1)
         nextmonth = nextdate.month
@@ -494,6 +498,7 @@ class TTMGoto(AnalysisAbs):
             dflo = pd.DataFrame()
             dfcl = pd.DataFrame()
 
+            cnt = 0
             for date_, srrow in dfgoto.iterrows():
                 # *************** 5分足チャート ***************
                 str_ = dt.datetime.combine(date_, dt.time(0, 0))
@@ -534,10 +539,6 @@ class TTMGoto(AnalysisAbs):
                 maxpri = df5m[:minidx][cs.LBL_HIGH].max()
 
                 self.__csdlist_5m.append(csd5m)
-
-                print("Open Price: {} " .format(openpri))
-                print("Low Price: {} " .format(minpri))
-                print("High Price: {} " .format(maxpri))
 
                 # *************** 1時間足チャート ***************
                 str_ = dt.datetime.combine(
@@ -616,15 +617,26 @@ class TTMGoto(AnalysisAbs):
                                    name=date_)
                 dfsmm = dfsmm.append(record)
 
+                cnt += 1
+                print("{} / {}" .format(cnt, len(dfgoto)))
+
             idx = [TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
             level_ = [TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
             print("------ dfhi ------")
             print(dfhi)
             dftmp = dfhi.set_index(idx)
             dftmp.sort_index(axis=1, inplace=True)
+            dfcnt = dftmp.groupby(level=level_).size()
+            dfcntsum = dfcnt.sum()
+
             hiave = dftmp.mean(level=level_)
             histd = dftmp.std(ddof=0, level=level_)
             print(dftmp)
+            print("＜カウント＞")
+            print(type(dfcnt))
+            print(dfcnt)
+            print("＜総計カウント＞")
+            print(dfcntsum)
             print("＜平均＞")
             print(hiave)
             print("＜標準偏差＞")
@@ -657,6 +669,7 @@ class TTMGoto(AnalysisAbs):
             for i in TTMGoto._WEEK_DICT.keys():
                 for j in TTMGoto._GOTO_DICT.keys():
                     try:
+                        cnt = dfcnt[i, j]
                         srhi = hiave.loc[(i, j), :]
                         srhi.name = DiffChart.LBL_MEAN_HI
                         srlo = loave.loc[(i, j), :]
@@ -665,6 +678,7 @@ class TTMGoto(AnalysisAbs):
                         srcl.name = DiffChart.LBL_MEAN_CL
                     except KeyError as e:
                         print("{} are not exist!" .format(e))
+                        cnt = 0
                         col = [srhi.name, srlo.name, srcl.name]
                         dfsumm = pd.DataFrame(index=hiave.T.index,
                                               columns=col)
@@ -673,9 +687,11 @@ class TTMGoto(AnalysisAbs):
                     finally:
                         self.__meanlist.append(dfsumm)
 
-                    diffchr = self.__diffchrlist[i *
-                                                 len(TTMGoto._GOTO_DICT) + j]
+                    pos = i * len(TTMGoto._GOTO_DICT) + j
+                    diffchr = self.__diffchrlist[pos]
                     diffchr.update(dfsumm)
+                    diffsumm = self.__diffsummlist[pos]
+                    diffsumm.value = str(cnt) + " / " + str(dfcntsum)
 
         # 表示更新
         self.__src.data = {
@@ -702,13 +718,3 @@ class TTMGoto(AnalysisAbs):
             self.__dfsmm.index[idx], self.__csdlist_5m[idx])
         self.__csc2.set_dataframe(
             self.__dfsmm.index[idx], self.__csdlist_1h[idx])
-
-
-if __name__ == "__main__":
-    from bokeh.io import show
-
-    dc = DiffChart("Diff chart")
-
-    dc.update()
-
-    show(dc.fig)
