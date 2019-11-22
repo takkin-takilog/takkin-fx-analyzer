@@ -4,7 +4,7 @@ import jpholiday
 import datetime as dt
 from bokeh.models import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, CrosshairTool, HoverTool
-from bokeh.models import Panel, Tabs
+from bokeh.models import Panel, Tabs, Range1d, FactorRange
 from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
@@ -50,7 +50,8 @@ class DiffChart(object):
         BG_COLOR = "#2E2E2E"  # Background color
 
         fig = figure(title=title,
-                     x_range=[],
+                     x_range=FactorRange(),
+                     y_range=Range1d(),
                      plot_height=300,
                      tools='',
                      background_fill_color=BG_COLOR)
@@ -87,6 +88,9 @@ class DiffChart(object):
                       line_color="cyan", line_width=2,
                       line_alpha=1.0)
         rencl = fig.add_glyph(src, vbarcl)
+
+        # ----- Vertical line -----
+        self.__vl = VerLine(fig, "pink", line_width=1)
 
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
@@ -140,7 +144,7 @@ class DiffChart(object):
         """
         return self.__fig
 
-    def update(self, df):
+    def update(self, df, y_str, y_end):
         timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
 
         dict_ = {DiffChart.X_TIME: timelist,
@@ -150,6 +154,10 @@ class DiffChart(object):
         self.__src.data = dict_
 
         self.__fig.x_range.factors = timelist
+        self.__fig.y_range.start = y_str
+        self.__fig.y_range.end = y_end
+
+        self.__vl.update("09:55:00", y_str, y_end)
 
     def clear(self):
         """"データをクリアする[clear data]
@@ -666,6 +674,9 @@ class TTMGoto(AnalysisAbs):
             print("＜標準偏差＞")
             print(clstd)
 
+            y_max = hiave.max().max()
+            y_min = loave.min().min()
+
             for i in TTMGoto._WEEK_DICT.keys():
                 for j in TTMGoto._GOTO_DICT.keys():
                     try:
@@ -689,7 +700,7 @@ class TTMGoto(AnalysisAbs):
 
                     pos = i * len(TTMGoto._GOTO_DICT) + j
                     diffchr = self.__diffchrlist[pos]
-                    diffchr.update(dfsumm)
+                    diffchr.update(dfsumm, y_min, y_max)
                     diffsumm = self.__diffsummlist[pos]
                     diffsumm.value = str(cnt) + " / " + str(dfcntsum)
 

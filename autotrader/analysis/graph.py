@@ -31,14 +31,13 @@ class HeatMap(object):
         fig = figure(title=title,
                      frame_height=self.__FIG_WIDTH,
                      frame_width=self.__FIG_WIDTH,
+                     x_range=Range1d(),
+                     y_range=Range1d(),
                      tools="",
                      toolbar_location=None,
                      background_fill_color="black")
         fig.xgrid.visible = False
         fig.ygrid.visible = False
-
-        fig.x_range = Range1d()
-        fig.y_range = Range1d()
 
         src = ColumnDataSource({HeatMap._X: [],
                                 HeatMap._Y: [],
@@ -201,11 +200,10 @@ class LineGraphAbs(metaclass=ABCMeta):
         fig = figure(title=title,
                      plot_height=400,
                      plot_width=400,
+                     x_range=Range1d(),
+                     y_range=Range1d(),
                      tools="",
                      background_fill_color=self.__BG_COLOR)
-
-        fig.x_range = Range1d()
-        fig.y_range = Range1d()
 
         self._src = ColumnDataSource({LineGraphAbs.X: [],
                                       LineGraphAbs.Y: []})
