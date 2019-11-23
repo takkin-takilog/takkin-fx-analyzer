@@ -723,6 +723,7 @@ class TTMGoto(AnalysisAbs):
             print(dftmp)
             print("＜平均＞")
             print(clave)
+            print(clave.cumsum(axis=1))
             print("＜標準偏差＞")
             print(clstd)
 
