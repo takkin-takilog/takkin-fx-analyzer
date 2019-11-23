@@ -30,16 +30,21 @@ class DiffChart(object):
     """
 
     X_TIME = "x_time"
-    Y_PRHI = "y_pri_hi"
-    Y_PRLO = "y_pri_lo"
-    Y_PRCL = "y_pri_cl"
+    Y_PRI_HI_AVE = "y_pri_hi_ave"
+    Y_PRI_LO_AVE = "y_pri_lo_ave"
+    Y_PRI_CL_AVE = "y_pri_cl_ave"
+    Y_PRI_HI_STD = "y_pri_hi_std"
+    Y_PRI_LO_STD = "y_pri_lo_std"
+    Y_PRI_CL_STD_HI = "y_pri_cl_std_hi"
+    Y_PRI_CL_STD_LO = "y_pri_cl_std_lo"
 
-    LBL_MEAN_HI = "mean_high"
-    LBL_MEAN_LO = "mean_low"
-    LBL_MEAN_CL = "mean_close"
+    LBL_AVE_HI = "ave_high"
+    LBL_AVE_LO = "ave_low"
+    LBL_AVE_CL = "ave_close"
     LBL_STD_HI = "std_high"
     LBL_STD_LO = "std_low"
-    LBL_STD_CL = "std_close"
+    LBL_STD_CL_HI = "std_close_hi"
+    LBL_STD_CL_LO = "std_close_lo"
 
     def __init__(self, title):
         """"コンストラクタ[Constructor]
@@ -61,48 +66,85 @@ class DiffChart(object):
         fig.yaxis.formatter = NumeralTickFormatter(format="0[.]00000")
 
         dict_ = {DiffChart.X_TIME: [],
-                 DiffChart.Y_PRHI: [],
-                 DiffChart.Y_PRLO: [],
-                 DiffChart.Y_PRCL: []}
+                 DiffChart.Y_PRI_HI_AVE: [],
+                 DiffChart.Y_PRI_LO_AVE: [],
+                 DiffChart.Y_PRI_CL_AVE: [],
+                 DiffChart.Y_PRI_HI_STD: [],
+                 DiffChart.Y_PRI_LO_STD: [],
+                 DiffChart.Y_PRI_CL_STD_HI: [],
+                 DiffChart.Y_PRI_CL_STD_LO: [],
+                 }
         src = ColumnDataSource(dict_)
 
-        # ----- Diff high price -----
-        vbarhi = VBar(x=DiffChart.X_TIME,
-                      top=DiffChart.Y_PRHI,
-                      width=0.9,
-                      fill_color="green", line_color="white",
-                      line_alpha=0.5, fill_alpha=0.5)
-        renhi = fig.add_glyph(src, vbarhi)
+        # ----- Diff high price ave -----
+        vbarhiave = VBar(x=DiffChart.X_TIME,
+                         top=DiffChart.Y_PRI_HI_AVE,
+                         width=0.9,
+                         fill_color="green", line_color="white",
+                         line_alpha=0.5, fill_alpha=0.5)
+        renhiave = fig.add_glyph(src, vbarhiave)
 
-        # ----- Diff high price -----
-        vbarlo = VBar(x=DiffChart.X_TIME,
-                      top=DiffChart.Y_PRLO,
-                      width=0.9,
-                      fill_color="red", line_color="white",
-                      line_alpha=0.5, fill_alpha=0.5)
-        renlo = fig.add_glyph(src, vbarlo)
+        # ----- Diff low price ave -----
+        vbarloave = VBar(x=DiffChart.X_TIME,
+                         top=DiffChart.Y_PRI_LO_AVE,
+                         width=0.9,
+                         fill_color="red", line_color="white",
+                         line_alpha=0.5, fill_alpha=0.5)
+        renloave = fig.add_glyph(src, vbarloave)
 
-        # ----- Diff close price -----
-        vbarcl = Line(x=DiffChart.X_TIME,
-                      y=DiffChart.Y_PRCL,
-                      line_color="cyan", line_width=2,
-                      line_alpha=1.0)
-        rencl = fig.add_glyph(src, vbarcl)
+        # ----- Diff close price ave -----
+        vbarclave = Line(x=DiffChart.X_TIME,
+                         y=DiffChart.Y_PRI_CL_AVE,
+                         line_color="cyan", line_width=2,
+                         line_alpha=1.0)
+        renclave = fig.add_glyph(src, vbarclave)
+
+        # ----- Diff high price std -----
+        vbarhistd = Line(x=DiffChart.X_TIME,
+                         y=DiffChart.Y_PRI_HI_STD,
+                         line_color="lawngreen", line_dash="solid",
+                         line_width=1, line_alpha=0.5)
+        renhistd = fig.add_glyph(src, vbarhistd)
+
+        # ----- Diff low price std -----
+        vbarlostd = Line(x=DiffChart.X_TIME,
+                         y=DiffChart.Y_PRI_LO_STD,
+                         line_color="pink", line_dash="solid", line_width=1,
+                         line_alpha=0.5)
+        renlostd = fig.add_glyph(src, vbarlostd)
+
+        # ----- Diff close price std high -----
+        vbarclstdhi = Line(x=DiffChart.X_TIME,
+                           y=DiffChart.Y_PRI_CL_STD_HI,
+                           line_color="cyan", line_dash="solid", line_width=1,
+                           line_alpha=0.5)
+        renclstdhi = fig.add_glyph(src, vbarclstdhi)
+
+        # ----- Diff close price std low -----
+        vbarclstdlo = Line(x=DiffChart.X_TIME,
+                           y=DiffChart.Y_PRI_CL_STD_LO,
+                           line_color="cyan", line_dash="solid", line_width=1,
+                           line_alpha=0.5)
+        renclstdlo = fig.add_glyph(src, vbarclstdlo)
 
         # ----- Vertical line -----
-        self.__vl = VerLine(fig, "pink", line_width=1)
+        self.__vl = VerLine(fig, "yellow", line_width=1)
 
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
 
         self.__fig = fig
         self.__src = src
-        self.__renhi = renhi
-        self.__renlo = renlo
-        self.__rencl = rencl
+        self.__renhiave = renhiave
+        self.__renloave = renloave
+        self.__renclave = renclave
+        self.__renhistd = renhistd
+        self.__renlostd = renlostd
+        self.__renclstdhi = renclstdhi
+        self.__renclstdlo = renclstdlo
 
     @property
-    def render_hi(self):
+    def render_hiave(self):
         """"フィギュアのGlyphRendererオブジェクトを取得する
             [get GlyphRenderer Object of Figure]
         引数[Args]:
@@ -110,10 +152,10 @@ class DiffChart(object):
         戻り値[Returns]:
             GlyphRenderer Object
         """
-        return self.__renhi
+        return self.__renhiave
 
     @property
-    def render_lo(self):
+    def render_loave(self):
         """"フィギュアのGlyphRendererオブジェクトを取得する
             [get GlyphRenderer Object of Figure]
         引数[Args]:
@@ -121,10 +163,10 @@ class DiffChart(object):
         戻り値[Returns]:
             GlyphRenderer Object
         """
-        return self.__renlo
+        return self.__renloave
 
     @property
-    def render_cl(self):
+    def render_clave(self):
         """"フィギュアのGlyphRendererオブジェクトを取得する
             [get GlyphRenderer Object of Figure]
         引数[Args]:
@@ -132,7 +174,7 @@ class DiffChart(object):
         戻り値[Returns]:
             GlyphRenderer Object
         """
-        return self.__rencl
+        return self.__renclave
 
     @property
     def fig(self):
@@ -147,10 +189,16 @@ class DiffChart(object):
     def update(self, df, y_str, y_end):
         timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
 
-        dict_ = {DiffChart.X_TIME: timelist,
-                 DiffChart.Y_PRHI: df[DiffChart.LBL_MEAN_HI].tolist(),
-                 DiffChart.Y_PRLO: df[DiffChart.LBL_MEAN_LO].tolist(),
-                 DiffChart.Y_PRCL: df[DiffChart.LBL_MEAN_CL].tolist(), }
+        dict_ = {
+            DiffChart.X_TIME: timelist,
+            DiffChart.Y_PRI_HI_AVE: df[DiffChart.LBL_AVE_HI].tolist(),
+            DiffChart.Y_PRI_LO_AVE: df[DiffChart.LBL_AVE_LO].tolist(),
+            DiffChart.Y_PRI_CL_AVE: df[DiffChart.LBL_AVE_CL].tolist(),
+            DiffChart.Y_PRI_HI_STD: df[DiffChart.LBL_STD_HI].tolist(),
+            DiffChart.Y_PRI_LO_STD: df[DiffChart.LBL_STD_LO].tolist(),
+            DiffChart.Y_PRI_CL_STD_HI: df[DiffChart.LBL_STD_CL_HI].tolist(),
+            DiffChart.Y_PRI_CL_STD_LO: df[DiffChart.LBL_STD_CL_LO].tolist()
+        }
         self.__src.data = dict_
 
         self.__fig.x_range.factors = timelist
@@ -167,9 +215,13 @@ class DiffChart(object):
             なし[None]
         """
         dict_ = {DiffChart.X_TIME: [],
-                 DiffChart.Y_PRHI: [],
-                 DiffChart.Y_PRLO: [],
-                 DiffChart.Y_PRCL: []}
+                 DiffChart.Y_PRI_HI_AVE: [],
+                 DiffChart.Y_PRI_LO_AVE: [],
+                 DiffChart.Y_PRI_CL_AVE: [],
+                 DiffChart.Y_PRI_HI_STD: [],
+                 DiffChart.Y_PRI_LO_STD: [],
+                 DiffChart.Y_PRI_CL_STD_HI: []
+                 }
         self.__src.data = dict_
 
 
@@ -674,27 +726,42 @@ class TTMGoto(AnalysisAbs):
             print("＜標準偏差＞")
             print(clstd)
 
-            y_max = hiave.max().max()
-            y_min = loave.min().min()
+            margin = 1.2
+            y_max = hiave.max().max() * margin
+            y_min = loave.min().min() * margin
 
             for i in TTMGoto._WEEK_DICT.keys():
                 for j in TTMGoto._GOTO_DICT.keys():
                     try:
                         cnt = dfcnt[i, j]
-                        srhi = hiave.loc[(i, j), :]
-                        srhi.name = DiffChart.LBL_MEAN_HI
-                        srlo = loave.loc[(i, j), :]
-                        srlo.name = DiffChart.LBL_MEAN_LO
-                        srcl = clave.loc[(i, j), :]
-                        srcl.name = DiffChart.LBL_MEAN_CL
+                        srhiave = hiave.loc[(i, j), :]
+                        srhiave.name = DiffChart.LBL_AVE_HI
+                        srloave = loave.loc[(i, j), :]
+                        srloave.name = DiffChart.LBL_AVE_LO
+                        srclave = clave.loc[(i, j), :]
+                        srclave.name = DiffChart.LBL_AVE_CL
+
+                        srhistd = srhiave + histd.loc[(i, j), :]
+                        srhistd.name = DiffChart.LBL_STD_HI
+                        srlostd = srloave - lostd.loc[(i, j), :]
+                        srlostd.name = DiffChart.LBL_STD_LO
+                        srclstdhi = srclave + clstd.loc[(i, j), :]
+                        srclstdhi.name = DiffChart.LBL_STD_CL_HI
+                        srclstdlo = srclave - clstd.loc[(i, j), :]
+                        srclstdlo.name = DiffChart.LBL_STD_CL_LO
+
                     except KeyError as e:
                         print("{} are not exist!" .format(e))
                         cnt = 0
-                        col = [srhi.name, srlo.name, srcl.name]
+                        col = [srhiave.name, srloave.name, srclave.name,
+                               srhistd.name, srlostd.name,
+                               srclstdhi.name, srclstdlo.name]
                         dfsumm = pd.DataFrame(index=hiave.T.index,
                                               columns=col)
                     else:
-                        dfsumm = pd.concat([srhi, srlo, srcl], axis=1)
+                        dfsumm = pd.concat([srhiave, srloave, srclave,
+                                            srhistd, srlostd, srclstdhi,
+                                            srclstdlo], axis=1)
                     finally:
                         self.__meanlist.append(dfsumm)
 
