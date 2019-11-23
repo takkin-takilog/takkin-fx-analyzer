@@ -10,7 +10,7 @@ from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
 from bokeh.models.glyphs import VBar, Line
 from bokeh.plotting import figure
-from bokeh.layouts import layout, widgetbox, row, gridplot, column
+from bokeh.layouts import row, gridplot, column
 from oandapyV20.exceptions import V20Error
 import autotrader.utils as utl
 import autotrader.analysis.candlestick as cs
@@ -225,6 +225,106 @@ class DiffChart(object):
         self.__src.data = dict_
 
 
+class SumChart(object):
+    """ SumChart
+            - 累積和チャート定義クラス[Difference chart definition class]
+    """
+
+    X_TIME = "x_time"
+    Y_PRI_SUM = "y_pri_sum"
+
+    LBL_SUM = "sum"
+
+    def __init__(self, title):
+        """"コンストラクタ[Constructor]
+        引数[Args]:
+            fig (figure) : フィギュアオブジェクト[figure object]
+            color_ (str) : カラーコード[Color code(ex "#E73B3A")]
+        """
+        BG_COLOR = "#2E2E2E"  # Background color
+
+        fig = figure(title=title,
+                     x_range=FactorRange(),
+                     y_range=Range1d(),
+                     plot_height=300,
+                     tools='',
+                     background_fill_color=BG_COLOR)
+        fig.xaxis.axis_label = "time"
+        fig.yaxis.axis_label = "diff price"
+        fig.xaxis.major_label_orientation = pi / 2
+        fig.yaxis.formatter = NumeralTickFormatter(format="0[.]00000")
+
+        dict_ = {SumChart.X_TIME: [],
+                 SumChart.Y_PRI_SUM: [],
+                 }
+        src = ColumnDataSource(dict_)
+
+        # ----- Diff high price ave -----
+        vbarsum = Line(x=SumChart.X_TIME,
+                       y=SumChart.Y_PRI_SUM,
+                       line_color="lawngreen", line_dash="solid",
+                       line_width=1, line_alpha=0.5)
+        rensum = fig.add_glyph(src, vbarsum)
+
+        # ----- Vertical line -----
+        self.__vl = VerLine(fig, "yellow", line_width=1)
+
+        fig.grid.grid_line_color = "white"
+        fig.grid.grid_line_alpha = 0.3
+
+        self.__fig = fig
+        self.__src = src
+        self.__rensum = rensum
+
+    @property
+    def render_sum(self):
+        """"フィギュアのGlyphRendererオブジェクトを取得する
+            [get GlyphRenderer Object of Figure]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            GlyphRenderer Object
+        """
+        return self.__rensum
+
+    @property
+    def fig(self):
+        """モデルを取得する[get model]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            self.__fig (object) : model object
+        """
+        return self.__fig
+
+    def update(self, df, y_str, y_end):
+        timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
+
+        dict_ = {
+            SumChart.X_TIME: timelist,
+            SumChart.Y_PRI_SUM: df[SumChart.LBL_SUM].tolist(),
+        }
+        self.__src.data = dict_
+
+        self.__fig.x_range.factors = timelist
+        self.__fig.y_range.start = y_str
+        self.__fig.y_range.end = y_end
+
+        self.__vl.update("09:55:00", y_str, y_end)
+
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        dict_ = {SumChart.X_TIME: [],
+                 SumChart.Y_PRI_SUM: [],
+                 }
+        self.__src.data = dict_
+
+
 class CandleStickChartAbs(CandleStickChartBase):
     """ CandleStickChart
             - ローソク足チャート定義クラス[Candle stick chart definition class]
@@ -408,6 +508,7 @@ class TTMGoto(AnalysisAbs):
 
         # 集計結果
         diffchrlist = []
+        diffsumlist = []
         diffsummlist = []
         for i in TTMGoto._WEEK_DICT.keys():
             for j in TTMGoto._GOTO_DICT.keys():
@@ -415,15 +516,15 @@ class TTMGoto(AnalysisAbs):
                 goto = TTMGoto._GOTO_DICT[j]
                 str_ = "Diff-chart Week[" + week + "]:Goto[" + goto + "]"
                 diffchrlist.append(DiffChart(str_))
+                str_ = "Cumulative Sum-chart Week[" + \
+                    week + "]:Goto[" + goto + "]"
+                diffsumlist.append(SumChart(str_))
                 txtin_cnt = TextInput(
                     value="", title="サンプル数:", width=100, sizing_mode="fixed")
                 diffsummlist.append(txtin_cnt)
         self.__diffchrlist = diffchrlist
+        self.__diffsumlist = diffsumlist
         self.__diffsummlist = diffsummlist
-
-        # Mean list: 0:High, 1:Low, 2:Close
-        self.__meanlist = []
-        self.__stdlist = []
 
     @property
     def layout(self):
@@ -469,8 +570,11 @@ class TTMGoto(AnalysisAbs):
             for j in TTMGoto._GOTO_DICT.keys():
                 pos = i * len(TTMGoto._GOTO_DICT) + j
                 summ = self.__diffsummlist[pos]
-                plot = self.__diffchrlist[pos]
-                plotlist.append([summ, plot.fig])
+                diffplot = self.__diffchrlist[pos]
+                sumplot = self.__diffsumlist[pos]
+                plotfig = column(children=[diffplot.fig, sumplot.fig],
+                                 sizing_mode="stretch_width")
+                plotlist.append([summ, plotfig])
 
         gridview = gridplot(children=plotlist, sizing_mode="stretch_width")
 
@@ -499,9 +603,6 @@ class TTMGoto(AnalysisAbs):
 
         self.__csdlist_5m = []
         self.__csdlist_1h = []
-
-        self.__meanlist = []
-        self.__stdlist = []
 
         yesterday = dt.date.today() - dt.timedelta(days=1)
         str_ = self.__dtwdg_str.date
@@ -723,13 +824,16 @@ class TTMGoto(AnalysisAbs):
             print(dftmp)
             print("＜平均＞")
             print(clave)
-            print(clave.cumsum(axis=1))
+            clavesum = clave.cumsum(axis=1)
+            print(clavesum)
             print("＜標準偏差＞")
             print(clstd)
 
             margin = 1.2
-            y_max = hiave.max().max() * margin
-            y_min = loave.min().min() * margin
+            y_diff_max = hiave.max().max() * margin
+            y_diff_min = loave.min().min() * margin
+            y_sum_max = clavesum.max().max() * margin
+            y_sum_min = clavesum.min().min() * margin
 
             for i in TTMGoto._WEEK_DICT.keys():
                 for j in TTMGoto._GOTO_DICT.keys():
@@ -751,24 +855,34 @@ class TTMGoto(AnalysisAbs):
                         srclstdlo = srclave - clstd.loc[(i, j), :]
                         srclstdlo.name = DiffChart.LBL_STD_CL_LO
 
+                        srclavesum = clavesum.loc[(i, j), :]
+                        srclavesum.name = SumChart.LBL_SUM
+
                     except KeyError as e:
                         print("{} are not exist!" .format(e))
                         cnt = 0
-                        col = [srhiave.name, srloave.name, srclave.name,
-                               srhistd.name, srlostd.name,
-                               srclstdhi.name, srclstdlo.name]
-                        dfsumm = pd.DataFrame(index=hiave.T.index,
+                        col = [DiffChart.LBL_AVE_HI, DiffChart.LBL_AVE_LO,
+                               DiffChart.LBL_AVE_CL, DiffChart.LBL_STD_HI,
+                               DiffChart.LBL_STD_LO, DiffChart.LBL_STD_CL_HI,
+                               DiffChart.LBL_STD_CL_LO]
+                        dfdiff = pd.DataFrame(index=hiave.T.index,
                                               columns=col)
+                        col = [SumChart.LBL_SUM]
+                        dfsum = pd.DataFrame(index=clavesum.T.index,
+                                             columns=col)
                     else:
-                        dfsumm = pd.concat([srhiave, srloave, srclave,
+                        dfdiff = pd.concat([srhiave, srloave, srclave,
                                             srhistd, srlostd, srclstdhi,
                                             srclstdlo], axis=1)
-                    finally:
-                        self.__meanlist.append(dfsumm)
+                        dfsum = pd.concat([srclavesum], axis=1)
 
                     pos = i * len(TTMGoto._GOTO_DICT) + j
                     diffchr = self.__diffchrlist[pos]
-                    diffchr.update(dfsumm, y_min, y_max)
+                    diffchr.update(dfdiff, y_diff_min, y_diff_max)
+
+                    sumchr = self.__diffsumlist[pos]
+                    sumchr.update(dfsum, y_sum_min, y_sum_max)
+
                     diffsumm = self.__diffsummlist[pos]
                     diffsumm.value = str(cnt) + " / " + str(dfcntsum)
 
