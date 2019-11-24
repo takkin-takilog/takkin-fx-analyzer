@@ -22,6 +22,8 @@ from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.technical import SimpleMovingAverage
 from autotrader.analysis.base import AnalysisAbs, DateWidget
 
+_TM0955 = dt.time(hour=9, minute=55)
+
 
 class DiffChart(object):
     """ DiffChart
@@ -193,7 +195,7 @@ class DiffChart(object):
         OFFSET = 0.5
 
         timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
-        idx = timelist.index("09:55:00")
+        idx = timelist.index(_TM0955.strftime(TIME_FMT))
         self.__ttmline.location = idx + OFFSET
 
         dict_ = {
@@ -318,7 +320,7 @@ class SumChart(object):
         OFFSET = 0.5
 
         timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
-        idx = timelist.index("09:55:00")
+        idx = timelist.index(_TM0955.strftime(TIME_FMT))
         self.__ttmline.location = idx + OFFSET
 
         dict_ = {
@@ -542,22 +544,33 @@ class TTMGoto(AnalysisAbs):
         # 集計結果
         diffchrlist = []
         diffsumlist = []
-        diffsummlist = []
+        sampcntlist = []
+        sumdifflist = []
         for i in TTMGoto._WEEK_DICT.keys():
             for j in TTMGoto._GOTO_DICT.keys():
                 week = TTMGoto._WEEK_DICT[i]
                 goto = TTMGoto._GOTO_DICT[j]
+
                 str_ = "Diff-chart Week[" + week + "]:Goto[" + goto + "]"
                 diffchrlist.append(DiffChart(str_))
+
                 str_ = "Cumulative Sum-chart Week[" + \
                     week + "]:Goto[" + goto + "]"
                 diffsumlist.append(SumChart(str_))
+
                 txtin_cnt = TextInput(
                     value="", title="サンプル数:", width=100, sizing_mode="fixed")
-                diffsummlist.append(txtin_cnt)
+                sampcntlist.append(txtin_cnt)
+
+                txtin_sumdiff = TextInput(
+                    value="", title="累積和(9:55):", width=100,
+                    sizing_mode="fixed")
+                sumdifflist.append(txtin_sumdiff)
+
         self.__diffchrlist = diffchrlist
         self.__diffsumlist = diffsumlist
-        self.__diffsummlist = diffsummlist
+        self.__sampcntlist = sampcntlist
+        self.__sumdifflist = sumdifflist
 
     @property
     def layout(self):
@@ -602,12 +615,15 @@ class TTMGoto(AnalysisAbs):
         for i in TTMGoto._WEEK_DICT.keys():
             for j in TTMGoto._GOTO_DICT.keys():
                 pos = i * len(TTMGoto._GOTO_DICT) + j
-                summ = self.__diffsummlist[pos]
+                sampcnt = self.__sampcntlist[pos]
+                sumdiff = self.__sumdifflist[pos]
                 diffplot = self.__diffchrlist[pos]
                 sumplot = self.__diffsumlist[pos]
                 plotfig = column(children=[diffplot.fig, sumplot.fig],
                                  sizing_mode="stretch_width")
-                plotlist.append([summ, plotfig])
+                txtin = column(children=[sampcnt, sumdiff],
+                               sizing_mode="fixed")
+                plotlist.append([txtin, plotfig])
 
         gridview = gridplot(children=plotlist, sizing_mode="stretch_width")
 
@@ -915,8 +931,11 @@ class TTMGoto(AnalysisAbs):
                     sumchr = self.__diffsumlist[pos]
                     sumchr.update(inst_id, dfsum, y_sum_min, y_sum_max)
 
-                    diffsumm = self.__diffsummlist[pos]
-                    diffsumm.value = str(cnt) + " / " + str(dfcntsum)
+                    sampcnt = self.__sampcntlist[pos]
+                    sampcnt.value = str(cnt) + " / " + str(dfcntsum)
+
+                    sumdiff = self.__sumdifflist[pos]
+                    sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
 
         # 表示更新
         self.__src.data = {
