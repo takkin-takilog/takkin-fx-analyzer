@@ -19,7 +19,6 @@ from autotrader.oanda_common import OandaGrn, OandaIns
 from autotrader.analysis.candlestick import CandleStickChartBase
 from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
-from autotrader.analysis.graph import VerLine
 from autotrader.technical import SimpleMovingAverage
 from autotrader.analysis.base import AnalysisAbs, DateWidget
 
@@ -191,8 +190,11 @@ class DiffChart(object):
     def update(self, inst_id, df, y_str, y_end):
 
         TIME_FMT = "%H:%M:%S"
+        OFFSET = 0.5
+
         timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
-        idx = timelist.index("09:50:00")
+        idx = timelist.index("09:55:00")
+        self.__ttmline.location = idx + OFFSET
 
         dict_ = {
             DiffChart.X_TIME: timelist,
@@ -205,8 +207,6 @@ class DiffChart(object):
             DiffChart.Y_PRI_CL_STD_LO: df[DiffChart.LBL_STD_CL_LO].tolist()
         }
         self.__src.data = dict_
-
-        self.__ttmline.location = idx + 0.5
 
         self.__fig.x_range.factors = timelist
         self.__fig.y_range.start = y_str
@@ -315,16 +315,17 @@ class SumChart(object):
     def update(self, inst_id, df, y_str, y_end):
 
         TIME_FMT = "%H:%M:%S"
+        OFFSET = 0.5
+
         timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
-        idx = timelist.index("09:50:00")
+        idx = timelist.index("09:55:00")
+        self.__ttmline.location = idx + OFFSET
 
         dict_ = {
             SumChart.X_TIME: timelist,
             SumChart.Y_PRI_SUM: df[SumChart.LBL_SUM].tolist(),
         }
         self.__src.data = dict_
-
-        self.__ttmline.location = idx + 0.5
 
         self.__fig.x_range.factors = timelist
         self.__fig.y_range.start = y_str
@@ -401,20 +402,28 @@ class CandleStickChart5M(CandleStickChartAbs):
         super().__init__()
         self._fig.title.text = "TTM Candlestick Chart ( 5 minutes )"
 
-        self.__vl1 = VerLine(self._fig, "pink", line_width=1)
-        self.__vl2 = VerLine(self._fig, "yellow", line_width=1)
+        vl2 = Span(location=0.0, dimension="height",
+                   line_color="yellow", line_dash="dashed", line_width=1)
+        self._fig.add_layout(vl2)
+
+        vl1 = Span(location=0.0, dimension="height",
+                   line_color="pink", line_dash="dashed", line_width=1)
+        self._fig.add_layout(vl1)
 
         self.__sma = SimpleMovingAverage(self._fig)
+
+        self.__vl1 = vl1
+        self.__vl2 = vl2
 
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
 
         dat_ = dt.date(date_.year, date_.month, date_.day)
-        y_pri = self._fig.y_range
         x_dttm = dt.datetime.combine(dat_, self.__TM0954)
-        self.__vl1.update(x_dttm, y_pri.start, y_pri.end)
+        self.__vl1.location = x_dttm
+
         x_dttm = dt.datetime.combine(dat_, self.__TM1030)
-        self.__vl2.update(x_dttm, y_pri.start, y_pri.end)
+        self.__vl2.location = x_dttm
 
         self.__sma.update_shr(csd.df, 5)
         self.__sma.update_mdl(csd.df, 20)
@@ -436,15 +445,18 @@ class CandleStickChart1H(CandleStickChartAbs):
         super().__init__()
         self._fig.title.text = "TTM Candlestick Chart ( 1 hour )"
 
-        self.__vl1 = VerLine(self._fig, "pink", line_width=1)
+        vl1 = Span(location=0.0, dimension="height",
+                   line_color="pink", line_dash="dashed", line_width=1)
+        self._fig.add_layout(vl1)
+
+        self.__vl1 = vl1
 
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
 
         dat_ = dt.date(date_.year, date_.month, date_.day)
-        y_pri = self._fig.y_range
         x_dttm = dt.datetime.combine(dat_, self.__TM0954)
-        self.__vl1.update(x_dttm, y_pri.start, y_pri.end)
+        self.__vl1.location = x_dttm
 
 
 class TTMGoto(AnalysisAbs):
