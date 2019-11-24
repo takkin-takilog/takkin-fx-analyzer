@@ -398,38 +398,45 @@ class CandleStickChart5M(CandleStickChartAbs):
         引数[Args]:
             なし[None]
         """
+        self.__TM0900 = dt.time(9, 0)
         self.__TM0954 = dt.time(9, 54)
         self.__TM1030 = dt.time(10, 30)
 
         super().__init__()
         self._fig.title.text = "TTM Candlestick Chart ( 5 minutes )"
 
-        vl2 = Span(location=0.0, dimension="height",
-                   line_color="yellow", line_dash="dashed", line_width=1)
-        self._fig.add_layout(vl2)
+        # Vertical Line (9:55)
+        vl0900 = Span(location=0.0, dimension="height",
+                      line_color="cyan", line_dash="dashed", line_width=1)
+        self._fig.add_layout(vl0900)
 
-        vl1 = Span(location=0.0, dimension="height",
-                   line_color="pink", line_dash="dashed", line_width=1)
-        self._fig.add_layout(vl1)
+        # Vertical Line (9:54)
+        vl0954 = Span(location=0.0, dimension="height",
+                      line_color="pink", line_dash="dashed", line_width=1)
+        self._fig.add_layout(vl0954)
 
-        self.__sma = SimpleMovingAverage(self._fig)
+        # Vertical Line (10:30)
+        vl1030 = Span(location=0.0, dimension="height",
+                      line_color="yellow", line_dash="dashed", line_width=1)
+        self._fig.add_layout(vl1030)
 
-        self.__vl1 = vl1
-        self.__vl2 = vl2
+        self.__vl0900 = vl0900
+        self.__vl0954 = vl0954
+        self.__vl1030 = vl1030
 
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
 
         dat_ = dt.date(date_.year, date_.month, date_.day)
+
+        x_dttm = dt.datetime.combine(dat_, self.__TM0900)
+        self.__vl0900.location = x_dttm
+
         x_dttm = dt.datetime.combine(dat_, self.__TM0954)
-        self.__vl1.location = x_dttm
+        self.__vl0954.location = x_dttm
 
         x_dttm = dt.datetime.combine(dat_, self.__TM1030)
-        self.__vl2.location = x_dttm
-
-        self.__sma.update_shr(csd.df, 5)
-        self.__sma.update_mdl(csd.df, 20)
-        self.__sma.update_lng(csd.df, 75)
+        self.__vl1030.location = x_dttm
 
 
 class CandleStickChart1H(CandleStickChartAbs):
@@ -447,18 +454,27 @@ class CandleStickChart1H(CandleStickChartAbs):
         super().__init__()
         self._fig.title.text = "TTM Candlestick Chart ( 1 hour )"
 
-        vl1 = Span(location=0.0, dimension="height",
-                   line_color="pink", line_dash="dashed", line_width=1)
-        self._fig.add_layout(vl1)
+        # Vertical Line (9:54)
+        vl0954 = Span(location=0.0, dimension="height",
+                      line_color="pink", line_dash="dashed", line_width=1)
+        self._fig.add_layout(vl0954)
 
-        self.__vl1 = vl1
+        # 移動平均線
+        self.__sma = SimpleMovingAverage(self._fig)
+
+        self.__vl0954 = vl0954
 
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
 
         dat_ = dt.date(date_.year, date_.month, date_.day)
+
         x_dttm = dt.datetime.combine(dat_, self.__TM0954)
-        self.__vl1.location = x_dttm
+        self.__vl0954.location = x_dttm
+
+        self.__sma.update_shr(csd.df, 5)
+        self.__sma.update_mdl(csd.df, 20)
+        self.__sma.update_lng(csd.df, 75)
 
 
 class TTMGoto(AnalysisAbs):
@@ -469,8 +485,8 @@ class TTMGoto(AnalysisAbs):
     LBL_DATE = "date"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
-    LBL_DIFL = "diff-low-price"
-    LBL_DIFH = "diff-high-price"
+    LBL_DIF0955L = "diff-0955-low-price"
+    LBL_DIF0955H = "diff-0955-high-price"
 
     FALSE = 0
     TRUE = 1
@@ -500,23 +516,23 @@ class TTMGoto(AnalysisAbs):
 
         cols = [TTMGoto.LBL_WEEK,
                 TTMGoto.LBL_GOTO,
-                TTMGoto.LBL_DIFL,
-                TTMGoto.LBL_DIFH]
+                TTMGoto.LBL_DIF0955L,
+                TTMGoto.LBL_DIF0955H]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
         # Widget DataTable:
         self.TBLLBL_DATE = "date"
         self.TBLLBL_WEEK = "week"
         self.TBLLBL_GOTO = "goto-day"
-        self.TBLLBL_DIFL = "diff-low-price"
-        self.TBLLBL_DIFH = "diff-high-price"
+        self.TBLLBL_DIF0955L = "diff-0955-low-price"
+        self.TBLLBL_DIF0955H = "diff-0955-high-price"
 
         # データテーブル初期化
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
                                        self.TBLLBL_WEEK: [],
                                        self.TBLLBL_GOTO: [],
-                                       self.TBLLBL_DIFL: [],
-                                       self.TBLLBL_DIFH: [],
+                                       self.TBLLBL_DIF0955L: [],
+                                       self.TBLLBL_DIF0955H: [],
                                        })
 
         cols = [
@@ -524,8 +540,10 @@ class TTMGoto(AnalysisAbs):
                         formatter=DateFormatter()),
             TableColumn(field=self.TBLLBL_WEEK, title="Week"),
             TableColumn(field=self.TBLLBL_GOTO, title="Goto Day"),
-            TableColumn(field=self.TBLLBL_DIFL, title="Diff Low Price"),
-            TableColumn(field=self.TBLLBL_DIFH, title="Diff High Price"),
+            TableColumn(field=self.TBLLBL_DIF0955L,
+                        title="Diff Low Price (9:55 - 10:30)"),
+            TableColumn(field=self.TBLLBL_DIF0955H,
+                        title="Diff High Price (9:55 - 10:30)"),
         ]
 
         self.__tbl = DataTable(source=self.__src,
@@ -711,7 +729,7 @@ class TTMGoto(AnalysisAbs):
             cnt = 0
             for date_, srrow in dfgoto.iterrows():
                 # *************** 5分足チャート ***************
-                str_ = dt.datetime.combine(date_, dt.time(0, 0))
+                str_ = dt.datetime.combine(date_, dt.time(8, 30))
                 end_ = dt.datetime.combine(date_, dt.time(12, 0))
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
@@ -773,7 +791,7 @@ class TTMGoto(AnalysisAbs):
                 self.__csdlist_1h.append(csd1h)
 
                 # *************** 5分足統計データ ***************
-                str_ = dt.datetime.combine(date_, dt.time(7, 0))
+                str_ = dt.datetime.combine(date_, dt.time(8, 30))
                 end_ = dt.datetime.combine(date_, dt.time(12, 0))
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
@@ -942,8 +960,8 @@ class TTMGoto(AnalysisAbs):
             self.TBLLBL_DATE: dfsmm.index.tolist(),
             self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].tolist(),
             self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].tolist(),
-            self.TBLLBL_DIFL: dfsmm[TTMGoto.LBL_DIFL].tolist(),
-            self.TBLLBL_DIFH: dfsmm[TTMGoto.LBL_DIFH].tolist(),
+            self.TBLLBL_DIF0955L: dfsmm[TTMGoto.LBL_DIF0955L].tolist(),
+            self.TBLLBL_DIF0955H: dfsmm[TTMGoto.LBL_DIF0955H].tolist(),
         }
         self.__dfsmm = dfsmm
 
