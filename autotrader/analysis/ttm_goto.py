@@ -57,13 +57,12 @@ class DiffChart(object):
         fig = figure(title=title,
                      x_range=FactorRange(),
                      y_range=Range1d(),
-                     plot_height=300,
+                     plot_height=400,
                      tools='',
                      background_fill_color=BG_COLOR)
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "diff price"
         fig.xaxis.major_label_orientation = pi / 2
-        fig.yaxis.formatter = NumeralTickFormatter(format="0[.]00000")
 
         dict_ = {DiffChart.X_TIME: [],
                  DiffChart.Y_PRI_HI_AVE: [],
@@ -186,7 +185,7 @@ class DiffChart(object):
         """
         return self.__fig
 
-    def update(self, df, y_str, y_end):
+    def update(self, inst_id, df, y_str, y_end):
         timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
 
         dict_ = {
@@ -204,6 +203,9 @@ class DiffChart(object):
         self.__fig.x_range.factors = timelist
         self.__fig.y_range.start = y_str
         self.__fig.y_range.end = y_end
+
+        fmt = OandaIns.format(inst_id)
+        self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
 
         self.__vl.update("09:55:00", y_str, y_end)
 
@@ -246,13 +248,12 @@ class SumChart(object):
         fig = figure(title=title,
                      x_range=FactorRange(),
                      y_range=Range1d(),
-                     plot_height=300,
+                     plot_height=200,
                      tools='',
                      background_fill_color=BG_COLOR)
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "diff price"
         fig.xaxis.major_label_orientation = pi / 2
-        fig.yaxis.formatter = NumeralTickFormatter(format="0[.]00000")
 
         dict_ = {SumChart.X_TIME: [],
                  SumChart.Y_PRI_SUM: [],
@@ -297,7 +298,7 @@ class SumChart(object):
         """
         return self.__fig
 
-    def update(self, df, y_str, y_end):
+    def update(self, inst_id, df, y_str, y_end):
         timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
 
         dict_ = {
@@ -309,6 +310,9 @@ class SumChart(object):
         self.__fig.x_range.factors = timelist
         self.__fig.y_range.start = y_str
         self.__fig.y_range.end = y_end
+
+        fmt = OandaIns.format(inst_id)
+        self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
 
         self.__vl.update("09:55:00", y_str, y_end)
 
@@ -766,7 +770,6 @@ class TTMGoto(AnalysisAbs):
                     pd.concat([srdt, srrow, srcl]), ignore_index=True)
 
                 # *************** 出力 ***************
-                inst_id = self.instrument_id
                 opmin = OandaIns.normalize(inst_id, openpri - minpri)
                 maxop = OandaIns.normalize(inst_id, maxpri - openpri)
 
@@ -878,10 +881,10 @@ class TTMGoto(AnalysisAbs):
 
                     pos = i * len(TTMGoto._GOTO_DICT) + j
                     diffchr = self.__diffchrlist[pos]
-                    diffchr.update(dfdiff, y_diff_min, y_diff_max)
+                    diffchr.update(inst_id, dfdiff, y_diff_min, y_diff_max)
 
                     sumchr = self.__diffsumlist[pos]
-                    sumchr.update(dfsum, y_sum_min, y_sum_max)
+                    sumchr.update(inst_id, dfsum, y_sum_min, y_sum_max)
 
                     diffsumm = self.__diffsummlist[pos]
                     diffsumm.value = str(cnt) + " / " + str(dfcntsum)

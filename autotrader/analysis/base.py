@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from datetime import timedelta, date
 from bokeh.models.widgets import Select
-from bokeh.layouts import row, column
+from bokeh.layouts import column
 from autotrader.oanda_common import OandaIns
 
 
@@ -74,13 +74,15 @@ class AnalysisAbs(metaclass=ABCMeta):
 
         # Widget Select:通貨ペア[Instrument]
         INST_OPT = OandaIns.get_dispname_list()
+        INST_DEF = INST_OPT[0]
+
         slc_inst = Select(title="通貨ペア:",
-                          value=INST_OPT[0],
+                          value=INST_DEF,
                           options=INST_OPT,
                           default_size=180)
         slc_inst.on_change("value", self.__cb_slc_inst)
 
-        self.__inst_id = OandaIns.get_id_from_dispname(OandaIns.EUR_USD)
+        self.__inst_id = OandaIns.get_id_from_dispname(INST_DEF)
 
         self._slc_inst = slc_inst
 
