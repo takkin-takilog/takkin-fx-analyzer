@@ -87,7 +87,7 @@ class HeatMapSim(HeatMap):
 
             idxmin = np.abs(df_y - event.y).idxmin()
             y = df_y[idxmin]
-            self._hline.update(xrng, y)
+            self._hline.update(xrng.start, xrng.end, y)
             self.__lgs.update(xlist, htmap[idxmin])
 
             str_ = round(ylist[idxmin], OandaIns.min_unit_max())

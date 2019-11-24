@@ -659,7 +659,7 @@ class HorLine(LineAbs):
     def __init__(self, plt, color, line_width=1):
         super().__init__(plt, color, line_width)
 
-    def update(self, x_rng, y):
+    def update(self, x_str, x_end, y):
         """"データを更新する[update glyph data]
         引数[Args]:
             dict_ (dict) : 更新データ[update data]
@@ -667,7 +667,7 @@ class HorLine(LineAbs):
             なし[None]
         """
         self._src.data = {
-            VerLine.X: x_rng,
+            VerLine.X: [x_str, x_end],
             VerLine.Y: [y, y]
         }
 

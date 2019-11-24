@@ -4,7 +4,7 @@ import jpholiday
 import datetime as dt
 from bokeh.models import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, CrosshairTool, HoverTool
-from bokeh.models import Panel, Tabs, Range1d, FactorRange
+from bokeh.models import Panel, Tabs, Range1d, FactorRange, Span
 from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
@@ -75,6 +75,11 @@ class DiffChart(object):
                  }
         src = ColumnDataSource(dict_)
 
+        # ----- Vertical line -----
+        ttmline = Span(location=0.0, dimension="height",
+                       line_color="yellow", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmline)
+
         # ----- Diff high price ave -----
         vbarhiave = VBar(x=DiffChart.X_TIME,
                          top=DiffChart.Y_PRI_HI_AVE,
@@ -102,32 +107,29 @@ class DiffChart(object):
         vbarhistd = Line(x=DiffChart.X_TIME,
                          y=DiffChart.Y_PRI_HI_STD,
                          line_color="lawngreen", line_dash="solid",
-                         line_width=1, line_alpha=0.5)
+                         line_width=1, line_alpha=1.0)
         renhistd = fig.add_glyph(src, vbarhistd)
 
         # ----- Diff low price std -----
         vbarlostd = Line(x=DiffChart.X_TIME,
                          y=DiffChart.Y_PRI_LO_STD,
                          line_color="pink", line_dash="solid", line_width=1,
-                         line_alpha=0.5)
+                         line_alpha=1.0)
         renlostd = fig.add_glyph(src, vbarlostd)
 
         # ----- Diff close price std high -----
         vbarclstdhi = Line(x=DiffChart.X_TIME,
                            y=DiffChart.Y_PRI_CL_STD_HI,
-                           line_color="cyan", line_dash="solid", line_width=1,
-                           line_alpha=0.5)
+                           line_color="cyan", line_dash="dotted", line_width=1,
+                           line_alpha=1.0)
         renclstdhi = fig.add_glyph(src, vbarclstdhi)
 
         # ----- Diff close price std low -----
         vbarclstdlo = Line(x=DiffChart.X_TIME,
                            y=DiffChart.Y_PRI_CL_STD_LO,
-                           line_color="cyan", line_dash="solid", line_width=1,
-                           line_alpha=0.5)
+                           line_color="cyan", line_dash="dotted", line_width=1,
+                           line_alpha=1.0)
         renclstdlo = fig.add_glyph(src, vbarclstdlo)
-
-        # ----- Vertical line -----
-        self.__vl = VerLine(fig, "yellow", line_width=1)
 
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
@@ -141,6 +143,7 @@ class DiffChart(object):
         self.__renlostd = renlostd
         self.__renclstdhi = renclstdhi
         self.__renclstdlo = renclstdlo
+        self.__ttmline = ttmline
 
     @property
     def render_hiave(self):
@@ -186,7 +189,10 @@ class DiffChart(object):
         return self.__fig
 
     def update(self, inst_id, df, y_str, y_end):
-        timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
+
+        TIME_FMT = "%H:%M:%S"
+        timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
+        idx = timelist.index("09:50:00")
 
         dict_ = {
             DiffChart.X_TIME: timelist,
@@ -200,14 +206,14 @@ class DiffChart(object):
         }
         self.__src.data = dict_
 
+        self.__ttmline.location = idx + 0.5
+
         self.__fig.x_range.factors = timelist
         self.__fig.y_range.start = y_str
         self.__fig.y_range.end = y_end
 
         fmt = OandaIns.format(inst_id)
         self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
-
-        self.__vl.update("09:55:00", y_str, y_end)
 
     def clear(self):
         """"データをクリアする[clear data]
@@ -248,11 +254,11 @@ class SumChart(object):
         fig = figure(title=title,
                      x_range=FactorRange(),
                      y_range=Range1d(),
-                     plot_height=200,
+                     plot_height=300,
                      tools='',
                      background_fill_color=BG_COLOR)
         fig.xaxis.axis_label = "time"
-        fig.yaxis.axis_label = "diff price"
+        fig.yaxis.axis_label = "Cumulative-Sum price"
         fig.xaxis.major_label_orientation = pi / 2
 
         dict_ = {SumChart.X_TIME: [],
@@ -260,15 +266,22 @@ class SumChart(object):
                  }
         src = ColumnDataSource(dict_)
 
+        # ----- Vertical line -----
+        ttmline = Span(location=0.0, dimension="height",
+                       line_color="yellow", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmline)
+
+        # ----- Horizontal line -----
+        zeroline = Span(location=0.0, dimension="width", line_color="deeppink",
+                        line_dash="solid", line_width=1)
+        fig.add_layout(zeroline)
+
         # ----- Diff high price ave -----
         vbarsum = Line(x=SumChart.X_TIME,
                        y=SumChart.Y_PRI_SUM,
                        line_color="lawngreen", line_dash="solid",
-                       line_width=1, line_alpha=0.5)
+                       line_width=2, line_alpha=1.0)
         rensum = fig.add_glyph(src, vbarsum)
-
-        # ----- Vertical line -----
-        self.__vl = VerLine(fig, "yellow", line_width=1)
 
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
@@ -276,6 +289,7 @@ class SumChart(object):
         self.__fig = fig
         self.__src = src
         self.__rensum = rensum
+        self.__ttmline = ttmline
 
     @property
     def render_sum(self):
@@ -299,7 +313,10 @@ class SumChart(object):
         return self.__fig
 
     def update(self, inst_id, df, y_str, y_end):
-        timelist = [i.strftime("%H:%M:%S") for i in df.index.tolist()]
+
+        TIME_FMT = "%H:%M:%S"
+        timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
+        idx = timelist.index("09:50:00")
 
         dict_ = {
             SumChart.X_TIME: timelist,
@@ -307,14 +324,14 @@ class SumChart(object):
         }
         self.__src.data = dict_
 
+        self.__ttmline.location = idx + 0.5
+
         self.__fig.x_range.factors = timelist
         self.__fig.y_range.start = y_str
         self.__fig.y_range.end = y_end
 
         fmt = OandaIns.format(inst_id)
         self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
-
-        self.__vl.update("09:55:00", y_str, y_end)
 
     def clear(self):
         """"データをクリアする[clear data]
