@@ -485,8 +485,9 @@ class TTMGoto(AnalysisAbs):
     LBL_DATE = "date"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
+    LBL_DIF0900H = "diff-0900-high-price"
     LBL_DIF0955L = "diff-0955-low-price"
-    LBL_DIF0955H = "diff-0955-high-price"
+    # LBL_DIF0955H = "diff-0955-high-price"
 
     FALSE = 0
     TRUE = 1
@@ -516,23 +517,26 @@ class TTMGoto(AnalysisAbs):
 
         cols = [TTMGoto.LBL_WEEK,
                 TTMGoto.LBL_GOTO,
-                TTMGoto.LBL_DIF0955L,
-                TTMGoto.LBL_DIF0955H]
+                TTMGoto.LBL_DIF0900H,
+                TTMGoto.LBL_DIF0955L]
+                #TTMGoto.LBL_DIF0955H]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
         # Widget DataTable:
         self.TBLLBL_DATE = "date"
         self.TBLLBL_WEEK = "week"
         self.TBLLBL_GOTO = "goto-day"
+        self.TBLLBL_DIF0900H = "diff-0900-high-price"
         self.TBLLBL_DIF0955L = "diff-0955-low-price"
-        self.TBLLBL_DIF0955H = "diff-0955-high-price"
+        # self.TBLLBL_DIF0955H = "diff-0955-high-price"
 
         # データテーブル初期化
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
                                        self.TBLLBL_WEEK: [],
                                        self.TBLLBL_GOTO: [],
+                                       self.TBLLBL_DIF0900H: [],
                                        self.TBLLBL_DIF0955L: [],
-                                       self.TBLLBL_DIF0955H: [],
+                                       #self.TBLLBL_DIF0955H: [],
                                        })
 
         cols = [
@@ -540,10 +544,12 @@ class TTMGoto(AnalysisAbs):
                         formatter=DateFormatter()),
             TableColumn(field=self.TBLLBL_WEEK, title="Week"),
             TableColumn(field=self.TBLLBL_GOTO, title="Goto Day"),
+            TableColumn(field=self.TBLLBL_DIF0900H,
+                        title="Diff Price (9:00 - 9:55)"),
             TableColumn(field=self.TBLLBL_DIF0955L,
-                        title="Diff Low Price (9:55 - 10:30)"),
-            TableColumn(field=self.TBLLBL_DIF0955H,
-                        title="Diff High Price (9:55 - 10:30)"),
+                        title="Diff Price (9:55 - 10:30)"),
+            #TableColumn(field=self.TBLLBL_DIF0955H,
+            #            title="Diff High Price (9:55 - 10:30)"),
         ]
 
         self.__tbl = DataTable(source=self.__src,
@@ -747,14 +753,29 @@ class TTMGoto(AnalysisAbs):
                     print("----- Exception: {}".format(excp))
                     continue
 
-                # 始値 - 最安値
+                # ---------- Extraction 9:00～9:55 chart ----------
+                strtm = dt.time(hour=9, minute=0)
+                strdttm = str(dt.datetime.combine(date_, strtm))
+                endtm = dt.time(hour=9, minute=50)
+                enddttm = str(dt.datetime.combine(date_, endtm))
+
+                try:
+                    openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
+                    closepri = csd5m.df.loc[enddttm, cs.LBL_CLOSE]
+                except KeyError:
+                    print("-----[Caution] Invalid Date found:[{}]"
+                          .format(str(date_)))
+                    continue
+
+                diff0900h = OandaIns.normalize(inst_id, closepri - openpri)
+
+                # ---------- Extraction 9:55～10:30 chart ----------
                 strtm = dt.time(hour=9, minute=55)
                 strdttm = str(dt.datetime.combine(date_, strtm))
                 endtm = dt.time(hour=10, minute=25)
                 enddttm = str(dt.datetime.combine(date_, endtm))
 
                 try:
-                    # 始値
                     openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
                     df5m = csd5m.df[strdttm:enddttm]
                 except KeyError:
@@ -762,10 +783,14 @@ class TTMGoto(AnalysisAbs):
                           .format(str(date_)))
                     continue
 
-                minidx = df5m[cs.LBL_LOW].idxmin()
                 minpri = df5m[cs.LBL_LOW].min()
-                maxpri = df5m[:minidx][cs.LBL_HIGH].max()
+                #minidx = df5m[cs.LBL_LOW].idxmin()
+                #maxpri = df5m[:minidx][cs.LBL_HIGH].max()
 
+                diff0955l = OandaIns.normalize(inst_id, minpri - openpri)
+                #diff0955h = OandaIns.normalize(inst_id, maxpri - openpri)
+
+                # ---------- output ----------
                 self.__csdlist_5m.append(csd5m)
 
                 # *************** 1時間足チャート ***************
@@ -833,13 +858,11 @@ class TTMGoto(AnalysisAbs):
                     pd.concat([srdt, srrow, srcl]), ignore_index=True)
 
                 # *************** 出力 ***************
-                opmin = OandaIns.normalize(inst_id, openpri - minpri)
-                maxop = OandaIns.normalize(inst_id, maxpri - openpri)
-
                 record = pd.Series([self._WEEK_DICT[srrow[TTMGoto.LBL_WEEK]],
                                     self._GOTO_DICT[srrow[TTMGoto.LBL_GOTO]],
-                                    opmin,
-                                    maxop],
+                                    diff0900h,
+                                    diff0955l],
+                                    #diff0955h],
                                    index=dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
@@ -960,8 +983,9 @@ class TTMGoto(AnalysisAbs):
             self.TBLLBL_DATE: dfsmm.index.tolist(),
             self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].tolist(),
             self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].tolist(),
+            self.TBLLBL_DIF0900H: dfsmm[TTMGoto.LBL_DIF0900H].tolist(),
             self.TBLLBL_DIF0955L: dfsmm[TTMGoto.LBL_DIF0955L].tolist(),
-            self.TBLLBL_DIF0955H: dfsmm[TTMGoto.LBL_DIF0955H].tolist(),
+            #self.TBLLBL_DIF0955H: dfsmm[TTMGoto.LBL_DIF0955H].tolist(),
         }
         self.__dfsmm = dfsmm
 
