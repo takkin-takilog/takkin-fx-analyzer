@@ -734,6 +734,29 @@ class TTMGoto(AnalysisAbs):
 
             cnt = 0
             for date_, srrow in dfgoto.iterrows():
+
+                # *************** 1時間足チャート ***************
+                str_ = dt.datetime.combine(
+                    date_, dt.time(0, 0)) - dt.timedelta(days=5)
+                end_ = dt.datetime.combine(date_, dt.time(15, 0))
+                dtmstr = DateTimeManager(str_)
+                dtmend = DateTimeManager(end_)
+                gran = OandaGrn.H1
+
+                try:
+                    csd1h = CandleStickData(gran, inst, dtmstr, dtmend)
+                except V20Error as v20err:
+                    print("-----V20Error: {}".format(v20err))
+                    continue
+                except ConnectionError as cerr:
+                    print("----- ConnectionError: {}".format(cerr))
+                    continue
+                except Exception as excp:
+                    print("----- Exception: {}".format(excp))
+                    continue
+
+                self.__csdlist_1h.append(csd1h)
+
                 # *************** 5分足チャート ***************
                 str_ = dt.datetime.combine(date_, dt.time(8, 30))
                 end_ = dt.datetime.combine(date_, dt.time(12, 0))
@@ -793,53 +816,10 @@ class TTMGoto(AnalysisAbs):
                 # ---------- output ----------
                 self.__csdlist_5m.append(csd5m)
 
-                # *************** 1時間足チャート ***************
-                str_ = dt.datetime.combine(
-                    date_, dt.time(0, 0)) - dt.timedelta(days=5)
-                end_ = dt.datetime.combine(date_, dt.time(15, 0))
-                dtmstr = DateTimeManager(str_)
-                dtmend = DateTimeManager(end_)
-                gran = OandaGrn.H1
-
-                try:
-                    csd1h = CandleStickData(gran, inst, dtmstr, dtmend)
-                except V20Error as v20err:
-                    print("-----V20Error: {}".format(v20err))
-                    continue
-                except ConnectionError as cerr:
-                    print("----- ConnectionError: {}".format(cerr))
-                    continue
-                except Exception as excp:
-                    print("----- Exception: {}".format(excp))
-                    continue
-
-                self.__csdlist_1h.append(csd1h)
-
-                # *************** 5分足統計データ ***************
-                str_ = dt.datetime.combine(date_, dt.time(8, 30))
-                end_ = dt.datetime.combine(date_, dt.time(12, 0))
-                dtmstr = DateTimeManager(str_)
-                dtmend = DateTimeManager(end_)
-                gran = OandaGrn.M5
-
-                try:
-                    csd5m = CandleStickData(gran, inst, dtmstr, dtmend)
-                except V20Error as v20err:
-                    print("-----V20Error: {}".format(v20err))
-                    continue
-                except ConnectionError as cerr:
-                    print("----- ConnectionError: {}".format(cerr))
-                    continue
-                except Exception as excp:
-                    print("----- Exception: {}".format(excp))
-                    continue
-
-                df = csd5m.df
-
                 # 集計
-                idxnew = [s.time() for s in df.index]
-                idxdict = dict(zip(df.index, idxnew))
-                df.rename(index=idxdict, inplace=True)
+                idxnew = [s.time() for s in csd5m.df.index]
+                idxdict = dict(zip(csd5m.df.index, idxnew))
+                df = csd5m.df.rename(index=idxdict)
 
                 tmp = df[cs.LBL_HIGH] - df[cs.LBL_OPEN]
                 srhi = pd.Series(tmp, name=date_)
