@@ -464,8 +464,8 @@ class CandleStickChart1H(CandleStickChartAbs):
 
         self.__vl0954 = vl0954
 
-    def add_column_sma(self, csd, window_):
-        pass
+    def calc_sma(self, csd, window_):
+        self.__sma.calc_sma_mdl(csd.df, window_)
 
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
@@ -475,7 +475,6 @@ class CandleStickChart1H(CandleStickChartAbs):
         x_dttm = dt.datetime.combine(dat_, self.__TM0954)
         self.__vl0954.location = x_dttm
 
-        self.__sma.calc_sma_mdl(csd.df, 20)
         self.__sma.draw_mdl(csd.df)
 
 
@@ -758,6 +757,7 @@ class TTMGoto(AnalysisAbs):
                     print("----- Exception: {}".format(excp))
                     continue
 
+                self.__csc1h.calc_sma(csd1h, 20)
                 self.__csdlist_1h.append(csd1h)
 
                 # *************** 5分足チャート ***************
