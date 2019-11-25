@@ -464,6 +464,9 @@ class CandleStickChart1H(CandleStickChartAbs):
 
         self.__vl0954 = vl0954
 
+    def add_column_sma(self, csd, window_):
+        pass
+
     def set_dataframe(self, date_, csd):
         super().set_dataframe(csd)
 
@@ -472,9 +475,8 @@ class CandleStickChart1H(CandleStickChartAbs):
         x_dttm = dt.datetime.combine(dat_, self.__TM0954)
         self.__vl0954.location = x_dttm
 
-        self.__sma.update_shr(csd.df, 5)
-        self.__sma.update_mdl(csd.df, 20)
-        self.__sma.update_lng(csd.df, 75)
+        self.__sma.calc_sma_mdl(csd.df, 20)
+        self.__sma.draw_mdl(csd.df)
 
 
 class TTMGoto(AnalysisAbs):
@@ -559,10 +561,10 @@ class TTMGoto(AnalysisAbs):
         self.__src.selected.on_change("indices", self.__cb_dttbl)
 
         # ローソク足チャート初期化
-        self.__csc1 = CandleStickChart5M()
+        self.__csc5m = CandleStickChart5M()
         self.__csdlist_5m = []
 
-        self.__csc2 = CandleStickChart1H()
+        self.__csc1h = CandleStickChart1H()
         self.__csdlist_1h = []
 
         # 集計結果
@@ -613,10 +615,11 @@ class TTMGoto(AnalysisAbs):
 
         btnrun = self.__btn_run
         tbl = self.__tbl
-        cscfig1 = self.__csc1.fig
-        cscfig2 = self.__csc2.fig
+        cscfig5m = self.__csc5m.fig
+        cscfig1h = self.__csc1h.fig
 
-        cscfigs = row(children=[cscfig1, cscfig2], sizing_mode="stretch_width")
+        cscfigs = row(children=[cscfig5m, cscfig1h],
+                      sizing_mode="stretch_width")
 
         tblfig = column(children=[tbl, cscfigs],
                         sizing_mode="stretch_width")
@@ -980,7 +983,7 @@ class TTMGoto(AnalysisAbs):
             なし[None]
         """
         idx = new[0]
-        self.__csc1.set_dataframe(
+        self.__csc5m.set_dataframe(
             self.__dfsmm.index[idx], self.__csdlist_5m[idx])
-        self.__csc2.set_dataframe(
+        self.__csc1h.set_dataframe(
             self.__dfsmm.index[idx], self.__csdlist_1h[idx])

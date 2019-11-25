@@ -323,11 +323,13 @@ class CandleStick(object):
         self.__add_orders_vline(gran, gmtstr, gmtend)
         self.__plt_main.y_range.update(start=str_, end=end_)
 
+        self.__df = df
+
         # 単純移動平均線
         if cfg.get_conf(cfg.ITEM_SMA_ACT) == 1:
-            self.__sma.update_shr(df, cfg.get_conf(cfg.ITEM_SMA_SHR))
-            self.__sma.update_mdl(df, cfg.get_conf(cfg.ITEM_SMA_MDL))
-            self.__sma.update_lng(df, cfg.get_conf(cfg.ITEM_SMA_LNG))
+            self.update_sma_shr(cfg.get_conf(cfg.ITEM_SMA_SHR))
+            self.update_sma_mdl(cfg.get_conf(cfg.ITEM_SMA_MDL))
+            self.update_sma_lng(cfg.get_conf(cfg.ITEM_SMA_LNG))
         # MACD
         if cfg.get_conf(cfg.ITEM_MACD_ACT) == 1:
             self.__macd.update_shr(df, cfg.get_conf(cfg.ITEM_MACD_SHR))
@@ -336,8 +338,6 @@ class CandleStick(object):
         # ボリンジャーバンド
         if cfg.get_conf(cfg.ITEM_BB_ACT) == 1:
             self.__bb.update(df, cfg.get_conf(cfg.ITEM_BB_PRD))
-
-        self.__df = df
 
         return yrng
 
@@ -358,7 +358,8 @@ class CandleStick(object):
         戻り値[Returns]:
             なし[None]
         """
-        self.__sma.update_shr(self.__df, new)
+        self.__sma.calc_sma_shr(self.__df, new)
+        self.__sma.draw_shr(self.__df)
 
     def update_sma_mdl(self, new):
         """"単純移動平均（中期）を更新する[update Simple Moving Average(middle range)]
@@ -367,7 +368,8 @@ class CandleStick(object):
         戻り値[Returns]:
             なし[None]
         """
-        self.__sma.update_mdl(self.__df, new)
+        self.__sma.calc_sma_mdl(self.__df, new)
+        self.__sma.draw_mdl(self.__df)
 
     def update_sma_lng(self, new):
         """"単純移動平均（長期）を更新する[update Simple Moving Average(long range)]
@@ -376,7 +378,8 @@ class CandleStick(object):
         戻り値[Returns]:
             なし[None]
         """
-        self.__sma.update_lng(self.__df, new)
+        self.__sma.calc_sma_lng(self.__df, new)
+        self.__sma.draw_lng(self.__df)
 
     def clear_sma(self):
         """"単純移動平均線表示をクリアする[clear Simple Moving Average line]
