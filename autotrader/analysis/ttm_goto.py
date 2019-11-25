@@ -1,4 +1,5 @@
 from math import pi
+import numpy as np
 import pandas as pd
 import jpholiday
 import datetime as dt
@@ -21,6 +22,7 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.technical import SimpleMovingAverage
 from autotrader.analysis.base import AnalysisAbs, DateWidget
+from bokeh.models.annotations import Slope
 
 _TM0955 = dt.time(hour=9, minute=55)
 
@@ -486,6 +488,7 @@ class TTMGoto(AnalysisAbs):
     LBL_DATE = "date"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
+    LBL_TREND = "trend slope"
     LBL_DIF0900H = "diff-0900-high-price"
     LBL_DIF0955L = "diff-0955-low-price"
     # LBL_DIF0955H = "diff-0955-high-price"
@@ -518,6 +521,7 @@ class TTMGoto(AnalysisAbs):
 
         cols = [TTMGoto.LBL_WEEK,
                 TTMGoto.LBL_GOTO,
+                TTMGoto.LBL_TREND,
                 TTMGoto.LBL_DIF0900H,
                 TTMGoto.LBL_DIF0955L]
                 #TTMGoto.LBL_DIF0955H]
@@ -527,6 +531,7 @@ class TTMGoto(AnalysisAbs):
         self.TBLLBL_DATE = "date"
         self.TBLLBL_WEEK = "week"
         self.TBLLBL_GOTO = "goto-day"
+        self.TBLLBL_TREND = "trend slope"
         self.TBLLBL_DIF0900H = "diff-0900-high-price"
         self.TBLLBL_DIF0955L = "diff-0955-low-price"
         # self.TBLLBL_DIF0955H = "diff-0955-high-price"
@@ -535,6 +540,7 @@ class TTMGoto(AnalysisAbs):
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
                                        self.TBLLBL_WEEK: [],
                                        self.TBLLBL_GOTO: [],
+                                       self.TBLLBL_TREND: [],
                                        self.TBLLBL_DIF0900H: [],
                                        self.TBLLBL_DIF0955L: [],
                                        #self.TBLLBL_DIF0955H: [],
@@ -545,6 +551,7 @@ class TTMGoto(AnalysisAbs):
                         formatter=DateFormatter()),
             TableColumn(field=self.TBLLBL_WEEK, title="Week"),
             TableColumn(field=self.TBLLBL_GOTO, title="Goto Day"),
+            TableColumn(field=self.TBLLBL_TREND, title="Trend slope"),
             TableColumn(field=self.TBLLBL_DIF0900H,
                         title="Diff Price (9:00 - 9:55)"),
             TableColumn(field=self.TBLLBL_DIF0955L,
@@ -757,7 +764,13 @@ class TTMGoto(AnalysisAbs):
                     print("----- Exception: {}".format(excp))
                     continue
 
+                # 移動平均線
                 self.__csc1h.calc_sma(csd1h, 20)
+                sma_sr = csd1h.df[SimpleMovingAverage.LBL_SMA_M]
+
+                # 線形近似
+                slope = self.__calc_linear_slope(date_, sma_sr)
+
                 self.__csdlist_1h.append(csd1h)
 
                 # *************** 5分足チャート ***************
@@ -843,6 +856,7 @@ class TTMGoto(AnalysisAbs):
                 # *************** 出力 ***************
                 record = pd.Series([self._WEEK_DICT[srrow[TTMGoto.LBL_WEEK]],
                                     self._GOTO_DICT[srrow[TTMGoto.LBL_GOTO]],
+                                    slope,
                                     diff0900h,
                                     diff0955l],
                                     #diff0955h],
@@ -966,6 +980,7 @@ class TTMGoto(AnalysisAbs):
             self.TBLLBL_DATE: dfsmm.index.tolist(),
             self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].tolist(),
             self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].tolist(),
+            self.TBLLBL_TREND: dfsmm[TTMGoto.LBL_TREND].tolist(),
             self.TBLLBL_DIF0900H: dfsmm[TTMGoto.LBL_DIF0900H].tolist(),
             self.TBLLBL_DIF0955L: dfsmm[TTMGoto.LBL_DIF0955L].tolist(),
             #self.TBLLBL_DIF0955H: dfsmm[TTMGoto.LBL_DIF0955H].tolist(),
@@ -987,3 +1002,27 @@ class TTMGoto(AnalysisAbs):
             self.__dfsmm.index[idx], self.__csdlist_5m[idx])
         self.__csc1h.set_dataframe(
             self.__dfsmm.index[idx], self.__csdlist_1h[idx])
+
+    def __calc_linear_slope(self, date_, sr):
+
+        strtm = dt.time(hour=0, minute=0)
+        strdttm = str(dt.datetime.combine(date_, strtm))
+        endtm = dt.time(hour=10, minute=0)
+        enddttm = str(dt.datetime.combine(date_, endtm))
+
+        slope = 0.0
+        try:
+            dfsma = sr[strdttm:enddttm]
+        except KeyError:
+            print("-----[Caution] Invalid Date found:[{}]"
+                  .format(str(date_)))
+            return slope
+
+        lenmax = endtm.hour - strtm.hour - 1
+        if lenmax < len(dfsma):
+            y = dfsma.values
+            x = list(range(len(dfsma)))
+            linear = np.polyfit(x, y, 1)
+            slope = linear[0]
+
+        return slope
