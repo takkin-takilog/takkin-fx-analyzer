@@ -22,7 +22,6 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.technical import SimpleMovingAverage
 from autotrader.analysis.base import AnalysisAbs, DateWidget
-from bokeh.models.annotations import Slope
 
 _TM0955 = dt.time(hour=9, minute=55)
 
@@ -679,10 +678,6 @@ class TTMGoto(AnalysisAbs):
         dfsmm = self.__dfsmm
         dfsmm.drop(index=dfsmm.index, inplace=True)
 
-        cols = [TTMGoto.LBL_WEEK,
-                TTMGoto.LBL_GOTO]
-        dfgoto = pd.DataFrame(columns=cols)
-
         self.__csdlist_5m = []
         self.__csdlist_1h = []
 
@@ -692,44 +687,8 @@ class TTMGoto(AnalysisAbs):
         end_ = self.__dtwdg_end.date
         end_ = utl.limit_upper(end_, yesterday)
 
-        nextdate = end_ + dt.timedelta(days=1)
-        nextmonth = nextdate.month
-
-        lastday_flg = False
-        gotoday_flg = False
-
-        for n in range((end_ - str_ + dt.timedelta(days=1)).days):
-            date_ = end_ - dt.timedelta(n)
-            weekdayno = date_.weekday()
-
-            # 月末判定
-            if not date_.month == nextmonth:
-                lastday_flg = True
-
-            # ゴトー日判定
-            if date_.day in self._MLT_FIVE_LIST:
-                gotoday_flg = True
-
-            # 平日判定
-            if (weekdayno < 5) and not jpholiday.is_holiday(date_):
-
-                if lastday_flg or gotoday_flg:
-                    target = TTMGoto.TRUE
-                    lastday_flg = False
-                    gotoday_flg = False
-                else:
-                    target = TTMGoto.FALSE
-
-                # 出力
-                record = pd.Series([weekdayno,
-                                    target],
-                                   index=dfgoto.columns,
-                                   name=date_)
-                dfgoto = dfgoto.append(record)
-
-            nextmonth = date_.month
-
-        dfgoto.sort_index(inplace=True)
+        # search Goto-Days
+        dfgoto = self.__search_goto_day(str_, end_)
 
         if dfgoto.empty:
             print("リストは空です")
@@ -1026,3 +985,50 @@ class TTMGoto(AnalysisAbs):
             slope = linear[0]
 
         return slope
+
+    def __search_goto_day(self, str_, end_):
+
+        cols = [TTMGoto.LBL_WEEK,
+                TTMGoto.LBL_GOTO]
+        dfgoto = pd.DataFrame(columns=cols)
+
+        nextdate = end_ + dt.timedelta(days=1)
+        nextmonth = nextdate.month
+
+        lastday_flg = False
+        gotoday_flg = False
+
+        for n in range((end_ - str_ + dt.timedelta(days=1)).days):
+            date_ = end_ - dt.timedelta(n)
+            weekdayno = date_.weekday()
+
+            # 月末判定
+            if not date_.month == nextmonth:
+                lastday_flg = True
+
+            # ゴトー日判定
+            if date_.day in self._MLT_FIVE_LIST:
+                gotoday_flg = True
+
+            # 平日判定
+            if (weekdayno < 5) and not jpholiday.is_holiday(date_):
+
+                if lastday_flg or gotoday_flg:
+                    target = TTMGoto.TRUE
+                    lastday_flg = False
+                    gotoday_flg = False
+                else:
+                    target = TTMGoto.FALSE
+
+                # 出力
+                record = pd.Series([weekdayno,
+                                    target],
+                                   index=dfgoto.columns,
+                                   name=date_)
+                dfgoto = dfgoto.append(record)
+
+            nextmonth = date_.month
+
+        dfgoto.sort_index(inplace=True)
+
+        return dfgoto
