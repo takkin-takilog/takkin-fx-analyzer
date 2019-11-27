@@ -813,8 +813,8 @@ class TTMGoto(AnalysisAbs):
                     pd.concat([srdt, srrow, srcl]), ignore_index=True)
 
                 # *************** 出力 ***************
-                record = pd.Series([self._WEEK_DICT[srrow[TTMGoto.LBL_WEEK]],
-                                    self._GOTO_DICT[srrow[TTMGoto.LBL_GOTO]],
+                record = pd.Series([srrow[TTMGoto.LBL_WEEK],
+                                    srrow[TTMGoto.LBL_GOTO],
                                     slope,
                                     diff0900h,
                                     diff0955l],
@@ -880,6 +880,9 @@ class TTMGoto(AnalysisAbs):
             y_sum_max = clavesum.max().max() * margin
             y_sum_min = clavesum.min().min() * margin
 
+            dfcorr = dfsmm.set_index([TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
+            print("------")
+            print(dfcorr)
             for i in TTMGoto._WEEK_DICT.keys():
                 for j in TTMGoto._GOTO_DICT.keys():
                     try:
@@ -902,6 +905,11 @@ class TTMGoto(AnalysisAbs):
 
                         srclavesum = clavesum.loc[(i, j), :]
                         srclavesum.name = SumChart.LBL_SUM
+
+                        # 相関を算出
+                        print("$$$$$$$$$$$$$$$$")
+                        dfcorr1 = dfcorr.loc[(i, j), :]
+                        print(dfcorr1)
 
                     except KeyError as e:
                         print("{} are not exist!" .format(e))
@@ -937,8 +945,8 @@ class TTMGoto(AnalysisAbs):
         # 表示更新
         self.__src.data = {
             self.TBLLBL_DATE: dfsmm.index.tolist(),
-            self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].tolist(),
-            self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].tolist(),
+            self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].replace(self._WEEK_DICT).tolist(),
+            self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].replace(self._GOTO_DICT).tolist(),
             self.TBLLBL_TREND: dfsmm[TTMGoto.LBL_TREND].tolist(),
             self.TBLLBL_DIF0900H: dfsmm[TTMGoto.LBL_DIF0900H].tolist(),
             self.TBLLBL_DIF0955L: dfsmm[TTMGoto.LBL_DIF0955L].tolist(),
@@ -1032,3 +1040,18 @@ class TTMGoto(AnalysisAbs):
         dfgoto.sort_index(inplace=True)
 
         return dfgoto
+
+    def __calc_correlation(self, df):
+
+        dfcorr = df.set_index([TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
+        print(dfcorr)
+
+        level_ = [TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
+
+        aaa = dfcorr.groupby(level=level_)
+        print(aaa)
+        print(type(aaa))
+
+        for idx, grpdf in dfcorr.groupby(level=level_):
+            print(idx)
+            print(grpdf.corr())
