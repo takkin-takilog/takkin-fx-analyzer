@@ -525,7 +525,6 @@ class TTMGoto(AnalysisAbs):
                 TTMGoto.LBL_TREND,
                 TTMGoto.LBL_DIF0900H,
                 TTMGoto.LBL_DIF0955L]
-                #TTMGoto.LBL_DIF0955H]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
         # Widget DataTable:
@@ -544,7 +543,6 @@ class TTMGoto(AnalysisAbs):
                                        self.TBLLBL_TREND: [],
                                        self.TBLLBL_DIF0900H: [],
                                        self.TBLLBL_DIF0955L: [],
-                                       #self.TBLLBL_DIF0955H: [],
                                        })
 
         cols = [
@@ -557,8 +555,6 @@ class TTMGoto(AnalysisAbs):
                         title="Diff Price (9:00 - 9:55)"),
             TableColumn(field=self.TBLLBL_DIF0955L,
                         title="Diff Price (9:55 - 10:30)"),
-            #TableColumn(field=self.TBLLBL_DIF0955H,
-            #            title="Diff High Price (9:55 - 10:30)"),
         ]
 
         self.__tbl = DataTable(source=self.__src,
@@ -698,10 +694,6 @@ class TTMGoto(AnalysisAbs):
 
             inst_id = self.instrument_id
             inst = OandaIns.list[inst_id].oanda_name
-            dfhi = pd.DataFrame()
-            dflo = pd.DataFrame()
-            dfcl = pd.DataFrame()
-
             df = pd.DataFrame()
 
             cnt = 0
@@ -786,11 +778,7 @@ class TTMGoto(AnalysisAbs):
                     continue
 
                 minpri = df5m[cs.LBL_LOW].min()
-                #minidx = df5m[cs.LBL_LOW].idxmin()
-                #maxpri = df5m[:minidx][cs.LBL_HIGH].max()
-
                 diff0955l = OandaIns.normalize(inst_id, minpri - openpri)
-                #diff0955h = OandaIns.normalize(inst_id, maxpri - openpri)
 
                 # ---------- output ----------
                 self.__csdlist_5m.append(csd5m)
@@ -809,23 +797,11 @@ class TTMGoto(AnalysisAbs):
 
                 srdt = pd.Series(date_, index=[TTMGoto.LBL_DATE])
 
-                ochl = pd.Series("high", index=[TTMGoto.LBL_OHLC])
-                dfhi = dfhi.append(
-                    pd.concat([srdt, srrow, srhi, ochl]), ignore_index=True)
-                ochl = pd.Series("low", index=[TTMGoto.LBL_OHLC])
-                dflo = dflo.append(
-                    pd.concat([srdt, srrow, srlo, ochl]), ignore_index=True)
-                ochl = pd.Series("close", index=[TTMGoto.LBL_OHLC])
-                dfcl = dfcl.append(
-                    pd.concat([srdt, srrow, srcl, ochl]), ignore_index=True)
-
-
-                #########################################################33
-                ochl = pd.Series("high", index=[TTMGoto.LBL_OHLC])
+                ochl = pd.Series(cs.LBL_HIGH, index=[TTMGoto.LBL_OHLC])
                 df1 = pd.concat([srdt, srrow, srhi, ochl])
-                ochl = pd.Series("low", index=[TTMGoto.LBL_OHLC])
+                ochl = pd.Series(cs.LBL_LOW, index=[TTMGoto.LBL_OHLC])
                 df2 = pd.concat([srdt, srrow, srlo, ochl])
-                ochl = pd.Series("close", index=[TTMGoto.LBL_OHLC])
+                ochl = pd.Series(cs.LBL_CLOSE, index=[TTMGoto.LBL_OHLC])
                 df3 = pd.concat([srdt, srrow, srcl, ochl])
 
                 df = df.append(df1, ignore_index=True)
@@ -838,7 +814,6 @@ class TTMGoto(AnalysisAbs):
                                     slope,
                                     diff0900h,
                                     diff0955l],
-                                    #diff0955h],
                                    index=dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
@@ -846,31 +821,30 @@ class TTMGoto(AnalysisAbs):
                 cnt += 1
                 print("{} / {}" .format(cnt, len(dfgoto)))
 
-            idx = [TTMGoto.LBL_OHLC, TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
+            idx = [TTMGoto.LBL_OHLC, TTMGoto.LBL_DATE,
+                   TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
             level_ = [TTMGoto.LBL_OHLC, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
 
-            print(df)
             df = df.set_index(idx)
             df.sort_index(axis=1, inplace=True)
+
+            # calculate mean
             dfave = df.mean(level=level_)
+            # calculate standard deviation
             dfstd = df.std(ddof=0, level=level_)
             print("＜平均＞")
             print(dfave)
             print("＜標準偏差＞")
             print(dfstd)
 
-            dfhi = df.loc["high", :]
-            dfcnt = dfhi.groupby(level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]).size()
+            dfhi = df.loc[cs.LBL_HIGH, :]
+            dfcnt = dfhi.groupby(
+                level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]).size()
             dfcntsum = dfcnt.sum()
 
-            print("＜カウント＞")
-            print(type(dfcnt))
-            print(dfcnt)
-            print("＜総計カウント＞")
-            print(dfcntsum)
-
-            dfavecl = dfave.loc["close", :]
-            dfaveclave = dfavecl.mean(level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
+            dfavecl = dfave.loc[cs.LBL_CLOSE, :]
+            dfaveclave = dfavecl.mean(
+                level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
             clavesum = dfaveclave.cumsum(axis=1)
 
             margin = 1.2
@@ -883,25 +857,30 @@ class TTMGoto(AnalysisAbs):
             print("------")
             print(dfcorr)
 
-            for i, j in itertools.product(TTMGoto._WEEK_DICT.keys(), TTMGoto._GOTO_DICT.keys()):
+            week_keys = TTMGoto._WEEK_DICT.keys()
+            goto_keys = TTMGoto._GOTO_DICT.keys()
+            for i, j in itertools.product(week_keys, goto_keys):
                 try:
                     cnt = dfcnt[i, j]
-                    sravehi = dfave.loc["high", :].loc[(i, j), :]
+                    sravehi = dfave.loc[cs.LBL_HIGH, :].loc[(i, j), :]
                     sravehi.name = DiffChart.LBL_AVE_HI
-                    sravelo = dfave.loc["low", :].loc[(i, j), :]
+                    sravelo = dfave.loc[cs.LBL_LOW, :].loc[(i, j), :]
                     sravelo.name = DiffChart.LBL_AVE_LO
-                    sravecl = dfave.loc["close", :].loc[(i, j), :]
+                    sravecl = dfave.loc[cs.LBL_CLOSE, :].loc[(i, j), :]
                     sravecl.name = DiffChart.LBL_AVE_CL
 
-                    srstdhi_ove = sravehi + dfstd.loc["high", :].loc[(i, j), :]
+                    dfstd_hi = dfstd.loc[cs.LBL_HIGH, :]
+                    srstdhi_ove = sravehi + dfstd_hi.loc[(i, j), :]
                     srstdhi_ove.name = DiffChart.LBL_STD_HI_OVE
 
-                    srstdlo_und = sravelo - dfstd.loc["low", :].loc[(i, j), :]
+                    dfstd_lo = dfstd.loc[cs.LBL_LOW, :]
+                    srstdlo_und = sravelo - dfstd_lo.loc[(i, j), :]
                     srstdlo_und.name = DiffChart.LBL_STD_LO_UND
 
-                    srstdcl_ove = sravecl + dfstd.loc["close", :].loc[(i, j), :]
+                    dfstd_cl = dfstd.loc[cs.LBL_CLOSE, :]
+                    srstdcl_ove = sravecl + dfstd_cl.loc[(i, j), :]
                     srstdcl_ove.name = DiffChart.LBL_STD_CL_OVE
-                    srstdcl_und = sravecl - dfstd.loc["close", :].loc[(i, j), :]
+                    srstdcl_und = sravecl - dfstd_cl.loc[(i, j), :]
                     srstdcl_und.name = DiffChart.LBL_STD_CL_UND
 
                     sraveclsum = clavesum.loc[(i, j), :]
@@ -938,78 +917,16 @@ class TTMGoto(AnalysisAbs):
                 sumdiff = self.__sumdifflist[pos]
                 sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
 
-
-
-            """
-            for i in TTMGoto._WEEK_DICT.keys():
-                for j in TTMGoto._GOTO_DICT.keys():
-                    try:
-                        cnt = dfcnt[i, j]
-                        srhiave = hiave.loc[(i, j), :]
-                        srhiave.name = DiffChart.LBL_AVE_HI
-                        srloave = loave.loc[(i, j), :]
-                        srloave.name = DiffChart.LBL_AVE_LO
-                        srclave = dfaveclave.loc[(i, j), :]
-                        srclave.name = DiffChart.LBL_AVE_CL
-
-                        srhistd = srhiave + histd.loc[(i, j), :]
-                        srhistd.name = DiffChart.LBL_STD_HI_OVE
-                        srlostd = srloave - lostd.loc[(i, j), :]
-                        srlostd.name = DiffChart.LBL_STD_LO_UND
-                        srclstdhi = srclave + clstd.loc[(i, j), :]
-                        srclstdhi.name = DiffChart.LBL_STD_CL_OVE
-                        srclstdlo = srclave - clstd.loc[(i, j), :]
-                        srclstdlo.name = DiffChart.LBL_STD_CL_UND
-
-                        srclavesum = clavesum.loc[(i, j), :]
-                        srclavesum.name = SumChart.LBL_SUM
-
-                        # 相関を算出
-                        print("$$$$$$$$$$$$$$$$")
-                        dfcorr1 = dfcorr.loc[(i, j), :]
-                        print(dfcorr1)
-
-                    except KeyError as e:
-                        print("{} are not exist!" .format(e))
-                        cnt = 0
-                        col = [DiffChart.LBL_AVE_HI, DiffChart.LBL_AVE_LO,
-                               DiffChart.LBL_AVE_CL, DiffChart.LBL_STD_HI_OVE,
-                               DiffChart.LBL_STD_LO_UND, DiffChart.LBL_STD_CL_OVE,
-                               DiffChart.LBL_STD_CL_UND]
-                        dfdiff = pd.DataFrame(index=hiave.T.index,
-                                              columns=col)
-                        col = [SumChart.LBL_SUM]
-                        dfsum = pd.DataFrame(index=clavesum.T.index,
-                                             columns=col)
-                    else:
-                        dfdiff = pd.concat([srhiave, srloave, srclave,
-                                            srhistd, srlostd, srclstdhi,
-                                            srclstdlo], axis=1)
-                        dfsum = pd.concat([srclavesum], axis=1)
-
-                    pos = i * len(TTMGoto._GOTO_DICT) + j
-                    diffchr = self.__diffchrlist[pos]
-                    diffchr.update(inst_id, dfdiff, y_diff_min, y_diff_max)
-
-                    sumchr = self.__diffsumlist[pos]
-                    sumchr.update(inst_id, dfsum, y_sum_min, y_sum_max)
-
-                    sampcnt = self.__sampcntlist[pos]
-                    sampcnt.value = str(cnt) + " / " + str(dfcntsum)
-
-                    sumdiff = self.__sumdifflist[pos]
-                    sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
-            """
-
         # 表示更新
+        srweek = dfsmm[TTMGoto.LBL_WEEK].replace(self._WEEK_DICT)
+        srgoto = dfsmm[TTMGoto.LBL_GOTO].replace(self._GOTO_DICT)
         self.__src.data = {
             self.TBLLBL_DATE: dfsmm.index.tolist(),
-            self.TBLLBL_WEEK: dfsmm[TTMGoto.LBL_WEEK].replace(self._WEEK_DICT).tolist(),
-            self.TBLLBL_GOTO: dfsmm[TTMGoto.LBL_GOTO].replace(self._GOTO_DICT).tolist(),
+            self.TBLLBL_WEEK: srweek.tolist(),
+            self.TBLLBL_GOTO: srgoto.tolist(),
             self.TBLLBL_TREND: dfsmm[TTMGoto.LBL_TREND].tolist(),
             self.TBLLBL_DIF0900H: dfsmm[TTMGoto.LBL_DIF0900H].tolist(),
             self.TBLLBL_DIF0955L: dfsmm[TTMGoto.LBL_DIF0955L].tolist(),
-            #self.TBLLBL_DIF0955H: dfsmm[TTMGoto.LBL_DIF0955H].tolist(),
         }
         self.__dfsmm = dfsmm
 
