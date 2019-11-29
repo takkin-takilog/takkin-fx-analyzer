@@ -783,30 +783,8 @@ class TTMGoto(AnalysisAbs):
                 # ---------- output ----------
                 self.__csdlist_5m.append(csd5m)
 
-                # 集計
-                idxnew = [s.time() for s in csd5m.df.index]
-                idxdict = dict(zip(csd5m.df.index, idxnew))
-                dftmp = csd5m.df.rename(index=idxdict)
-
-                tmp = dftmp[cs.LBL_HIGH] - dftmp[cs.LBL_OPEN]
-                srhi = pd.Series(tmp, name=date_)
-                tmp = dftmp[cs.LBL_LOW] - dftmp[cs.LBL_OPEN]
-                srlo = pd.Series(tmp, name=date_)
-                tmp = dftmp[cs.LBL_CLOSE] - dftmp[cs.LBL_OPEN]
-                srcl = pd.Series(tmp, name=date_)
-
-                srdt = pd.Series(date_, index=[TTMGoto.LBL_DATE])
-
-                ochl = pd.Series(cs.LBL_HIGH, index=[TTMGoto.LBL_OHLC])
-                df1 = pd.concat([srdt, srrow, srhi, ochl])
-                ochl = pd.Series(cs.LBL_LOW, index=[TTMGoto.LBL_OHLC])
-                df2 = pd.concat([srdt, srrow, srlo, ochl])
-                ochl = pd.Series(cs.LBL_CLOSE, index=[TTMGoto.LBL_OHLC])
-                df3 = pd.concat([srdt, srrow, srcl, ochl])
-
-                df = df.append(df1, ignore_index=True)
-                df = df.append(df2, ignore_index=True)
-                df = df.append(df3, ignore_index=True)
+                # make OHCL data-frame
+                df = self.__append_ohcl_df(df, csd5m, date_, srrow)
 
                 # *************** 出力 ***************
                 record = pd.Series([srrow[TTMGoto.LBL_WEEK],
@@ -820,6 +798,9 @@ class TTMGoto(AnalysisAbs):
 
                 cnt += 1
                 print("{} / {}" .format(cnt, len(dfgoto)))
+
+            print("＜DF＞")
+            print(df)
 
             idx = [TTMGoto.LBL_OHLC, TTMGoto.LBL_DATE,
                    TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
@@ -1031,3 +1012,32 @@ class TTMGoto(AnalysisAbs):
         for idx, grpdf in dfcorr.groupby(level=level_):
             print(idx)
             print(grpdf.corr())
+
+    def __append_ohcl_df(self, df, csd, date_, srrow):
+
+        # 集計
+        idxnew = [s.time() for s in csd.df.index]
+        idxdict = dict(zip(csd.df.index, idxnew))
+        dftmp = csd.df.rename(index=idxdict)
+
+        tmp = dftmp[cs.LBL_HIGH] - dftmp[cs.LBL_OPEN]
+        srhi = pd.Series(tmp, name=date_)
+        tmp = dftmp[cs.LBL_LOW] - dftmp[cs.LBL_OPEN]
+        srlo = pd.Series(tmp, name=date_)
+        tmp = dftmp[cs.LBL_CLOSE] - dftmp[cs.LBL_OPEN]
+        srcl = pd.Series(tmp, name=date_)
+
+        srdt = pd.Series(date_, index=[TTMGoto.LBL_DATE])
+
+        ochl = pd.Series(cs.LBL_HIGH, index=[TTMGoto.LBL_OHLC])
+        df1 = pd.concat([srdt, srrow, srhi, ochl])
+        ochl = pd.Series(cs.LBL_LOW, index=[TTMGoto.LBL_OHLC])
+        df2 = pd.concat([srdt, srrow, srlo, ochl])
+        ochl = pd.Series(cs.LBL_CLOSE, index=[TTMGoto.LBL_OHLC])
+        df3 = pd.concat([srdt, srrow, srcl, ochl])
+
+        df = df.append(df1, ignore_index=True)
+        df = df.append(df2, ignore_index=True)
+        df = df.append(df3, ignore_index=True)
+
+        return df
