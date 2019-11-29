@@ -1,3 +1,4 @@
+import itertools
 from math import pi
 import numpy as np
 import pandas as pd
@@ -43,10 +44,10 @@ class DiffChart(object):
     LBL_AVE_HI = "ave_high"
     LBL_AVE_LO = "ave_low"
     LBL_AVE_CL = "ave_close"
-    LBL_STD_HI = "std_high"
-    LBL_STD_LO = "std_low"
-    LBL_STD_CL_HI = "std_close_hi"
-    LBL_STD_CL_LO = "std_close_lo"
+    LBL_STD_HI_OVE = "std_high_over"
+    LBL_STD_LO_UND = "std_low_under"
+    LBL_STD_CL_OVE = "std_close_over"
+    LBL_STD_CL_UND = "std_close_under"
 
     def __init__(self, title):
         """"コンストラクタ[Constructor]
@@ -204,10 +205,10 @@ class DiffChart(object):
             DiffChart.Y_PRI_HI_AVE: df[DiffChart.LBL_AVE_HI].tolist(),
             DiffChart.Y_PRI_LO_AVE: df[DiffChart.LBL_AVE_LO].tolist(),
             DiffChart.Y_PRI_CL_AVE: df[DiffChart.LBL_AVE_CL].tolist(),
-            DiffChart.Y_PRI_HI_STD: df[DiffChart.LBL_STD_HI].tolist(),
-            DiffChart.Y_PRI_LO_STD: df[DiffChart.LBL_STD_LO].tolist(),
-            DiffChart.Y_PRI_CL_STD_HI: df[DiffChart.LBL_STD_CL_HI].tolist(),
-            DiffChart.Y_PRI_CL_STD_LO: df[DiffChart.LBL_STD_CL_LO].tolist()
+            DiffChart.Y_PRI_HI_STD: df[DiffChart.LBL_STD_HI_OVE].tolist(),
+            DiffChart.Y_PRI_LO_STD: df[DiffChart.LBL_STD_LO_UND].tolist(),
+            DiffChart.Y_PRI_CL_STD_HI: df[DiffChart.LBL_STD_CL_OVE].tolist(),
+            DiffChart.Y_PRI_CL_STD_LO: df[DiffChart.LBL_STD_CL_UND].tolist()
         }
         self.__src.data = dict_
 
@@ -487,7 +488,8 @@ class TTMGoto(AnalysisAbs):
     LBL_DATE = "date"
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
-    LBL_TREND = "trend slope"
+    LBL_OHLC = "ohlc"
+    LBL_TREND = "trend-slope"
     LBL_DIF0900H = "diff-0900-high-price"
     LBL_DIF0955L = "diff-0955-low-price"
     # LBL_DIF0955H = "diff-0955-high-price"
@@ -700,6 +702,8 @@ class TTMGoto(AnalysisAbs):
             dflo = pd.DataFrame()
             dfcl = pd.DataFrame()
 
+            df = pd.DataFrame()
+
             cnt = 0
             for date_, srrow in dfgoto.iterrows():
 
@@ -794,23 +798,39 @@ class TTMGoto(AnalysisAbs):
                 # 集計
                 idxnew = [s.time() for s in csd5m.df.index]
                 idxdict = dict(zip(csd5m.df.index, idxnew))
-                df = csd5m.df.rename(index=idxdict)
+                dftmp = csd5m.df.rename(index=idxdict)
 
-                tmp = df[cs.LBL_HIGH] - df[cs.LBL_OPEN]
+                tmp = dftmp[cs.LBL_HIGH] - dftmp[cs.LBL_OPEN]
                 srhi = pd.Series(tmp, name=date_)
-                tmp = df[cs.LBL_LOW] - df[cs.LBL_OPEN]
+                tmp = dftmp[cs.LBL_LOW] - dftmp[cs.LBL_OPEN]
                 srlo = pd.Series(tmp, name=date_)
-                tmp = df[cs.LBL_CLOSE] - df[cs.LBL_OPEN]
+                tmp = dftmp[cs.LBL_CLOSE] - dftmp[cs.LBL_OPEN]
                 srcl = pd.Series(tmp, name=date_)
 
                 srdt = pd.Series(date_, index=[TTMGoto.LBL_DATE])
 
+                ochl = pd.Series("high", index=[TTMGoto.LBL_OHLC])
                 dfhi = dfhi.append(
-                    pd.concat([srdt, srrow, srhi]), ignore_index=True)
+                    pd.concat([srdt, srrow, srhi, ochl]), ignore_index=True)
+                ochl = pd.Series("low", index=[TTMGoto.LBL_OHLC])
                 dflo = dflo.append(
-                    pd.concat([srdt, srrow, srlo]), ignore_index=True)
+                    pd.concat([srdt, srrow, srlo, ochl]), ignore_index=True)
+                ochl = pd.Series("close", index=[TTMGoto.LBL_OHLC])
                 dfcl = dfcl.append(
-                    pd.concat([srdt, srrow, srcl]), ignore_index=True)
+                    pd.concat([srdt, srrow, srcl, ochl]), ignore_index=True)
+
+
+                #########################################################33
+                ochl = pd.Series("high", index=[TTMGoto.LBL_OHLC])
+                df1 = pd.concat([srdt, srrow, srhi, ochl])
+                ochl = pd.Series("low", index=[TTMGoto.LBL_OHLC])
+                df2 = pd.concat([srdt, srrow, srlo, ochl])
+                ochl = pd.Series("close", index=[TTMGoto.LBL_OHLC])
+                df3 = pd.concat([srdt, srrow, srcl, ochl])
+
+                df = df.append(df1, ignore_index=True)
+                df = df.append(df2, ignore_index=True)
+                df = df.append(df3, ignore_index=True)
 
                 # *************** 出力 ***************
                 record = pd.Series([srrow[TTMGoto.LBL_WEEK],
@@ -826,63 +846,101 @@ class TTMGoto(AnalysisAbs):
                 cnt += 1
                 print("{} / {}" .format(cnt, len(dfgoto)))
 
-            idx = [TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
-            level_ = [TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
-            print("------ dfhi ------")
-            print(dfhi)
-            dftmp = dfhi.set_index(idx)
-            dftmp.sort_index(axis=1, inplace=True)
-            dfcnt = dftmp.groupby(level=level_).size()
+            idx = [TTMGoto.LBL_OHLC, TTMGoto.LBL_DATE, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
+            level_ = [TTMGoto.LBL_OHLC, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
+
+            print(df)
+            df = df.set_index(idx)
+            df.sort_index(axis=1, inplace=True)
+            dfave = df.mean(level=level_)
+            dfstd = df.std(ddof=0, level=level_)
+            print("＜平均＞")
+            print(dfave)
+            print("＜標準偏差＞")
+            print(dfstd)
+
+            dfhi = df.loc["high", :]
+            dfcnt = dfhi.groupby(level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]).size()
             dfcntsum = dfcnt.sum()
 
-            hiave = dftmp.mean(level=level_)
-            histd = dftmp.std(ddof=0, level=level_)
-            print(dftmp)
             print("＜カウント＞")
             print(type(dfcnt))
             print(dfcnt)
             print("＜総計カウント＞")
             print(dfcntsum)
-            print("＜平均＞")
-            print(hiave)
-            print("＜標準偏差＞")
-            print(histd)
 
-            print("------ dflo ------")
-            print(dflo)
-            dftmp = dflo.set_index(idx)
-            dftmp.sort_index(axis=1, inplace=True)
-            loave = dftmp.mean(level=level_)
-            lostd = dftmp.std(ddof=0, level=level_)
-            print(dftmp)
-            print("＜平均＞")
-            print(loave)
-            print("＜標準偏差＞")
-            print(lostd)
-
-            print("------ dfcl ------")
-            print(dfcl)
-            dftmp = dfcl.set_index(idx)
-            dftmp.sort_index(axis=1, inplace=True)
-            clave = dftmp.mean(level=level_)
-            clstd = dftmp.std(ddof=0, level=level_)
-            print(dftmp)
-            print("＜平均＞")
-            print(clave)
-            clavesum = clave.cumsum(axis=1)
-            print(clavesum)
-            print("＜標準偏差＞")
-            print(clstd)
+            dfavecl = dfave.loc["close", :]
+            dfaveclave = dfavecl.mean(level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
+            clavesum = dfaveclave.cumsum(axis=1)
 
             margin = 1.2
-            y_diff_max = hiave.max().max() * margin
-            y_diff_min = loave.min().min() * margin
+            y_diff_max = dfave.max().max() * margin
+            y_diff_min = dfave.min().min() * margin
             y_sum_max = clavesum.max().max() * margin
             y_sum_min = clavesum.min().min() * margin
 
             dfcorr = dfsmm.set_index([TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
             print("------")
             print(dfcorr)
+
+            for i, j in itertools.product(TTMGoto._WEEK_DICT.keys(), TTMGoto._GOTO_DICT.keys()):
+                try:
+                    cnt = dfcnt[i, j]
+                    sravehi = dfave.loc["high", :].loc[(i, j), :]
+                    sravehi.name = DiffChart.LBL_AVE_HI
+                    sravelo = dfave.loc["low", :].loc[(i, j), :]
+                    sravelo.name = DiffChart.LBL_AVE_LO
+                    sravecl = dfave.loc["close", :].loc[(i, j), :]
+                    sravecl.name = DiffChart.LBL_AVE_CL
+
+                    srstdhi_ove = sravehi + dfstd.loc["high", :].loc[(i, j), :]
+                    srstdhi_ove.name = DiffChart.LBL_STD_HI_OVE
+
+                    srstdlo_und = sravelo - dfstd.loc["low", :].loc[(i, j), :]
+                    srstdlo_und.name = DiffChart.LBL_STD_LO_UND
+
+                    srstdcl_ove = sravecl + dfstd.loc["close", :].loc[(i, j), :]
+                    srstdcl_ove.name = DiffChart.LBL_STD_CL_OVE
+                    srstdcl_und = sravecl - dfstd.loc["close", :].loc[(i, j), :]
+                    srstdcl_und.name = DiffChart.LBL_STD_CL_UND
+
+                    sraveclsum = clavesum.loc[(i, j), :]
+                    sraveclsum.name = SumChart.LBL_SUM
+
+                except KeyError as e:
+                    print("{} are not exist!" .format(e))
+                    cnt = 0
+                    col = [DiffChart.LBL_AVE_HI, DiffChart.LBL_AVE_LO,
+                           DiffChart.LBL_AVE_CL, DiffChart.LBL_STD_HI_OVE,
+                           DiffChart.LBL_STD_LO_UND, DiffChart.LBL_STD_CL_OVE,
+                           DiffChart.LBL_STD_CL_UND]
+                    dfdiff = pd.DataFrame(index=dfave.loc["high", :].T.index,
+                                          columns=col)
+                    col = [SumChart.LBL_SUM]
+                    dfsum = pd.DataFrame(index=clavesum.T.index,
+                                         columns=col)
+                else:
+                    dfdiff = pd.concat([sravehi, sravelo, sravecl,
+                                        srstdhi_ove, srstdlo_und, srstdcl_ove,
+                                        srstdcl_und], axis=1)
+                    dfsum = pd.concat([sraveclsum], axis=1)
+
+                pos = i * len(TTMGoto._GOTO_DICT) + j
+                diffchr = self.__diffchrlist[pos]
+                diffchr.update(inst_id, dfdiff, y_diff_min, y_diff_max)
+
+                diffsum = self.__diffsumlist[pos]
+                diffsum.update(inst_id, dfsum, y_sum_min, y_sum_max)
+
+                sampcnt = self.__sampcntlist[pos]
+                sampcnt.value = str(cnt) + " / " + str(dfcntsum)
+
+                sumdiff = self.__sumdifflist[pos]
+                sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
+
+
+
+            """
             for i in TTMGoto._WEEK_DICT.keys():
                 for j in TTMGoto._GOTO_DICT.keys():
                     try:
@@ -891,17 +949,17 @@ class TTMGoto(AnalysisAbs):
                         srhiave.name = DiffChart.LBL_AVE_HI
                         srloave = loave.loc[(i, j), :]
                         srloave.name = DiffChart.LBL_AVE_LO
-                        srclave = clave.loc[(i, j), :]
+                        srclave = dfaveclave.loc[(i, j), :]
                         srclave.name = DiffChart.LBL_AVE_CL
 
                         srhistd = srhiave + histd.loc[(i, j), :]
-                        srhistd.name = DiffChart.LBL_STD_HI
+                        srhistd.name = DiffChart.LBL_STD_HI_OVE
                         srlostd = srloave - lostd.loc[(i, j), :]
-                        srlostd.name = DiffChart.LBL_STD_LO
+                        srlostd.name = DiffChart.LBL_STD_LO_UND
                         srclstdhi = srclave + clstd.loc[(i, j), :]
-                        srclstdhi.name = DiffChart.LBL_STD_CL_HI
+                        srclstdhi.name = DiffChart.LBL_STD_CL_OVE
                         srclstdlo = srclave - clstd.loc[(i, j), :]
-                        srclstdlo.name = DiffChart.LBL_STD_CL_LO
+                        srclstdlo.name = DiffChart.LBL_STD_CL_UND
 
                         srclavesum = clavesum.loc[(i, j), :]
                         srclavesum.name = SumChart.LBL_SUM
@@ -915,9 +973,9 @@ class TTMGoto(AnalysisAbs):
                         print("{} are not exist!" .format(e))
                         cnt = 0
                         col = [DiffChart.LBL_AVE_HI, DiffChart.LBL_AVE_LO,
-                               DiffChart.LBL_AVE_CL, DiffChart.LBL_STD_HI,
-                               DiffChart.LBL_STD_LO, DiffChart.LBL_STD_CL_HI,
-                               DiffChart.LBL_STD_CL_LO]
+                               DiffChart.LBL_AVE_CL, DiffChart.LBL_STD_HI_OVE,
+                               DiffChart.LBL_STD_LO_UND, DiffChart.LBL_STD_CL_OVE,
+                               DiffChart.LBL_STD_CL_UND]
                         dfdiff = pd.DataFrame(index=hiave.T.index,
                                               columns=col)
                         col = [SumChart.LBL_SUM]
@@ -941,6 +999,7 @@ class TTMGoto(AnalysisAbs):
 
                     sumdiff = self.__sumdifflist[pos]
                     sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
+            """
 
         # 表示更新
         self.__src.data = {
