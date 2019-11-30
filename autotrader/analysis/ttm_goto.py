@@ -723,10 +723,12 @@ class TTMGoto(AnalysisAbs):
 
                 try:
                     # ---------- Extraction 9:00～9:55 chart ----------
-                    d900 = self.__extract_from_900_to_955(date_, csd5m, inst_id)
+                    d900 = self.__extract_from_900_to_955(date_, csd5m,
+                                                          inst_id)
 
                     # ---------- Extraction 9:55～10:30 chart ----------
-                    d955 = self.__extract_from_955_to_1030(date_, csd5m, inst_id)
+                    d955 = self.__extract_from_955_to_1030(date_, csd5m,
+                                                           inst_id)
                 except KeyError:
                     print("-----[Caution] Invalid Date found:[{}]"
                           .format(str(date_)))
@@ -809,11 +811,11 @@ class TTMGoto(AnalysisAbs):
                            DiffChart.LBL_AVE_CL, DiffChart.LBL_STD_HI_OVE,
                            DiffChart.LBL_STD_LO_UND, DiffChart.LBL_STD_CL_OVE,
                            DiffChart.LBL_STD_CL_UND]
-                    dfdiff = pd.DataFrame(index=dfave.loc["high", :].T.index,
-                                          columns=col)
+                    idx = dfave.loc[cs.LBL_HIGH, :].T.index
+                    dfdiff = pd.DataFrame(index=idx, columns=col)
                     col = [SumChart.LBL_SUM]
-                    dfsum = pd.DataFrame(index=clavesum.T.index,
-                                         columns=col)
+                    idx = clavesum.T.index
+                    dfsum = pd.DataFrame(index=idx, columns=col)
 
                 pos = i * len(TTMGoto._GOTO_DICT) + j
                 diffchr = self.__diffchrlist[pos]
