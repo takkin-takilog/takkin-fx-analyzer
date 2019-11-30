@@ -28,6 +28,10 @@ from autotrader.analysis.base import AnalysisAbs, DateWidget
 _TM0955 = dt.time(hour=9, minute=55)
 
 
+def _retry_if_connection_error(exception):
+    return isinstance(exception, ConnectionError)
+
+
 class DiffChart(object):
     """ DiffChart
             - 差分チャート定義クラス[Difference chart definition class]
@@ -699,20 +703,29 @@ class TTMGoto(AnalysisAbs):
             cnt = 0
             for date_, srrow in dfgoto.iterrows():
 
-                # *************** 1時間足チャート ***************
-                str_dt = dt.datetime.combine(
-                    date_, dt.time(0, 0)) - dt.timedelta(days=5)
-                end_dt = dt.datetime.combine(date_, dt.time(15, 0))
-                gran = OandaGrn.H1
+                try:
+                    # *************** 1時間足チャート ***************
+                    str_dt = dt.datetime.combine(
+                        date_, dt.time(0, 0)) - dt.timedelta(days=5)
+                    end_dt = dt.datetime.combine(date_, dt.time(15, 0))
+                    gran = OandaGrn.H1
 
-                csd1h = self.__fetch_candlestick(inst_id, gran, str_dt, end_dt)
+                    csd1h = self.__fetch_candlestick(inst_id, gran,
+                                                     str_dt, end_dt)
 
-                # *************** 5分足チャート ***************
-                str_dt = dt.datetime.combine(date_, dt.time(8, 30))
-                end_dt = dt.datetime.combine(date_, dt.time(12, 0))
-                gran = OandaGrn.M5
+                    # *************** 5分足チャート ***************
+                    str_dt = dt.datetime.combine(date_, dt.time(8, 30))
+                    end_dt = dt.datetime.combine(date_, dt.time(12, 0))
+                    gran = OandaGrn.M5
 
-                csd5m = self.__fetch_candlestick(inst_id, gran, str_dt, end_dt)
+                    csd5m = self.__fetch_candlestick(inst_id, gran,
+                                                     str_dt, end_dt)
+
+                except ValueError:
+                    print("-----[Caution] Invalid Date found:[{}]"
+                          .format(str(date_)))
+                    cnt += 1
+                    continue
 
                 # 移動平均線
                 self.__csc1h.calc_sma(csd1h, 20)
@@ -730,8 +743,8 @@ class TTMGoto(AnalysisAbs):
                     d955 = self.__extract_from_955_to_1030(date_, csd5m,
                                                            inst_id)
                 except KeyError:
-                    print("-----[Caution] Invalid Date found:[{}]"
-                          .format(str(date_)))
+                    print("-----[Caution] Can't extract data Due to Invalid \
+                            Date:[{}]".format(str(date_)))
                     continue
 
                 # ---------- output ----------
@@ -930,7 +943,9 @@ class TTMGoto(AnalysisAbs):
 
         return dfgoto
 
-    @retry(stop_max_attempt_number=5, wait_fixed=500)
+    @retry(stop_max_attempt_number=5,
+           wait_fixed=500,
+           retry_on_exception=_retry_if_connection_error)
     def __fetch_candlestick(self, inst_id, gran, str_dt, end_dt):
 
         inst = OandaIns.list[inst_id].oanda_name
@@ -979,21 +994,6 @@ class TTMGoto(AnalysisAbs):
         diff0955l = OandaIns.normalize(inst_id, minpri - openpri)
 
         return diff0955l
-
-    def __calc_correlation(self, df):
-
-        dfcorr = df.set_index([TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
-        print(dfcorr)
-
-        level_ = [TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
-
-        aaa = dfcorr.groupby(level=level_)
-        print(aaa)
-        print(type(aaa))
-
-        for idx, grpdf in dfcorr.groupby(level=level_):
-            print(idx)
-            print(grpdf.corr())
 
     def __append_ohcl_df(self, df, csd, date_, srrow):
 
