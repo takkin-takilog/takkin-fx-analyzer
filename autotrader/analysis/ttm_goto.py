@@ -1,5 +1,6 @@
 import itertools
 from math import pi
+from retrying import retry
 import numpy as np
 import pandas as pd
 import jpholiday
@@ -692,32 +693,26 @@ class TTMGoto(AnalysisAbs):
             print("リストは空です")
         else:
 
-            inst_id = self.instrument_id
-            inst = OandaIns.list[inst_id].oanda_name
             df = pd.DataFrame()
+            inst_id = self.instrument_id
 
             cnt = 0
             for date_, srrow in dfgoto.iterrows():
 
                 # *************** 1時間足チャート ***************
-                str_ = dt.datetime.combine(
+                str_dt = dt.datetime.combine(
                     date_, dt.time(0, 0)) - dt.timedelta(days=5)
-                end_ = dt.datetime.combine(date_, dt.time(15, 0))
-                dtmstr = DateTimeManager(str_)
-                dtmend = DateTimeManager(end_)
+                end_dt = dt.datetime.combine(date_, dt.time(15, 0))
                 gran = OandaGrn.H1
 
-                try:
-                    csd1h = CandleStickData(gran, inst, dtmstr, dtmend)
-                except V20Error as v20err:
-                    print("-----V20Error: {}".format(v20err))
-                    continue
-                except ConnectionError as cerr:
-                    print("----- ConnectionError: {}".format(cerr))
-                    continue
-                except Exception as excp:
-                    print("----- Exception: {}".format(excp))
-                    continue
+                csd1h = self.__fetch_candlestick(inst_id, gran, str_dt, end_dt)
+
+                # *************** 5分足チャート ***************
+                str_dt = dt.datetime.combine(date_, dt.time(8, 30))
+                end_dt = dt.datetime.combine(date_, dt.time(12, 0))
+                gran = OandaGrn.M5
+
+                csd5m = self.__fetch_candlestick(inst_id, gran, str_dt, end_dt)
 
                 # 移動平均線
                 self.__csc1h.calc_sma(csd1h, 20)
@@ -726,75 +721,33 @@ class TTMGoto(AnalysisAbs):
                 # 線形近似
                 slope = self.__calc_linear_slope(date_, sma_sr)
 
-                self.__csdlist_1h.append(csd1h)
-
-                # *************** 5分足チャート ***************
-                str_ = dt.datetime.combine(date_, dt.time(8, 30))
-                end_ = dt.datetime.combine(date_, dt.time(12, 0))
-                dtmstr = DateTimeManager(str_)
-                dtmend = DateTimeManager(end_)
-                gran = OandaGrn.M5
-
                 try:
-                    csd5m = CandleStickData(gran, inst, dtmstr, dtmend)
-                except V20Error as v20err:
-                    print("-----V20Error: {}".format(v20err))
-                    continue
-                except ConnectionError as cerr:
-                    print("----- ConnectionError: {}".format(cerr))
-                    continue
-                except Exception as excp:
-                    print("----- Exception: {}".format(excp))
-                    continue
+                    # ---------- Extraction 9:00～9:55 chart ----------
+                    d900 = self.__extract_from_900_to_955(date_, csd5m, inst_id)
 
-                # ---------- Extraction 9:00～9:55 chart ----------
-                strtm = dt.time(hour=9, minute=0)
-                strdttm = str(dt.datetime.combine(date_, strtm))
-                endtm = dt.time(hour=9, minute=50)
-                enddttm = str(dt.datetime.combine(date_, endtm))
-
-                try:
-                    openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
-                    closepri = csd5m.df.loc[enddttm, cs.LBL_CLOSE]
+                    # ---------- Extraction 9:55～10:30 chart ----------
+                    d955 = self.__extract_from_955_to_1030(date_, csd5m, inst_id)
                 except KeyError:
                     print("-----[Caution] Invalid Date found:[{}]"
                           .format(str(date_)))
                     continue
-
-                diff0900h = OandaIns.normalize(inst_id, closepri - openpri)
-
-                # ---------- Extraction 9:55～10:30 chart ----------
-                strtm = dt.time(hour=9, minute=55)
-                strdttm = str(dt.datetime.combine(date_, strtm))
-                endtm = dt.time(hour=10, minute=25)
-                enddttm = str(dt.datetime.combine(date_, endtm))
-
-                try:
-                    openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
-                    df5m = csd5m.df[strdttm:enddttm]
-                except KeyError:
-                    print("-----[Caution] Invalid Date found:[{}]"
-                          .format(str(date_)))
-                    continue
-
-                minpri = df5m[cs.LBL_LOW].min()
-                diff0955l = OandaIns.normalize(inst_id, minpri - openpri)
 
                 # ---------- output ----------
+                self.__csdlist_1h.append(csd1h)
                 self.__csdlist_5m.append(csd5m)
-
-                # make OHCL data-frame
-                df = self.__append_ohcl_df(df, csd5m, date_, srrow)
 
                 # *************** 出力 ***************
                 record = pd.Series([srrow[TTMGoto.LBL_WEEK],
                                     srrow[TTMGoto.LBL_GOTO],
                                     slope,
-                                    diff0900h,
-                                    diff0955l],
-                                   index=dfsmm.columns,
+                                    d900,
+                                    d955],
+                                   index=self.__dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
+
+                # make OHCL data-frame
+                df = self.__append_ohcl_df(df, csd5m, date_, srrow)
 
                 cnt += 1
                 print("{} / {}" .format(cnt, len(dfgoto)))
@@ -809,20 +762,22 @@ class TTMGoto(AnalysisAbs):
             df = df.set_index(idx)
             df.sort_index(axis=1, inplace=True)
 
-            # calculate mean
+            # ---------- calculate mean ----------
             dfave = df.mean(level=level_)
-            # calculate standard deviation
+            # ---------- calculate standard deviation ----------
             dfstd = df.std(ddof=0, level=level_)
             print("＜平均＞")
             print(dfave)
             print("＜標準偏差＞")
             print(dfstd)
 
+            # ---------- calculate parameter ----------
             dfhi = df.loc[cs.LBL_HIGH, :]
-            dfcnt = dfhi.groupby(
-                level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]).size()
-            dfcntsum = dfcnt.sum()
+            tmp = [TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
+            dfcnt = dfhi.groupby(level=tmp).size()
+            dfparam = dfcnt.sum()
 
+            # ---------- calculate Cumulative sum ----------
             dfavecl = dfave.loc[cs.LBL_CLOSE, :]
             dfaveclave = dfavecl.mean(
                 level=[TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
@@ -841,35 +796,15 @@ class TTMGoto(AnalysisAbs):
             week_keys = TTMGoto._WEEK_DICT.keys()
             goto_keys = TTMGoto._GOTO_DICT.keys()
             for i, j in itertools.product(week_keys, goto_keys):
+
                 try:
                     cnt = dfcnt[i, j]
-                    sravehi = dfave.loc[cs.LBL_HIGH, :].loc[(i, j), :]
-                    sravehi.name = DiffChart.LBL_AVE_HI
-                    sravelo = dfave.loc[cs.LBL_LOW, :].loc[(i, j), :]
-                    sravelo.name = DiffChart.LBL_AVE_LO
-                    sravecl = dfave.loc[cs.LBL_CLOSE, :].loc[(i, j), :]
-                    sravecl.name = DiffChart.LBL_AVE_CL
-
-                    dfstd_hi = dfstd.loc[cs.LBL_HIGH, :]
-                    srstdhi_ove = sravehi + dfstd_hi.loc[(i, j), :]
-                    srstdhi_ove.name = DiffChart.LBL_STD_HI_OVE
-
-                    dfstd_lo = dfstd.loc[cs.LBL_LOW, :]
-                    srstdlo_und = sravelo - dfstd_lo.loc[(i, j), :]
-                    srstdlo_und.name = DiffChart.LBL_STD_LO_UND
-
-                    dfstd_cl = dfstd.loc[cs.LBL_CLOSE, :]
-                    srstdcl_ove = sravecl + dfstd_cl.loc[(i, j), :]
-                    srstdcl_ove.name = DiffChart.LBL_STD_CL_OVE
-                    srstdcl_und = sravecl - dfstd_cl.loc[(i, j), :]
-                    srstdcl_und.name = DiffChart.LBL_STD_CL_UND
-
-                    sraveclsum = clavesum.loc[(i, j), :]
-                    sraveclsum.name = SumChart.LBL_SUM
-
+                    dfdiff = self.__generate_statistics_df(i, j, dfave, dfstd)
+                    dfsum = self.__generate_sum_df(i, j, clavesum)
                 except KeyError as e:
                     print("{} are not exist!" .format(e))
                     cnt = 0
+
                     col = [DiffChart.LBL_AVE_HI, DiffChart.LBL_AVE_LO,
                            DiffChart.LBL_AVE_CL, DiffChart.LBL_STD_HI_OVE,
                            DiffChart.LBL_STD_LO_UND, DiffChart.LBL_STD_CL_OVE,
@@ -879,11 +814,6 @@ class TTMGoto(AnalysisAbs):
                     col = [SumChart.LBL_SUM]
                     dfsum = pd.DataFrame(index=clavesum.T.index,
                                          columns=col)
-                else:
-                    dfdiff = pd.concat([sravehi, sravelo, sravecl,
-                                        srstdhi_ove, srstdlo_und, srstdcl_ove,
-                                        srstdcl_und], axis=1)
-                    dfsum = pd.concat([sraveclsum], axis=1)
 
                 pos = i * len(TTMGoto._GOTO_DICT) + j
                 diffchr = self.__diffchrlist[pos]
@@ -893,7 +823,7 @@ class TTMGoto(AnalysisAbs):
                 diffsum.update(inst_id, dfsum, y_sum_min, y_sum_max)
 
                 sampcnt = self.__sampcntlist[pos]
-                sampcnt.value = str(cnt) + " / " + str(dfcntsum)
+                sampcnt.value = str(cnt) + " / " + str(dfparam)
 
                 sumdiff = self.__sumdifflist[pos]
                 sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
@@ -998,6 +928,56 @@ class TTMGoto(AnalysisAbs):
 
         return dfgoto
 
+    @retry(stop_max_attempt_number=5, wait_fixed=500)
+    def __fetch_candlestick(self, inst_id, gran, str_dt, end_dt):
+
+        inst = OandaIns.list[inst_id].oanda_name
+        dtmstr = DateTimeManager(str_dt)
+        dtmend = DateTimeManager(end_dt)
+
+        try:
+            csd = CandleStickData(gran, inst, dtmstr, dtmend)
+        except V20Error as v20err:
+            print("-----V20Error: {}".format(v20err))
+            raise v20err
+        except ConnectionError as cerr:
+            print("----- ConnectionError: {}".format(cerr))
+            raise cerr
+        except Exception as excp:
+            print("----- Exception: {}".format(excp))
+            raise excp
+
+        return csd
+
+    def __extract_from_900_to_955(self, date_, csd5m, inst_id):
+
+        strtm = dt.time(hour=9, minute=0)
+        strdttm = str(dt.datetime.combine(date_, strtm))
+        endtm = dt.time(hour=9, minute=50)
+        enddttm = str(dt.datetime.combine(date_, endtm))
+
+        openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
+        closepri = csd5m.df.loc[enddttm, cs.LBL_CLOSE]
+
+        diff0900h = OandaIns.normalize(inst_id, closepri - openpri)
+
+        return diff0900h
+
+    def __extract_from_955_to_1030(self, date_, csd5m, inst_id):
+
+        strtm = dt.time(hour=9, minute=55)
+        strdttm = str(dt.datetime.combine(date_, strtm))
+        endtm = dt.time(hour=10, minute=25)
+        enddttm = str(dt.datetime.combine(date_, endtm))
+
+        openpri = csd5m.df.loc[strdttm, cs.LBL_OPEN]
+        df5m = csd5m.df[strdttm:enddttm]
+
+        minpri = df5m[cs.LBL_LOW].min()
+        diff0955l = OandaIns.normalize(inst_id, minpri - openpri)
+
+        return diff0955l
+
     def __calc_correlation(self, df):
 
         dfcorr = df.set_index([TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
@@ -1041,3 +1021,39 @@ class TTMGoto(AnalysisAbs):
         df = df.append(df3, ignore_index=True)
 
         return df
+
+    def __generate_statistics_df(self, week_no, goto_no, dfave, dfstd):
+
+        sravehi = dfave.loc[cs.LBL_HIGH, :].loc[(week_no, goto_no), :]
+        sravehi.name = DiffChart.LBL_AVE_HI
+        sravelo = dfave.loc[cs.LBL_LOW, :].loc[(week_no, goto_no), :]
+        sravelo.name = DiffChart.LBL_AVE_LO
+        sravecl = dfave.loc[cs.LBL_CLOSE, :].loc[(week_no, goto_no), :]
+        sravecl.name = DiffChart.LBL_AVE_CL
+
+        dfstd_hi = dfstd.loc[cs.LBL_HIGH, :]
+        srstdhi_ove = sravehi + dfstd_hi.loc[(week_no, goto_no), :]
+        srstdhi_ove.name = DiffChart.LBL_STD_HI_OVE
+
+        dfstd_lo = dfstd.loc[cs.LBL_LOW, :]
+        srstdlo_und = sravelo - dfstd_lo.loc[(week_no, goto_no), :]
+        srstdlo_und.name = DiffChart.LBL_STD_LO_UND
+
+        dfstd_cl = dfstd.loc[cs.LBL_CLOSE, :]
+        srstdcl_ove = sravecl + dfstd_cl.loc[(week_no, goto_no), :]
+        srstdcl_ove.name = DiffChart.LBL_STD_CL_OVE
+        srstdcl_und = sravecl - dfstd_cl.loc[(week_no, goto_no), :]
+        srstdcl_und.name = DiffChart.LBL_STD_CL_UND
+
+        dfdiff = pd.concat([sravehi, sravelo, sravecl, srstdhi_ove,
+                            srstdlo_und, srstdcl_ove, srstdcl_und],
+                           axis=1)
+        return dfdiff
+
+    def __generate_sum_df(self, week_no, goto_no, clavesum):
+
+        sraveclsum = clavesum.loc[(week_no, goto_no), :]
+        sraveclsum.name = SumChart.LBL_SUM
+        dfsum = pd.concat([sraveclsum], axis=1)
+
+        return dfsum
