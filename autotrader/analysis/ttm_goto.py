@@ -25,7 +25,9 @@ from autotrader.analysis.candlestick import CandleGlyph
 from autotrader.technical import SimpleMovingAverage
 from autotrader.analysis.base import AnalysisAbs, DateWidget
 
+_TM0900 = dt.time(hour=9, minute=0)
 _TM0955 = dt.time(hour=9, minute=55)
+_TM1030 = dt.time(hour=10, minute=30)
 
 
 def _retry_if_connection_error(exception):
@@ -83,10 +85,20 @@ class DiffChart(object):
                  }
         src = ColumnDataSource(dict_)
 
-        # ----- Vertical line -----
-        ttmline = Span(location=0.0, dimension="height",
-                       line_color="yellow", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmline)
+        # ----- Vertical line 9:00 -----
+        ttmvl0900 = Span(location=0.0, dimension="height",
+                         line_color="cyan", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmvl0900)
+
+        # ----- Vertical line 9:55 -----
+        ttmvl0955 = Span(location=0.0, dimension="height",
+                         line_color="pink", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmvl0955)
+
+        # ----- Vertical line 10:30 -----
+        ttmvl1030 = Span(location=0.0, dimension="height",
+                         line_color="yellow", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmvl1030)
 
         # ----- Diff high price ave -----
         vbarhiave = VBar(x=DiffChart.X_TIME,
@@ -151,7 +163,9 @@ class DiffChart(object):
         self.__renlostd = renlostd
         self.__renclstdhi = renclstdhi
         self.__renclstdlo = renclstdlo
-        self.__ttmline = ttmline
+        self.__ttmvl0900 = ttmvl0900
+        self.__ttmvl0955 = ttmvl0955
+        self.__ttmvl1030 = ttmvl1030
 
     @property
     def render_hiave(self):
@@ -202,8 +216,18 @@ class DiffChart(object):
         OFFSET = 0.5
 
         timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
+
+        # ----- Vertical line 9:00 -----
+        idx = timelist.index(_TM0900.strftime(TIME_FMT))
+        self.__ttmvl0900.location = idx + OFFSET
+
+        # ----- Vertical line 9:55 -----
         idx = timelist.index(_TM0955.strftime(TIME_FMT))
-        self.__ttmline.location = idx + OFFSET
+        self.__ttmvl0955.location = idx + OFFSET
+
+        # ----- Vertical line 10:30 -----
+        idx = timelist.index(_TM1030.strftime(TIME_FMT))
+        self.__ttmvl1030.location = idx + OFFSET
 
         dict_ = {
             DiffChart.X_TIME: timelist,
@@ -275,10 +299,20 @@ class SumChart(object):
                  }
         src = ColumnDataSource(dict_)
 
-        # ----- Vertical line -----
-        ttmline = Span(location=0.0, dimension="height",
-                       line_color="yellow", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmline)
+        # ----- Vertical line 9:00 -----
+        ttmvl0900 = Span(location=0.0, dimension="height",
+                         line_color="cyan", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmvl0900)
+
+        # ----- Vertical line 9:55 -----
+        ttmvl0955 = Span(location=0.0, dimension="height",
+                         line_color="pink", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmvl0955)
+
+        # ----- Vertical line 10:30 -----
+        ttmvl1030 = Span(location=0.0, dimension="height",
+                         line_color="yellow", line_dash="dashed", line_width=1)
+        fig.add_layout(ttmvl1030)
 
         # ----- Horizontal line -----
         zeroline = Span(location=0.0, dimension="width", line_color="deeppink",
@@ -298,7 +332,9 @@ class SumChart(object):
         self.__fig = fig
         self.__src = src
         self.__rensum = rensum
-        self.__ttmline = ttmline
+        self.__ttmvl0900 = ttmvl0900
+        self.__ttmvl0955 = ttmvl0955
+        self.__ttmvl1030 = ttmvl1030
 
     @property
     def render_sum(self):
@@ -327,8 +363,18 @@ class SumChart(object):
         OFFSET = 0.5
 
         timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
+
+        # ----- Vertical line 9:00 -----
+        idx = timelist.index(_TM0900.strftime(TIME_FMT))
+        self.__ttmvl0900.location = idx + OFFSET
+
+        # ----- Vertical line 9:55 -----
         idx = timelist.index(_TM0955.strftime(TIME_FMT))
-        self.__ttmline.location = idx + OFFSET
+        self.__ttmvl0955.location = idx + OFFSET
+
+        # ----- Vertical line 10:30 -----
+        idx = timelist.index(_TM1030.strftime(TIME_FMT))
+        self.__ttmvl1030.location = idx + OFFSET
 
         dict_ = {
             SumChart.X_TIME: timelist,
@@ -497,7 +543,10 @@ class TTMGoto(AnalysisAbs):
     LBL_TREND = "trend-slope"
     LBL_DIF0900H = "diff-0900-high-price"
     LBL_DIF0955L = "diff-0955-low-price"
-    # LBL_DIF0955H = "diff-0955-high-price"
+    LBL_DIF0900H = "diff-0900-high-price"
+    LBL_DIF0955L = "diff-0955-low-price"
+    LBL_DIF0950OC = "diff-cs0900oc"
+    LBL_DIF0955OC = "diff-cs0955oc"
 
     FALSE = 0
     TRUE = 1
@@ -529,7 +578,10 @@ class TTMGoto(AnalysisAbs):
                 TTMGoto.LBL_GOTO,
                 TTMGoto.LBL_TREND,
                 TTMGoto.LBL_DIF0900H,
-                TTMGoto.LBL_DIF0955L]
+                TTMGoto.LBL_DIF0955L,
+                TTMGoto.LBL_DIF0950OC,
+                TTMGoto.LBL_DIF0955OC
+                ]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
         # Widget DataTable:
@@ -539,7 +591,8 @@ class TTMGoto(AnalysisAbs):
         self.TBLLBL_TREND = "trend slope"
         self.TBLLBL_DIF0900H = "diff-0900-high-price"
         self.TBLLBL_DIF0955L = "diff-0955-low-price"
-        # self.TBLLBL_DIF0955H = "diff-0955-high-price"
+        self.TBLLBL_CS0950OC = "cs-0950oc"
+        self.TBLLBL_CS0955OC = "cs-0955oc"
 
         # データテーブル初期化
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
@@ -548,6 +601,8 @@ class TTMGoto(AnalysisAbs):
                                        self.TBLLBL_TREND: [],
                                        self.TBLLBL_DIF0900H: [],
                                        self.TBLLBL_DIF0955L: [],
+                                       self.TBLLBL_CS0950OC: [],
+                                       self.TBLLBL_CS0955OC: [],
                                        })
 
         cols = [
@@ -560,6 +615,10 @@ class TTMGoto(AnalysisAbs):
                         title="Diff Price (9:00 - 9:55)"),
             TableColumn(field=self.TBLLBL_DIF0955L,
                         title="Diff Price (9:55 - 10:30)"),
+            TableColumn(field=self.TBLLBL_CS0950OC,
+                        title="Diff CS (9:50 - 9:55)"),
+            TableColumn(field=self.TBLLBL_CS0955OC,
+                        title="Diff CS (9:55 - 10:00)"),
         ]
 
         self.__tbl = DataTable(source=self.__src,
@@ -580,26 +639,26 @@ class TTMGoto(AnalysisAbs):
         diffsumlist = []
         sampcntlist = []
         sumdifflist = []
-        for i in TTMGoto._WEEK_DICT.keys():
-            for j in TTMGoto._GOTO_DICT.keys():
-                week = TTMGoto._WEEK_DICT[i]
-                goto = TTMGoto._GOTO_DICT[j]
 
-                str_ = "Diff-chart Week[" + week + "]:Goto[" + goto + "]"
-                diffchrlist.append(DiffChart(str_))
+        week_keys = TTMGoto._WEEK_DICT.keys()
+        goto_keys = TTMGoto._GOTO_DICT.keys()
+        for i, j in itertools.product(week_keys, goto_keys):
+            week = TTMGoto._WEEK_DICT[i]
+            goto = TTMGoto._GOTO_DICT[j]
 
-                str_ = "Cumulative Sum-chart Week[" + \
-                    week + "]:Goto[" + goto + "]"
-                diffsumlist.append(SumChart(str_))
+            str_ = "Diff-chart Week[" + week + "]:Goto[" + goto + "]"
+            diffchrlist.append(DiffChart(str_))
 
-                txtin_cnt = TextInput(
-                    value="", title="サンプル数:", width=100, sizing_mode="fixed")
-                sampcntlist.append(txtin_cnt)
+            str_ = "Cumulative Sum-chart Week[" + week + "]:Goto[" + goto + "]"
+            diffsumlist.append(SumChart(str_))
 
-                txtin_sumdiff = TextInput(
-                    value="", title="累積和(9:55):", width=100,
-                    sizing_mode="fixed")
-                sumdifflist.append(txtin_sumdiff)
+            txtin_cnt = TextInput(value="", title="サンプル数:",
+                                  width=100, sizing_mode="fixed")
+            sampcntlist.append(txtin_cnt)
+
+            txtin_sumdiff = TextInput(
+                value="", title="累積和(9:55):", width=100, sizing_mode="fixed")
+            sumdifflist.append(txtin_sumdiff)
 
         self.__diffchrlist = diffchrlist
         self.__diffsumlist = diffsumlist
@@ -647,18 +706,19 @@ class TTMGoto(AnalysisAbs):
         # Tab1の設定
 
         plotlist = []
-        for i in TTMGoto._WEEK_DICT.keys():
-            for j in TTMGoto._GOTO_DICT.keys():
-                pos = i * len(TTMGoto._GOTO_DICT) + j
-                sampcnt = self.__sampcntlist[pos]
-                sumdiff = self.__sumdifflist[pos]
-                diffplot = self.__diffchrlist[pos]
-                sumplot = self.__diffsumlist[pos]
-                plotfig = column(children=[diffplot.fig, sumplot.fig],
-                                 sizing_mode="stretch_width")
-                txtin = column(children=[sampcnt, sumdiff],
-                               sizing_mode="fixed")
-                plotlist.append([txtin, plotfig])
+
+        week_keys = TTMGoto._WEEK_DICT.keys()
+        goto_keys = TTMGoto._GOTO_DICT.keys()
+        for i, j in itertools.product(week_keys, goto_keys):
+            pos = i * len(TTMGoto._GOTO_DICT) + j
+            sampcnt = self.__sampcntlist[pos]
+            sumdiff = self.__sumdifflist[pos]
+            diffplot = self.__diffchrlist[pos]
+            sumplot = self.__diffsumlist[pos]
+            plotfig = column(children=[diffplot.fig, sumplot.fig],
+                             sizing_mode="stretch_width")
+            txtin = column(children=[sampcnt, sumdiff], sizing_mode="fixed")
+            plotlist.append([txtin, plotfig])
 
         gridview = gridplot(children=plotlist, sizing_mode="stretch_width")
 
@@ -742,6 +802,15 @@ class TTMGoto(AnalysisAbs):
                     # ---------- Extraction 9:55～10:30 chart ----------
                     d955 = self.__extract_from_955_to_1030(date_, csd5m,
                                                            inst_id)
+
+                    tm = dt.time(hour=9, minute=50)
+                    cs950 = self.__extract_diff_candlestick(
+                        tm, date_, csd5m, inst_id)
+
+                    tm = dt.time(hour=9, minute=55)
+                    cs955 = self.__extract_diff_candlestick(
+                        tm, date_, csd5m, inst_id)
+
                 except KeyError:
                     print("-----[Caution] Can't extract data Due to Invalid \
                             Date:[{}]".format(str(date_)))
@@ -756,7 +825,9 @@ class TTMGoto(AnalysisAbs):
                                     srrow[TTMGoto.LBL_GOTO],
                                     slope,
                                     d900,
-                                    d955],
+                                    d955,
+                                    cs950,
+                                    cs955],
                                    index=self.__dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
@@ -853,6 +924,8 @@ class TTMGoto(AnalysisAbs):
             self.TBLLBL_TREND: dfsmm[TTMGoto.LBL_TREND].tolist(),
             self.TBLLBL_DIF0900H: dfsmm[TTMGoto.LBL_DIF0900H].tolist(),
             self.TBLLBL_DIF0955L: dfsmm[TTMGoto.LBL_DIF0955L].tolist(),
+            self.TBLLBL_CS0950OC: dfsmm[TTMGoto.LBL_DIF0950OC].tolist(),
+            self.TBLLBL_CS0955OC: dfsmm[TTMGoto.LBL_DIF0955OC].tolist(),
         }
         self.__dfsmm = dfsmm
 
@@ -994,6 +1067,17 @@ class TTMGoto(AnalysisAbs):
         diff0955l = OandaIns.normalize(inst_id, minpri - openpri)
 
         return diff0955l
+
+    def __extract_diff_candlestick(self, tm, date_, csd5m, inst_id):
+
+        dttm = str(dt.datetime.combine(date_, tm))
+
+        openpri = csd5m.df.loc[dttm, cs.LBL_OPEN]
+        closepri = csd5m.df.loc[dttm, cs.LBL_CLOSE]
+
+        cslen = OandaIns.normalize(inst_id, closepri - openpri)
+
+        return cslen
 
     def __append_ohcl_df(self, df, csd, date_, srrow):
 
