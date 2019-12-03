@@ -58,7 +58,31 @@ class ChartAbs(metaclass=ABCMeta):
         fig.yaxis.axis_label = "diff price"
         fig.xaxis.major_label_orientation = pi / 2
 
+        # ----- Vertical line on Cursor -----
+        vloncur = Span(location=0.0, dimension="height",
+                       line_color="white", line_dash="dashed", line_width=1)
+        fig.add_layout(vloncur)
+
+        # ----- Vertical line 9:00 -----
+        ttmvl0900 = Span(location=0.0, dimension="height",
+                         line_color="cyan", line_dash="solid", line_width=2)
+        fig.add_layout(ttmvl0900)
+
+        # ----- Vertical line 9:55 -----
+        ttmvl0955 = Span(location=0.0, dimension="height",
+                         line_color="pink", line_dash="solid", line_width=2)
+        fig.add_layout(ttmvl0955)
+
+        # ----- Vertical line 10:30 -----
+        ttmvl1030 = Span(location=0.0, dimension="height",
+                         line_color="yellow", line_dash="solid", line_width=2)
+        fig.add_layout(ttmvl1030)
+
         self._fig = fig
+        self.__vloncur = vloncur
+        self.__ttmvl0900 = ttmvl0900
+        self.__ttmvl0955 = ttmvl0955
+        self.__ttmvl1030 = ttmvl1030
 
     @property
     def fig(self):
@@ -69,6 +93,24 @@ class ChartAbs(metaclass=ABCMeta):
             self.__fig (object) : model object
         """
         return self._fig
+
+    def update(self, timelist):
+
+        # ----- Vertical line 9:00 -----
+        idx = timelist.index(_TM0900.strftime(self._TIME_FMT))
+        self.__ttmvl0900.location = idx + DiffChart.CHART_OFS
+
+        # ----- Vertical line 9:55 -----
+        idx = timelist.index(_TM0955.strftime(self._TIME_FMT))
+        self.__ttmvl0955.location = idx + DiffChart.CHART_OFS
+
+        # ----- Vertical line 10:30 -----
+        idx = timelist.index(_TM1030.strftime(self._TIME_FMT))
+        self.__ttmvl1030.location = idx + DiffChart.CHART_OFS
+
+    def update_in_callback(self, idx):
+
+        self.__vloncur.location = idx + DiffChart.CHART_OFS
 
 
 class DiffChart(ChartAbs):
@@ -116,26 +158,6 @@ class DiffChart(ChartAbs):
                  DiffChart.Y_PRI_CL_STD_LO: [],
                  }
         src = ColumnDataSource(dict_)
-
-        # ----- Vertical line on Cursor -----
-        vloncur = Span(location=0.0, dimension="height",
-                       line_color="white", line_dash="dashed", line_width=1)
-        fig.add_layout(vloncur)
-
-        # ----- Vertical line 9:00 -----
-        ttmvl0900 = Span(location=0.0, dimension="height",
-                         line_color="cyan", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmvl0900)
-
-        # ----- Vertical line 9:55 -----
-        ttmvl0955 = Span(location=0.0, dimension="height",
-                         line_color="pink", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmvl0955)
-
-        # ----- Vertical line 10:30 -----
-        ttmvl1030 = Span(location=0.0, dimension="height",
-                         line_color="yellow", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmvl1030)
 
         # ----- Diff high price ave -----
         vbarhiave = VBar(x=DiffChart.X_TIME,
@@ -200,10 +222,6 @@ class DiffChart(ChartAbs):
         self.__renlostd = renlostd
         self.__renclstdhi = renclstdhi
         self.__renclstdlo = renclstdlo
-        self.__vloncur = vloncur
-        self.__ttmvl0900 = ttmvl0900
-        self.__ttmvl0955 = ttmvl0955
-        self.__ttmvl1030 = ttmvl1030
 
     @property
     def render_hiave(self):
@@ -242,17 +260,7 @@ class DiffChart(ChartAbs):
 
         timelist = [i.strftime(self._TIME_FMT) for i in df.index.tolist()]
 
-        # ----- Vertical line 9:00 -----
-        idx = timelist.index(_TM0900.strftime(self._TIME_FMT))
-        self.__ttmvl0900.location = idx + DiffChart.CHART_OFS
-
-        # ----- Vertical line 9:55 -----
-        idx = timelist.index(_TM0955.strftime(self._TIME_FMT))
-        self.__ttmvl0955.location = idx + DiffChart.CHART_OFS
-
-        # ----- Vertical line 10:30 -----
-        idx = timelist.index(_TM1030.strftime(self._TIME_FMT))
-        self.__ttmvl1030.location = idx + DiffChart.CHART_OFS
+        super().update(timelist)
 
         dict_ = {
             DiffChart.X_TIME: timelist,
@@ -272,10 +280,6 @@ class DiffChart(ChartAbs):
 
         fmt = OandaIns.format(inst_id)
         self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
-
-    def update_in_callback(self, idx):
-
-        self.__vloncur.location = idx + DiffChart.CHART_OFS
 
     def clear(self):
         """"データをクリアする[clear data]
@@ -323,26 +327,6 @@ class SumChart(ChartAbs):
                  }
         src = ColumnDataSource(dict_)
 
-        # ----- Vertical line on Cursor -----
-        vloncur = Span(location=0.0, dimension="height",
-                       line_color="white", line_dash="dashed", line_width=1)
-        fig.add_layout(vloncur)
-
-        # ----- Vertical line 9:00 -----
-        ttmvl0900 = Span(location=0.0, dimension="height",
-                         line_color="cyan", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmvl0900)
-
-        # ----- Vertical line 9:55 -----
-        ttmvl0955 = Span(location=0.0, dimension="height",
-                         line_color="pink", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmvl0955)
-
-        # ----- Vertical line 10:30 -----
-        ttmvl1030 = Span(location=0.0, dimension="height",
-                         line_color="yellow", line_dash="dashed", line_width=1)
-        fig.add_layout(ttmvl1030)
-
         # ----- Horizontal line -----
         zeroline = Span(location=0.0, dimension="width", line_color="deeppink",
                         line_dash="solid", line_width=1)
@@ -361,10 +345,6 @@ class SumChart(ChartAbs):
         self.__fig = fig
         self.__src = src
         self.__rensum = rensum
-        self.__vloncur = vloncur
-        self.__ttmvl0900 = ttmvl0900
-        self.__ttmvl0955 = ttmvl0955
-        self.__ttmvl1030 = ttmvl1030
 
     @property
     def render_sum(self):
@@ -381,17 +361,7 @@ class SumChart(ChartAbs):
 
         timelist = [i.strftime(self._TIME_FMT) for i in df.index.tolist()]
 
-        # ----- Vertical line 9:00 -----
-        idx = timelist.index(_TM0900.strftime(self._TIME_FMT))
-        self.__ttmvl0900.location = idx + DiffChart.CHART_OFS
-
-        # ----- Vertical line 9:55 -----
-        idx = timelist.index(_TM0955.strftime(self._TIME_FMT))
-        self.__ttmvl0955.location = idx + DiffChart.CHART_OFS
-
-        # ----- Vertical line 10:30 -----
-        idx = timelist.index(_TM1030.strftime(self._TIME_FMT))
-        self.__ttmvl1030.location = idx + DiffChart.CHART_OFS
+        super().update(timelist)
 
         dict_ = {
             SumChart.X_TIME: timelist,
@@ -405,10 +375,6 @@ class SumChart(ChartAbs):
 
         fmt = OandaIns.format(inst_id)
         self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
-
-    def update_in_callback(self, idx):
-
-        self.__vloncur.location = idx + DiffChart.CHART_OFS
 
     def clear(self):
         """"データをクリアする[clear data]
