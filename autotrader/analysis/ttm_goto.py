@@ -1,10 +1,13 @@
+from abc import ABCMeta
 import itertools
+import math
 from math import pi
 from retrying import retry
 import numpy as np
 import pandas as pd
 import jpholiday
 import datetime as dt
+from bokeh import events
 from bokeh.models import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs, Range1d, FactorRange, Span
@@ -34,7 +37,41 @@ def _retry_if_connection_error(exception):
     return isinstance(exception, ConnectionError)
 
 
-class DiffChart(object):
+class ChartAbs(metaclass=ABCMeta):
+    """ ChartAbs - Chart抽象クラス"""
+
+    CHART_OFS = 0.5
+
+    def __init__(self, title, plot_height):
+        """"コンストラクタ[Constructor]
+        """
+        BG_COLOR = "#2E2E2E"  # Background color
+        self._TIME_FMT = "%H:%M:%S"
+
+        fig = figure(title=title,
+                     x_range=FactorRange(),
+                     y_range=Range1d(),
+                     plot_height=plot_height,
+                     tools='',
+                     background_fill_color=BG_COLOR)
+        fig.xaxis.axis_label = "time"
+        fig.yaxis.axis_label = "diff price"
+        fig.xaxis.major_label_orientation = pi / 2
+
+        self._fig = fig
+
+    @property
+    def fig(self):
+        """モデルを取得する[get model]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            self.__fig (object) : model object
+        """
+        return self._fig
+
+
+class DiffChart(ChartAbs):
     """ DiffChart
             - 差分チャート定義クラス[Difference chart definition class]
     """
@@ -62,14 +99,9 @@ class DiffChart(object):
             fig (figure) : フィギュアオブジェクト[figure object]
             color_ (str) : カラーコード[Color code(ex "#E73B3A")]
         """
-        BG_COLOR = "#2E2E2E"  # Background color
+        super().__init__(title, 400)
 
-        fig = figure(title=title,
-                     x_range=FactorRange(),
-                     y_range=Range1d(),
-                     plot_height=400,
-                     tools='',
-                     background_fill_color=BG_COLOR)
+        fig = self._fig
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "diff price"
         fig.xaxis.major_label_orientation = pi / 2
@@ -84,6 +116,11 @@ class DiffChart(object):
                  DiffChart.Y_PRI_CL_STD_LO: [],
                  }
         src = ColumnDataSource(dict_)
+
+        # ----- Vertical line on Cursor -----
+        vloncur = Span(location=0.0, dimension="height",
+                       line_color="white", line_dash="dashed", line_width=1)
+        fig.add_layout(vloncur)
 
         # ----- Vertical line 9:00 -----
         ttmvl0900 = Span(location=0.0, dimension="height",
@@ -163,6 +200,7 @@ class DiffChart(object):
         self.__renlostd = renlostd
         self.__renclstdhi = renclstdhi
         self.__renclstdlo = renclstdlo
+        self.__vloncur = vloncur
         self.__ttmvl0900 = ttmvl0900
         self.__ttmvl0955 = ttmvl0955
         self.__ttmvl1030 = ttmvl1030
@@ -200,34 +238,21 @@ class DiffChart(object):
         """
         return self.__renclave
 
-    @property
-    def fig(self):
-        """モデルを取得する[get model]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            self.__fig (object) : model object
-        """
-        return self.__fig
-
     def update(self, inst_id, df, y_str, y_end):
 
-        TIME_FMT = "%H:%M:%S"
-        OFFSET = 0.5
-
-        timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
+        timelist = [i.strftime(self._TIME_FMT) for i in df.index.tolist()]
 
         # ----- Vertical line 9:00 -----
-        idx = timelist.index(_TM0900.strftime(TIME_FMT))
-        self.__ttmvl0900.location = idx + OFFSET
+        idx = timelist.index(_TM0900.strftime(self._TIME_FMT))
+        self.__ttmvl0900.location = idx + DiffChart.CHART_OFS
 
         # ----- Vertical line 9:55 -----
-        idx = timelist.index(_TM0955.strftime(TIME_FMT))
-        self.__ttmvl0955.location = idx + OFFSET
+        idx = timelist.index(_TM0955.strftime(self._TIME_FMT))
+        self.__ttmvl0955.location = idx + DiffChart.CHART_OFS
 
         # ----- Vertical line 10:30 -----
-        idx = timelist.index(_TM1030.strftime(TIME_FMT))
-        self.__ttmvl1030.location = idx + OFFSET
+        idx = timelist.index(_TM1030.strftime(self._TIME_FMT))
+        self.__ttmvl1030.location = idx + DiffChart.CHART_OFS
 
         dict_ = {
             DiffChart.X_TIME: timelist,
@@ -248,6 +273,10 @@ class DiffChart(object):
         fmt = OandaIns.format(inst_id)
         self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
 
+    def update_in_callback(self, idx):
+
+        self.__vloncur.location = idx + DiffChart.CHART_OFS
+
     def clear(self):
         """"データをクリアする[clear data]
         引数[Args]:
@@ -266,7 +295,7 @@ class DiffChart(object):
         self.__src.data = dict_
 
 
-class SumChart(object):
+class SumChart(ChartAbs):
     """ SumChart
             - 累積和チャート定義クラス[Difference chart definition class]
     """
@@ -282,14 +311,9 @@ class SumChart(object):
             fig (figure) : フィギュアオブジェクト[figure object]
             color_ (str) : カラーコード[Color code(ex "#E73B3A")]
         """
-        BG_COLOR = "#2E2E2E"  # Background color
+        super().__init__(title, 300)
 
-        fig = figure(title=title,
-                     x_range=FactorRange(),
-                     y_range=Range1d(),
-                     plot_height=300,
-                     tools='',
-                     background_fill_color=BG_COLOR)
+        fig = self._fig
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "Cumulative-Sum price"
         fig.xaxis.major_label_orientation = pi / 2
@@ -298,6 +322,11 @@ class SumChart(object):
                  SumChart.Y_PRI_SUM: [],
                  }
         src = ColumnDataSource(dict_)
+
+        # ----- Vertical line on Cursor -----
+        vloncur = Span(location=0.0, dimension="height",
+                       line_color="white", line_dash="dashed", line_width=1)
+        fig.add_layout(vloncur)
 
         # ----- Vertical line 9:00 -----
         ttmvl0900 = Span(location=0.0, dimension="height",
@@ -332,6 +361,7 @@ class SumChart(object):
         self.__fig = fig
         self.__src = src
         self.__rensum = rensum
+        self.__vloncur = vloncur
         self.__ttmvl0900 = ttmvl0900
         self.__ttmvl0955 = ttmvl0955
         self.__ttmvl1030 = ttmvl1030
@@ -347,34 +377,21 @@ class SumChart(object):
         """
         return self.__rensum
 
-    @property
-    def fig(self):
-        """モデルを取得する[get model]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            self.__fig (object) : model object
-        """
-        return self.__fig
-
     def update(self, inst_id, df, y_str, y_end):
 
-        TIME_FMT = "%H:%M:%S"
-        OFFSET = 0.5
-
-        timelist = [i.strftime(TIME_FMT) for i in df.index.tolist()]
+        timelist = [i.strftime(self._TIME_FMT) for i in df.index.tolist()]
 
         # ----- Vertical line 9:00 -----
-        idx = timelist.index(_TM0900.strftime(TIME_FMT))
-        self.__ttmvl0900.location = idx + OFFSET
+        idx = timelist.index(_TM0900.strftime(self._TIME_FMT))
+        self.__ttmvl0900.location = idx + DiffChart.CHART_OFS
 
         # ----- Vertical line 9:55 -----
-        idx = timelist.index(_TM0955.strftime(TIME_FMT))
-        self.__ttmvl0955.location = idx + OFFSET
+        idx = timelist.index(_TM0955.strftime(self._TIME_FMT))
+        self.__ttmvl0955.location = idx + DiffChart.CHART_OFS
 
         # ----- Vertical line 10:30 -----
-        idx = timelist.index(_TM1030.strftime(TIME_FMT))
-        self.__ttmvl1030.location = idx + OFFSET
+        idx = timelist.index(_TM1030.strftime(self._TIME_FMT))
+        self.__ttmvl1030.location = idx + DiffChart.CHART_OFS
 
         dict_ = {
             SumChart.X_TIME: timelist,
@@ -388,6 +405,10 @@ class SumChart(object):
 
         fmt = OandaIns.format(inst_id)
         self.__fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
+
+    def update_in_callback(self, idx):
+
+        self.__vloncur.location = idx + DiffChart.CHART_OFS
 
     def clear(self):
         """"データをクリアする[clear data]
@@ -647,10 +668,12 @@ class TTMGoto(AnalysisAbs):
             goto = TTMGoto._GOTO_DICT[j]
 
             str_ = "Diff-chart Week[" + week + "]:Goto[" + goto + "]"
-            diffchrlist.append(DiffChart(str_))
+            diffchr = DiffChart(str_)
+            diffchrlist.append(diffchr)
 
             str_ = "Cumulative Sum-chart Week[" + week + "]:Goto[" + goto + "]"
-            diffsumlist.append(SumChart(str_))
+            sumchr = SumChart(str_)
+            diffsumlist.append(sumchr)
 
             txtin_cnt = TextInput(value="", title="サンプル数:",
                                   width=100, sizing_mode="fixed")
@@ -659,6 +682,9 @@ class TTMGoto(AnalysisAbs):
             txtin_sumdiff = TextInput(
                 value="", title="累積和(9:55):", width=100, sizing_mode="fixed")
             sumdifflist.append(txtin_sumdiff)
+
+            diffchr.fig.on_event(events.MouseMove, self.__cb_chart_mousemove)
+            sumchr.fig.on_event(events.MouseMove, self.__cb_chart_mousemove)
 
         self.__diffchrlist = diffchrlist
         self.__diffsumlist = diffsumlist
@@ -1143,3 +1169,21 @@ class TTMGoto(AnalysisAbs):
         dfsum = pd.concat([sraveclsum], axis=1)
 
         return dfsum
+
+    def __cb_chart_mousemove(self, event):
+        """Event mouse move(チャート)コールバックメソッド
+           [Callback method of mouse move event(Chart)]
+        引数[Args]:
+            event (str) : An event name on this object
+        戻り値[Returns]:
+            なし[None]
+        """
+        if event.x is not None:
+            idx = math.floor(event.x + DiffChart.CHART_OFS)
+            print(idx)
+
+            for diffchr in self.__diffchrlist:
+                diffchr.update_in_callback(idx)
+
+            for diffsum in self.__diffsumlist:
+                diffsum.update_in_callback(idx)
