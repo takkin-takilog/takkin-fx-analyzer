@@ -37,6 +37,39 @@ def _retry_if_connection_error(exception):
     return isinstance(exception, ConnectionError)
 
 
+class CorrelationPlot(object):
+
+    def __init__(self, title):
+        """"コンストラクタ[Constructor]
+        """
+        BG_COLOR = "#2E2E2E"  # Background color
+
+        fig = figure(title=title,
+                     plot_width=400,
+                     plot_height=400,
+                     x_range=Range1d(),
+                     y_range=Range1d(),
+                     match_aspect=True,
+                     tools='',
+                     background_fill_color=BG_COLOR)
+        fig.grid.grid_line_color = "white"
+        fig.grid.grid_line_alpha = 0.3
+        fig.xaxis.axis_label = "diff price (n-1)"
+        fig.yaxis.axis_label = "diff price (n)"
+
+        self.__fig = fig
+
+    @property
+    def fig(self):
+        """モデルを取得する[get model]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            self.__fig (object) : model object
+        """
+        return self.__fig
+
+
 class ChartAbs(metaclass=ABCMeta):
     """ ChartAbs - Chart抽象クラス"""
 
@@ -49,11 +82,14 @@ class ChartAbs(metaclass=ABCMeta):
         self._TIME_FMT = "%H:%M:%S"
 
         fig = figure(title=title,
+                     plot_width=800,
                      x_range=FactorRange(),
                      y_range=Range1d(),
                      plot_height=plot_height,
                      tools='',
                      background_fill_color=BG_COLOR)
+        fig.grid.grid_line_color = "white"
+        fig.grid.grid_line_alpha = 0.3
         fig.xaxis.axis_label = "time"
         fig.yaxis.axis_label = "diff price"
         fig.xaxis.major_label_orientation = pi / 2
@@ -62,6 +98,12 @@ class ChartAbs(metaclass=ABCMeta):
         vloncur = Span(location=0.0, dimension="height",
                        line_color="white", line_dash="dashed", line_width=1)
         fig.add_layout(vloncur)
+
+        # ----- Vertical line on Select -----
+        vlonsel = Span(location=0.0, dimension="height",
+                       line_color="greenyellow", line_dash="dashed",
+                       line_width=1)
+        fig.add_layout(vlonsel)
 
         # ----- Vertical line 9:00 -----
         ttmvl0900 = Span(location=0.0, dimension="height",
@@ -80,6 +122,7 @@ class ChartAbs(metaclass=ABCMeta):
 
         self._fig = fig
         self.__vloncur = vloncur
+        self.__vlonsel = vlonsel
         self.__ttmvl0900 = ttmvl0900
         self.__ttmvl0955 = ttmvl0955
         self.__ttmvl1030 = ttmvl1030
@@ -108,9 +151,13 @@ class ChartAbs(metaclass=ABCMeta):
         idx = timelist.index(_TM1030.strftime(self._TIME_FMT))
         self.__ttmvl1030.location = idx + DiffChart.CHART_OFS
 
-    def update_in_callback(self, idx):
+    def update_vl_cursol(self, idx):
 
         self.__vloncur.location = idx + DiffChart.CHART_OFS
+
+    def update_vl_select(self, idx):
+
+        self.__vlonsel.location = idx + DiffChart.CHART_OFS
 
 
 class DiffChart(ChartAbs):
@@ -209,9 +256,6 @@ class DiffChart(ChartAbs):
                            line_color="cyan", line_dash="dotted", line_width=1,
                            line_alpha=1.0)
         renclstdlo = fig.add_glyph(src, vbarclstdlo)
-
-        fig.grid.grid_line_color = "white"
-        fig.grid.grid_line_alpha = 0.3
 
         self.__fig = fig
         self.__src = src
@@ -338,9 +382,6 @@ class SumChart(ChartAbs):
                        line_color="lawngreen", line_dash="solid",
                        line_width=2, line_alpha=1.0)
         rensum = fig.add_glyph(src, vbarsum)
-
-        fig.grid.grid_line_color = "white"
-        fig.grid.grid_line_alpha = 0.3
 
         self.__fig = fig
         self.__src = src
@@ -624,6 +665,7 @@ class TTMGoto(AnalysisAbs):
         # 集計結果
         diffchrlist = []
         diffsumlist = []
+        corrpltlist = []
         sampcntlist = []
         sumdifflist = []
 
@@ -633,14 +675,22 @@ class TTMGoto(AnalysisAbs):
             week = TTMGoto._WEEK_DICT[i]
             goto = TTMGoto._GOTO_DICT[j]
 
+            # ---------- Diff-chart ----------
             str_ = "Diff-chart Week[" + week + "]:Goto[" + goto + "]"
             diffchr = DiffChart(str_)
             diffchrlist.append(diffchr)
 
+            # ---------- Cumulative Sum-chart ----------
             str_ = "Cumulative Sum-chart Week[" + week + "]:Goto[" + goto + "]"
             sumchr = SumChart(str_)
             diffsumlist.append(sumchr)
 
+            # ---------- Correlation Plot ----------
+            str_ = "Correlation plot Week[" + week + "]:Goto[" + goto + "]"
+            corrplt = CorrelationPlot(str_)
+            corrpltlist.append(corrplt)
+
+            # ---------- Text ----------
             txtin_cnt = TextInput(value="", title="サンプル数:",
                                   width=100, sizing_mode="fixed")
             sampcntlist.append(txtin_cnt)
@@ -652,10 +702,14 @@ class TTMGoto(AnalysisAbs):
             diffchr.fig.on_event(events.MouseMove, self.__cb_chart_mousemove)
             sumchr.fig.on_event(events.MouseMove, self.__cb_chart_mousemove)
 
+            diffchr.fig.on_event(events.Tap, self.__cb_chart_tap)
+
         self.__diffchrlist = diffchrlist
         self.__diffsumlist = diffsumlist
+        self.__corrpltlist = corrpltlist
         self.__sampcntlist = sampcntlist
         self.__sumdifflist = sumdifflist
+        self.__timelist = []
 
     @property
     def layout(self):
@@ -707,12 +761,14 @@ class TTMGoto(AnalysisAbs):
             sumdiff = self.__sumdifflist[pos]
             diffplot = self.__diffchrlist[pos]
             sumplot = self.__diffsumlist[pos]
+            txtin = column(children=[sampcnt, sumdiff],
+                           sizing_mode="fixed")
             plotfig = column(children=[diffplot.fig, sumplot.fig],
-                             sizing_mode="stretch_width")
-            txtin = column(children=[sampcnt, sumdiff], sizing_mode="fixed")
-            plotlist.append([txtin, plotfig])
+                             sizing_mode="fixed")
+            corrfig = self.__corrpltlist[pos].fig
+            plotlist.append([txtin, plotfig, corrfig])
 
-        gridview = gridplot(children=plotlist, sizing_mode="stretch_width")
+        gridview = gridplot(children=plotlist, sizing_mode="fixed")
 
         tab1 = Panel(child=gridview, title="Summary")
 
@@ -848,6 +904,8 @@ class TTMGoto(AnalysisAbs):
             print(dfave)
             print("＜標準偏差＞")
             print(dfstd)
+
+            self.__timelist = dfave.columns.tolist()
 
             # ---------- calculate parameter ----------
             dfhi = df.loc[cs.LBL_HIGH, :]
@@ -1146,10 +1204,34 @@ class TTMGoto(AnalysisAbs):
         """
         if event.x is not None:
             idx = math.floor(event.x + DiffChart.CHART_OFS)
-            print(idx)
 
             for diffchr in self.__diffchrlist:
-                diffchr.update_in_callback(idx)
+                diffchr.update_vl_cursol(idx)
 
             for diffsum in self.__diffsumlist:
-                diffsum.update_in_callback(idx)
+                diffsum.update_vl_cursol(idx)
+
+    def __cb_chart_tap(self, event):
+        """Event tap(チャート)コールバックメソッド
+           [Callback method of tap event(Chart)]
+        引数[Args]:
+            event (str) : An event name on this object
+        戻り値[Returns]:
+            なし[None]
+        """
+        if event.x is not None:
+            idx = math.floor(event.x + DiffChart.CHART_OFS)
+
+            for diffchr in self.__diffchrlist:
+                diffchr.update_vl_select(idx)
+
+            for diffsum in self.__diffsumlist:
+                diffsum.update_vl_select(idx)
+
+        if idx == 0:
+            idx_pre = 0
+        else:
+            idx_pre = idx - 1
+
+        print(self.__timelist[idx])
+        print(self.__timelist[idx_pre])
