@@ -612,6 +612,8 @@ class TTMGoto(AnalysisAbs):
                 ]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
+        self.__dfall = pd.DataFrame()
+
         # Widget DataTable:
         self.TBLLBL_DATE = "date"
         self.TBLLBL_WEEK = "week"
@@ -978,6 +980,7 @@ class TTMGoto(AnalysisAbs):
             self.TBLLBL_CS0955OC: dfsmm[TTMGoto.LBL_DIF0955OC].tolist(),
         }
         self.__dfsmm = dfsmm
+        self.__dfall = df
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
@@ -1219,6 +1222,8 @@ class TTMGoto(AnalysisAbs):
         戻り値[Returns]:
             なし[None]
         """
+        print("CAlled cb_chart_tap")
+        print(event.x)
         if event.x is not None:
             idx = math.floor(event.x + DiffChart.CHART_OFS)
 
@@ -1228,10 +1233,17 @@ class TTMGoto(AnalysisAbs):
             for diffsum in self.__diffsumlist:
                 diffsum.update_vl_select(idx)
 
-        if idx == 0:
-            idx_pre = 0
-        else:
-            idx_pre = idx - 1
+            if idx == 0:
+                idx_pre = 0
+            else:
+                idx_pre = idx - 1
 
-        print(self.__timelist[idx])
-        print(self.__timelist[idx_pre])
+            col_tm = self.__timelist[idx]
+            col_tmpre = self.__timelist[idx_pre]
+
+            df = self.__dfall
+
+            print("--------------")
+            print(df)
+            dfcl = df.loc[cs.LBL_CLOSE, :]
+            print(dfcl[[col_tmpre, col_tm]])
