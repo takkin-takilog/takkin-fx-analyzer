@@ -71,7 +71,7 @@ class CorrPlot(object):
                                 CorrPlot.Y: [],
                                 CorrPlot.C: []
                                 })
-        glycir = Circle(x=CorrPlot.X, y=CorrPlot.Y, radius=0.5,
+        glycir = Circle(x=CorrPlot.X, y=CorrPlot.Y, radius=0.005,
                         line_color=CorrPlot.C, line_alpha=1.0,
                         fill_color=CorrPlot.C, fill_alpha=0.5)
         ren_cir = fig.add_glyph(src, glycir)
@@ -85,8 +85,9 @@ class CorrPlot(object):
         self.__legends = legends
         self.__ren_cir = ren_cir
         self.__ren_leg = ren_leg
+        self.__glycir = glycir
 
-    def update(self, xlist, ylist, clist):
+    def update(self, xlist, ylist, clist, maxval):
 
         dict_ = {
             CorrPlot.X: xlist,
@@ -94,6 +95,13 @@ class CorrPlot(object):
             CorrPlot.C: clist,
         }
         self.__src.data = dict_
+
+        self.__fig.x_range.start = -maxval
+        self.__fig.x_range.end = maxval
+        self.__fig.y_range.start = -maxval
+        self.__fig.y_range.end = maxval
+
+        self.__glycir.radius = maxval / 50
 
     @property
     def fig(self):
@@ -1263,6 +1271,8 @@ class TTMGoto(AnalysisAbs):
         if event.x is not None:
 
             LBL_YEAR = "year"
+            LBL_COLOR = "color"
+            MARGINE = 1.2
 
             idx = math.floor(event.x + DiffChart.CHART_OFS)
 
@@ -1299,10 +1309,21 @@ class TTMGoto(AnalysisAbs):
             for x in range(len(yearkeys)):
                 colvals.append(RdBu3[x])
             d = dict(zip(yearkeys, colvals))
-            print("-------- Dict ----------")
-            print(d)
-            print(d[idxnew])
+            collist = [d[s] for s in idxnew]
+            df[LBL_COLOR] = collist
+            print(df)
+            print("====================================")
+            dftmp = df[[col_tmpre, col_tm]]
 
+            max_ = dftmp.max().max()
+            min_ = dftmp.min().min()
+            print("max: {}" .format(max_))
+            print("min: {}" .format(min_))
+
+            maxval = max([math.fabs(max_), math.fabs(min_)]) * MARGINE
+            print("max2: {}" .format(maxval))
+
+            print("====================================")
             week_keys = TTMGoto._WEEK_DICT.keys()
             goto_keys = TTMGoto._GOTO_DICT.keys()
             for i, j in itertools.product(week_keys, goto_keys):
@@ -1315,20 +1336,12 @@ class TTMGoto(AnalysisAbs):
 
                 xlist = df1[col_tmpre].tolist()
                 ylist = df1[col_tm].tolist()
-                clist = []
-
-                cidx = 0
-                for name, dfgr in df1.groupby(LBL_YEAR):
-                    print(name)
-                    print(dfgr)
-
-                    clist.append(RdBu3[cidx])
-
-                    cidx += 1
-
+                clist = df1[LBL_COLOR].tolist()
 
                 pos = i * len(TTMGoto._GOTO_DICT) + j
                 corrplt = self.__corrpltlist[pos]
+
+                corrplt.update(xlist, ylist, clist, maxval)
 
                 #print(df1)
                 print("---------- pod:{} ----------" .format(pos))
