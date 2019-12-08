@@ -1225,6 +1225,9 @@ class TTMGoto(AnalysisAbs):
         print("CAlled cb_chart_tap")
         print(event.x)
         if event.x is not None:
+
+            LBL_YEAR = "year"
+
             idx = math.floor(event.x + DiffChart.CHART_OFS)
 
             for diffchr in self.__diffchrlist:
@@ -1241,9 +1244,34 @@ class TTMGoto(AnalysisAbs):
             col_tm = self.__timelist[idx]
             col_tmpre = self.__timelist[idx_pre]
 
-            df = self.__dfall
-
             print("--------------")
+            print(self.__dfall)
+            dfcl = self.__dfall.loc[cs.LBL_CLOSE, :]
+            df = dfcl[[col_tmpre, col_tm]]
             print(df)
-            dfcl = df.loc[cs.LBL_CLOSE, :]
-            print(dfcl[[col_tmpre, col_tm]])
+            df = df.reset_index(TTMGoto.LBL_DATE)
+            print(df)
+            print(df[TTMGoto.LBL_DATE])
+            idxnew = [s.year for s in df[TTMGoto.LBL_DATE]]
+            print(idxnew)
+            df[LBL_YEAR] = idxnew
+            #df.set_index(LBL_YEAR, inplace=True)
+
+            week_keys = TTMGoto._WEEK_DICT.keys()
+            goto_keys = TTMGoto._GOTO_DICT.keys()
+            for i, j in itertools.product(week_keys, goto_keys):
+
+                try:
+                    df1 = df.loc[(i, j), :]
+                except KeyError as e:
+                    print("{} are not exist!" .format(e))
+
+                for name, group in df1.groupby(LBL_YEAR):
+                    print(name)
+                    print(group)
+
+                pos = i * len(TTMGoto._GOTO_DICT) + j
+
+                #print(df1)
+                print("---------- pod:{} ----------" .format(pos))
+
