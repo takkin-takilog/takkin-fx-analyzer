@@ -8,6 +8,7 @@ import pandas as pd
 import jpholiday
 import datetime as dt
 from bokeh import events
+from bokeh.models import Circle, Legend, LegendItem
 from bokeh.models import NumeralTickFormatter
 from bokeh.models import ColumnDataSource, CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs, Range1d, FactorRange, Span
@@ -15,6 +16,7 @@ from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
 from bokeh.models.glyphs import VBar, Line
+from bokeh.palettes import RdBu3
 from bokeh.plotting import figure
 from bokeh.layouts import row, gridplot, column
 from oandapyV20.exceptions import V20Error
@@ -37,7 +39,14 @@ def _retry_if_connection_error(exception):
     return isinstance(exception, ConnectionError)
 
 
-class CorrelationPlot(object):
+class CorrPlot(object):
+    """ CorrPlot
+            - 相関図定義クラス[Correlation plot definition class]
+    """
+
+    X = "x"
+    Y = "y"
+    C = "color"
 
     def __init__(self, title):
         """"コンストラクタ[Constructor]
@@ -57,7 +66,34 @@ class CorrelationPlot(object):
         fig.xaxis.axis_label = "diff price (n-1)"
         fig.yaxis.axis_label = "diff price (n)"
 
+        # ---------- circle ----------
+        src = ColumnDataSource({CorrPlot.X: [],
+                                CorrPlot.Y: [],
+                                CorrPlot.C: []
+                                })
+        glycir = Circle(x=CorrPlot.X, y=CorrPlot.Y, radius=0.5,
+                        line_color=CorrPlot.C, line_alpha=1.0,
+                        fill_color=CorrPlot.C, fill_alpha=0.5)
+        ren_cir = fig.add_glyph(src, glycir)
+
+        # ---------- legend ----------
+        legends = Legend(items=[])
+        ren_leg = fig.add_layout(legends)
+
         self.__fig = fig
+        self.__src = src
+        self.__legends = legends
+        self.__ren_cir = ren_cir
+        self.__ren_leg = ren_leg
+
+    def update(self, xlist, ylist, clist):
+
+        dict_ = {
+            CorrPlot.X: xlist,
+            CorrPlot.Y: ylist,
+            CorrPlot.C: clist,
+        }
+        self.__src.data = dict_
 
     @property
     def fig(self):
@@ -689,7 +725,7 @@ class TTMGoto(AnalysisAbs):
 
             # ---------- Correlation Plot ----------
             str_ = "Correlation plot Week[" + week + "]:Goto[" + goto + "]"
-            corrplt = CorrelationPlot(str_)
+            corrplt = CorrPlot(str_)
             corrpltlist.append(corrplt)
 
             # ---------- Text ----------
@@ -1257,6 +1293,16 @@ class TTMGoto(AnalysisAbs):
             df[LBL_YEAR] = idxnew
             #df.set_index(LBL_YEAR, inplace=True)
 
+            # Year重複削除
+            yearkeys = set(idxnew)
+            colvals = []
+            for x in range(len(yearkeys)):
+                colvals.append(RdBu3[x])
+            d = dict(zip(yearkeys, colvals))
+            print("-------- Dict ----------")
+            print(d)
+            print(d[idxnew])
+
             week_keys = TTMGoto._WEEK_DICT.keys()
             goto_keys = TTMGoto._GOTO_DICT.keys()
             for i, j in itertools.product(week_keys, goto_keys):
@@ -1265,12 +1311,24 @@ class TTMGoto(AnalysisAbs):
                     df1 = df.loc[(i, j), :]
                 except KeyError as e:
                     print("{} are not exist!" .format(e))
+                    continue
 
-                for name, group in df1.groupby(LBL_YEAR):
+                xlist = df1[col_tmpre].tolist()
+                ylist = df1[col_tm].tolist()
+                clist = []
+
+                cidx = 0
+                for name, dfgr in df1.groupby(LBL_YEAR):
                     print(name)
-                    print(group)
+                    print(dfgr)
+
+                    clist.append(RdBu3[cidx])
+
+                    cidx += 1
+
 
                 pos = i * len(TTMGoto._GOTO_DICT) + j
+                corrplt = self.__corrpltlist[pos]
 
                 #print(df1)
                 print("---------- pod:{} ----------" .format(pos))
