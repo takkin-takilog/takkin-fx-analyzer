@@ -103,6 +103,22 @@ class CorrPlot(object):
 
         self.__glycir.radius = maxval / 50
 
+    def clear(self):
+        """"データをクリアする[clear data]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        dict_ = {
+            CorrPlot.X: [],
+            CorrPlot.Y: [],
+            CorrPlot.C: [],
+        }
+        self.__src.data = dict_
+
+        self.__legends.items = []
+
     @property
     def fig(self):
         """モデルを取得する[get model]
@@ -832,6 +848,10 @@ class TTMGoto(AnalysisAbs):
             なし[None]
         """
         print("Called cb_btn_run")
+
+        for corrplt in self.__corrpltlist:
+            corrplt.clear()
+
         dfsmm = self.__dfsmm
         dfsmm.drop(index=dfsmm.index, inplace=True)
 
