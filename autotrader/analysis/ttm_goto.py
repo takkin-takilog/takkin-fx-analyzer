@@ -16,7 +16,7 @@ from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
 from bokeh.models.glyphs import VBar, Line
-from bokeh.palettes import RdBu3
+from bokeh.palettes import Pastel1_9
 from bokeh.plotting import figure
 from bokeh.layouts import row, gridplot, column
 from oandapyV20.exceptions import V20Error
@@ -104,7 +104,9 @@ class CorrPlot(object):
         # set legend
         for year, idx in yearsidx:
             print("{}:{}" .format(idx, year))
-            item = LegendItem(label=str(year), renderers=[self.__ren_cir], index=idx)
+            item = LegendItem(label=str(year),
+                              renderers=[self.__ren_cir],
+                              index=idx)
             self.__legends.items.append(item)
 
     def clear(self):
@@ -1325,14 +1327,13 @@ class TTMGoto(AnalysisAbs):
             idxnew = [s.year for s in df[TTMGoto.LBL_DATE]]
             print(idxnew)
             df[LBL_YEAR] = idxnew
-            #df.set_index(LBL_YEAR, inplace=True)
 
             # Year重複削除
             years = list(set(idxnew))
 
             colvals = []
             for x in range(len(years)):
-                colvals.append(RdBu3[x])
+                colvals.append(Pastel1_9[x])
             d = dict(zip(years, colvals))
             collist = [d[s] for s in idxnew]
             df[LBL_COLOR] = collist
@@ -1372,4 +1373,3 @@ class TTMGoto(AnalysisAbs):
 
                 print(df1)
                 print("---------- pos:{} ----------" .format(pos))
-
