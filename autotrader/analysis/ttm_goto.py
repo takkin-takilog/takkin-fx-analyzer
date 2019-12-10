@@ -78,16 +78,15 @@ class CorrPlot(object):
 
         # ---------- legend ----------
         legends = Legend(items=[])
-        ren_leg = fig.add_layout(legends)
+        fig.add_layout(legends)
 
         self.__fig = fig
         self.__src = src
         self.__legends = legends
         self.__ren_cir = ren_cir
-        self.__ren_leg = ren_leg
         self.__glycir = glycir
 
-    def update(self, xlist, ylist, clist, maxval):
+    def update(self, xlist, ylist, clist, maxval, yearsidx):
 
         dict_ = {
             CorrPlot.X: xlist,
@@ -100,8 +99,13 @@ class CorrPlot(object):
         self.__fig.x_range.end = maxval
         self.__fig.y_range.start = -maxval
         self.__fig.y_range.end = maxval
+        self.__glycir.radius = maxval / 80
 
-        self.__glycir.radius = maxval / 50
+        # set legend
+        for year, idx in yearsidx:
+            print("{}:{}" .format(idx, year))
+            item = LegendItem(label=str(year), renderers=[self.__ren_cir], index=idx)
+            self.__legends.items.append(item)
 
     def clear(self):
         """"データをクリアする[clear data]
@@ -1324,11 +1328,12 @@ class TTMGoto(AnalysisAbs):
             #df.set_index(LBL_YEAR, inplace=True)
 
             # Year重複削除
-            yearkeys = set(idxnew)
+            years = list(set(idxnew))
+
             colvals = []
-            for x in range(len(yearkeys)):
+            for x in range(len(years)):
                 colvals.append(RdBu3[x])
-            d = dict(zip(yearkeys, colvals))
+            d = dict(zip(years, colvals))
             collist = [d[s] for s in idxnew]
             df[LBL_COLOR] = collist
             print(df)
@@ -1357,12 +1362,14 @@ class TTMGoto(AnalysisAbs):
                 xlist = df1[col_tmpre].tolist()
                 ylist = df1[col_tm].tolist()
                 clist = df1[LBL_COLOR].tolist()
+                yearlist = df1[LBL_YEAR].tolist()
 
                 pos = i * len(TTMGoto._GOTO_DICT) + j
                 corrplt = self.__corrpltlist[pos]
 
-                corrplt.update(xlist, ylist, clist, maxval)
+                yearsidx = [(y, yearlist.index(y)) for y in set(yearlist)]
+                corrplt.update(xlist, ylist, clist, maxval, yearsidx)
 
-                #print(df1)
-                print("---------- pod:{} ----------" .format(pos))
+                print(df1)
+                print("---------- pos:{} ----------" .format(pos))
 
