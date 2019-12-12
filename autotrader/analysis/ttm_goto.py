@@ -47,6 +47,7 @@ class CorrPlot(object):
     X = "x"
     Y = "y"
     C = "color"
+    D = "date"
 
     def __init__(self, title):
         """"コンストラクタ[Constructor]
@@ -66,10 +67,19 @@ class CorrPlot(object):
         fig.xaxis.axis_label = "diff price (n-1)"
         fig.yaxis.axis_label = "diff price (n)"
 
+        # ----- Vertical and Horizontal line -----
+        vl = Span(location=0.0, dimension="height",
+                  line_color="white", line_dash="solid", line_width=1)
+        fig.add_layout(vl)
+        hl = Span(location=0.0, dimension="width",
+                  line_color="white", line_dash="solid", line_width=1)
+        fig.add_layout(hl)
+
         # ---------- circle ----------
         src = ColumnDataSource({CorrPlot.X: [],
                                 CorrPlot.Y: [],
-                                CorrPlot.C: []
+                                CorrPlot.C: [],
+                                CorrPlot.D: []
                                 })
         glycir = Circle(x=CorrPlot.X, y=CorrPlot.Y, radius=0.005,
                         line_color=CorrPlot.C, line_alpha=1.0,
@@ -80,18 +90,29 @@ class CorrPlot(object):
         legends = Legend(items=[])
         fig.add_layout(legends)
 
+        # ---------- hover ----------
+        hover = HoverTool()
+        hover.formatters = {CorrPlot.D: "datetime"}
+        hover.tooltips = [(CorrPlot.D, "@" + CorrPlot.D + "{%F}"),
+                          (CorrPlot.X, "@" + CorrPlot.X + "{0.0000}"),
+                          (CorrPlot.Y, "@" + CorrPlot.Y + "{0.0000}"),
+                          ]
+        hover.renderers = [ren_cir]
+        fig.add_tools(hover)
+
         self.__fig = fig
         self.__src = src
         self.__legends = legends
         self.__ren_cir = ren_cir
         self.__glycir = glycir
 
-    def update(self, xlist, ylist, clist, maxval, yearsidx):
+    def update(self, xlist, ylist, clist, dlist, maxval, yearsidx):
 
         dict_ = {
             CorrPlot.X: xlist,
             CorrPlot.Y: ylist,
             CorrPlot.C: clist,
+            CorrPlot.D: dlist,
         }
         self.__src.data = dict_
 
@@ -102,6 +123,7 @@ class CorrPlot(object):
         self.__glycir.radius = maxval / 80
 
         # set legend
+        self.__legends.items = []
         for year, idx in yearsidx:
             print("{}:{}" .format(idx, year))
             item = LegendItem(label=str(year),
@@ -1363,13 +1385,14 @@ class TTMGoto(AnalysisAbs):
                 xlist = df1[col_tmpre].tolist()
                 ylist = df1[col_tm].tolist()
                 clist = df1[LBL_COLOR].tolist()
+                dlist = df1[TTMGoto.LBL_DATE].tolist()
                 yearlist = df1[LBL_YEAR].tolist()
 
                 pos = i * len(TTMGoto._GOTO_DICT) + j
                 corrplt = self.__corrpltlist[pos]
 
                 yearsidx = [(y, yearlist.index(y)) for y in set(yearlist)]
-                corrplt.update(xlist, ylist, clist, maxval, yearsidx)
+                corrplt.update(xlist, ylist, clist, dlist, maxval, yearsidx)
 
                 print(df1)
                 print("---------- pos:{} ----------" .format(pos))
