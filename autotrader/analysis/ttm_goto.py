@@ -182,17 +182,6 @@ class ChartAbs(metaclass=ABCMeta):
         fig.yaxis.axis_label = "diff price"
         fig.xaxis.major_label_orientation = pi / 2
 
-        # ----- Vertical line on Cursor -----
-        vloncur = Span(location=0.0, dimension="height",
-                       line_color="white", line_dash="dashed", line_width=1)
-        fig.add_layout(vloncur)
-
-        # ----- Vertical line on Select -----
-        vlonsel = Span(location=0.0, dimension="height",
-                       line_color="greenyellow", line_dash="dashed",
-                       line_width=1)
-        fig.add_layout(vlonsel)
-
         # ----- Vertical line 9:00 -----
         ttmvl0900 = Span(location=0.0, dimension="height",
                          line_color="cyan", line_dash="solid", line_width=2)
@@ -207,6 +196,17 @@ class ChartAbs(metaclass=ABCMeta):
         ttmvl1030 = Span(location=0.0, dimension="height",
                          line_color="yellow", line_dash="solid", line_width=2)
         fig.add_layout(ttmvl1030)
+
+        # ----- Vertical line on Cursor -----
+        vloncur = Span(location=0.0, dimension="height",
+                       line_color="white", line_dash="dashed", line_width=1)
+        fig.add_layout(vloncur)
+
+        # ----- Vertical line on Select -----
+        vlonsel = Span(location=0.0, dimension="height",
+                       line_color="greenyellow", line_dash="dashed",
+                       line_width=1)
+        fig.add_layout(vlonsel)
 
         self._fig = fig
         self.__vloncur = vloncur
@@ -640,19 +640,19 @@ class CandleStickChart1H(CandleStickChartAbs):
                       line_color="pink", line_dash="dashed", line_width=1)
         self._fig.add_layout(vl0954)
 
+        # ---------- 移動平均線 ----------
+        self.__sma = SimpleMovingAverage(self._fig)
+
         # ---------- slope line ----------
         src = ColumnDataSource({self.XDT: [],
                                 self.YPR: []})
         glvline = Line(x=self.XDT,
                        y=self.YPR,
-                       line_color="yellow",
-                       line_dash="dashed",
-                       line_width=1.0,
+                       line_color="cyan",
+                       line_dash="solid",
+                       line_width=3.0,
                        line_alpha=1.0)
         self._fig.add_glyph(src, glvline)
-
-        # 移動平均線
-        self.__sma = SimpleMovingAverage(self._fig)
 
         self.__vl0954 = vl0954
         self.__src = src
@@ -670,14 +670,12 @@ class CandleStickChart1H(CandleStickChartAbs):
 
         self.__sma.draw_mdl(csd.df)
 
-        print("xlist:{}" .format(l2p[0]))
-        print("ylist:{}" .format(l2p[1]))
-
-        if not l2p.isEmpty():
-            self.__src.data = {self.XDT: l2p[0],
-                               self.YPR: l2p[0]}
+        if len(l2p) == 0:
+            self.__src.data = {self.XDT: [],
+                               self.YPR: []}
         else:
-            print("ndarrayは空です。")
+            self.__src.data = {self.XDT: l2p[0],
+                               self.YPR: l2p[1]}
 
     def clear(self):
         super().clear()
@@ -836,6 +834,7 @@ class TTMGoto(AnalysisAbs):
             sumchr.fig.on_event(events.MouseMove, self.__cb_chart_mousemove)
 
             diffchr.fig.on_event(events.Tap, self.__cb_chart_tap)
+            sumchr.fig.on_event(events.Tap, self.__cb_chart_tap)
 
         self.__diffchrlist = diffchrlist
         self.__diffsumlist = diffsumlist
@@ -1102,6 +1101,8 @@ class TTMGoto(AnalysisAbs):
                 sumdiff = self.__sumdifflist[pos]
                 sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
 
+                self.__dfall = df
+
         # 表示更新
         srweek = dfsmm[TTMGoto.LBL_WEEK].replace(self._WEEK_DICT)
         srgoto = dfsmm[TTMGoto.LBL_GOTO].replace(self._GOTO_DICT)
@@ -1116,7 +1117,6 @@ class TTMGoto(AnalysisAbs):
             self.TBLLBL_CS0955OC: dfsmm[TTMGoto.LBL_DIF0955OC].tolist(),
         }
         self.__dfsmm = dfsmm
-        self.__dfall = df
 
     def __cb_dttbl(self, attr, old, new):
         """Widget DataTableコールバックメソッド
@@ -1132,7 +1132,8 @@ class TTMGoto(AnalysisAbs):
         self.__csc5m.set_dataframe(
             self.__dfsmm.index[idx], self.__csdlist_5m[idx])
         self.__csc1h.set_dataframe(
-            self.__dfsmm.index[idx], self.__csdlist_1h[idx], self.__dfsmm[TTMGoto.LBL_TREND_2P][idx])
+            self.__dfsmm.index[idx], self.__csdlist_1h[idx],
+            self.__dfsmm[TTMGoto.LBL_TREND_2P][idx])
 
     def __calc_linear_slope(self, date_, sr):
 
@@ -1142,32 +1143,28 @@ class TTMGoto(AnalysisAbs):
         enddttm = str(dt.datetime.combine(date_, endtm))
 
         slope = 0.0
+        l2p = np.empty(0)
         try:
             dfsma = sr[strdttm:enddttm]
-            print("------ dfsma -----")
-            print(dfsma)
         except KeyError:
             print("-----[Caution] Invalid Date found:[{}]"
                   .format(str(date_)))
-            return slope
+            return slope, l2p
 
         lenmax = endtm.hour - strtm.hour - 1
-        lp = np.empty()
         if lenmax < len(dfsma):
             y = dfsma.values
-            print("------ 1 --------")
-            print(y)
             x = list(range(len(dfsma)))
             linear = np.polyfit(x, y, 1)
             slope = linear[0]
             func = np.poly1d(linear)
             y2p = func([x[0], x[-1]])
-            x2p = [dfsma.index[0].to_pydatetime(), dfsma.index[-1].to_pydatetime()]
+            x2p = [dfsma.index[0].to_pydatetime(),
+                   dfsma.index[-1].to_pydatetime()]
 
-            lp = np.array([x2p, y2p])
-            print(lp)
+            l2p = np.array([x2p, y2p])
 
-        return slope, lp
+        return slope, l2p
 
     def __search_goto_day(self, str_, end_):
 
