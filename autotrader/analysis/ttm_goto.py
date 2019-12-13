@@ -556,6 +556,9 @@ class CandleStickChartAbs(CandleStickChartBase):
     def set_dataframe(self, csd):
         super().set_dataframe(csd)
 
+    def clear(self):
+        super().clear()
+
 
 class CandleStickChart5M(CandleStickChartAbs):
     """ CandleStickChart
@@ -607,11 +610,20 @@ class CandleStickChart5M(CandleStickChartAbs):
         x_dttm = dt.datetime.combine(dat_, self.__TM1030)
         self.__vl1030.location = x_dttm
 
+    def clear(self):
+        super().clear()
+
+        self.__vl0900.location = 0
+        self.__vl0954.location = 0
+        self.__vl1030.location = 0
+
 
 class CandleStickChart1H(CandleStickChartAbs):
     """ CandleStickChart
             - ローソク足チャート定義クラス[Candle stick chart definition class]
     """
+    XDT = "xdt"  # X軸(datetime)
+    YPR = "ypr"  # Y軸(float)
 
     def __init__(self):
         """"コンストラクタ[Constructor]
@@ -623,20 +635,32 @@ class CandleStickChart1H(CandleStickChartAbs):
         super().__init__()
         self._fig.title.text = "TTM Candlestick Chart ( 1 hour )"
 
-        # Vertical Line (9:54)
+        # ---------- Vertical Line (9:54) ----------
         vl0954 = Span(location=0.0, dimension="height",
                       line_color="pink", line_dash="dashed", line_width=1)
         self._fig.add_layout(vl0954)
+
+        # ---------- slope line ----------
+        src = ColumnDataSource({self.XDT: [],
+                                self.YPR: []})
+        glvline = Line(x=self.XDT,
+                       y=self.YPR,
+                       line_color="yellow",
+                       line_dash="dashed",
+                       line_width=1.0,
+                       line_alpha=1.0)
+        self._fig.add_glyph(src, glvline)
 
         # 移動平均線
         self.__sma = SimpleMovingAverage(self._fig)
 
         self.__vl0954 = vl0954
+        self.__src = src
 
     def calc_sma(self, csd, window_):
         self.__sma.calc_sma_mdl(csd.df, window_)
 
-    def set_dataframe(self, date_, csd):
+    def set_dataframe(self, date_, csd, l2p):
         super().set_dataframe(csd)
 
         dat_ = dt.date(date_.year, date_.month, date_.day)
@@ -645,6 +669,23 @@ class CandleStickChart1H(CandleStickChartAbs):
         self.__vl0954.location = x_dttm
 
         self.__sma.draw_mdl(csd.df)
+
+        print("xlist:{}" .format(l2p[0]))
+        print("ylist:{}" .format(l2p[1]))
+
+        if not l2p.isEmpty():
+            self.__src.data = {self.XDT: l2p[0],
+                               self.YPR: l2p[0]}
+        else:
+            print("ndarrayは空です。")
+
+    def clear(self):
+        super().clear()
+
+        self.__sma.clear()
+
+        self.__src.data = {self.XDT: [],
+                           self.YPR: []}
 
 
 class TTMGoto(AnalysisAbs):
@@ -656,13 +697,14 @@ class TTMGoto(AnalysisAbs):
     LBL_WEEK = "week"
     LBL_GOTO = "goto-day"
     LBL_OHLC = "ohlc"
-    LBL_TREND = "trend-slope"
+    LBL_TREND_SL = "trend-slope"
     LBL_DIF0900H = "diff-0900-high-price"
     LBL_DIF0955L = "diff-0955-low-price"
     LBL_DIF0900H = "diff-0900-high-price"
     LBL_DIF0955L = "diff-0955-low-price"
     LBL_DIF0950OC = "diff-cs0900oc"
     LBL_DIF0955OC = "diff-cs0955oc"
+    LBL_TREND_2P = "trend-2p"
 
     FALSE = 0
     TRUE = 1
@@ -692,11 +734,12 @@ class TTMGoto(AnalysisAbs):
 
         cols = [TTMGoto.LBL_WEEK,
                 TTMGoto.LBL_GOTO,
-                TTMGoto.LBL_TREND,
+                TTMGoto.LBL_TREND_SL,
                 TTMGoto.LBL_DIF0900H,
                 TTMGoto.LBL_DIF0955L,
                 TTMGoto.LBL_DIF0950OC,
-                TTMGoto.LBL_DIF0955OC
+                TTMGoto.LBL_DIF0955OC,
+                TTMGoto.LBL_TREND_2P
                 ]
         self.__dfsmm = pd.DataFrame(columns=cols)
 
@@ -706,7 +749,7 @@ class TTMGoto(AnalysisAbs):
         self.TBLLBL_DATE = "date"
         self.TBLLBL_WEEK = "week"
         self.TBLLBL_GOTO = "goto-day"
-        self.TBLLBL_TREND = "trend slope"
+        self.TBLLBL_TREND_SL = "trend slope"
         self.TBLLBL_DIF0900H = "diff-0900-high-price"
         self.TBLLBL_DIF0955L = "diff-0955-low-price"
         self.TBLLBL_CS0950OC = "cs-0950oc"
@@ -716,7 +759,7 @@ class TTMGoto(AnalysisAbs):
         self.__src = ColumnDataSource({self.TBLLBL_DATE: [],
                                        self.TBLLBL_WEEK: [],
                                        self.TBLLBL_GOTO: [],
-                                       self.TBLLBL_TREND: [],
+                                       self.TBLLBL_TREND_SL: [],
                                        self.TBLLBL_DIF0900H: [],
                                        self.TBLLBL_DIF0955L: [],
                                        self.TBLLBL_CS0950OC: [],
@@ -728,7 +771,7 @@ class TTMGoto(AnalysisAbs):
                         formatter=DateFormatter()),
             TableColumn(field=self.TBLLBL_WEEK, title="Week"),
             TableColumn(field=self.TBLLBL_GOTO, title="Goto Day"),
-            TableColumn(field=self.TBLLBL_TREND, title="Trend slope"),
+            TableColumn(field=self.TBLLBL_TREND_SL, title="Trend slope"),
             TableColumn(field=self.TBLLBL_DIF0900H,
                         title="Diff Price (9:00 - 9:55)"),
             TableColumn(field=self.TBLLBL_DIF0955L,
@@ -934,7 +977,7 @@ class TTMGoto(AnalysisAbs):
                 sma_sr = csd1h.df[SimpleMovingAverage.LBL_SMA_M]
 
                 # 線形近似
-                slope = self.__calc_linear_slope(date_, sma_sr)
+                slope, l2p = self.__calc_linear_slope(date_, sma_sr)
 
                 try:
                     # ---------- Extraction 9:00～9:55 chart ----------
@@ -969,7 +1012,8 @@ class TTMGoto(AnalysisAbs):
                                     d900,
                                     d955,
                                     cs950,
-                                    cs955],
+                                    cs955,
+                                    l2p],
                                    index=self.__dfsmm.columns,
                                    name=date_)
                 dfsmm = dfsmm.append(record)
@@ -1065,7 +1109,7 @@ class TTMGoto(AnalysisAbs):
             self.TBLLBL_DATE: dfsmm.index.tolist(),
             self.TBLLBL_WEEK: srweek.tolist(),
             self.TBLLBL_GOTO: srgoto.tolist(),
-            self.TBLLBL_TREND: dfsmm[TTMGoto.LBL_TREND].tolist(),
+            self.TBLLBL_TREND_SL: dfsmm[TTMGoto.LBL_TREND_SL].tolist(),
             self.TBLLBL_DIF0900H: dfsmm[TTMGoto.LBL_DIF0900H].tolist(),
             self.TBLLBL_DIF0955L: dfsmm[TTMGoto.LBL_DIF0955L].tolist(),
             self.TBLLBL_CS0950OC: dfsmm[TTMGoto.LBL_DIF0950OC].tolist(),
@@ -1088,7 +1132,7 @@ class TTMGoto(AnalysisAbs):
         self.__csc5m.set_dataframe(
             self.__dfsmm.index[idx], self.__csdlist_5m[idx])
         self.__csc1h.set_dataframe(
-            self.__dfsmm.index[idx], self.__csdlist_1h[idx])
+            self.__dfsmm.index[idx], self.__csdlist_1h[idx], self.__dfsmm[TTMGoto.LBL_TREND_2P][idx])
 
     def __calc_linear_slope(self, date_, sr):
 
@@ -1100,19 +1144,30 @@ class TTMGoto(AnalysisAbs):
         slope = 0.0
         try:
             dfsma = sr[strdttm:enddttm]
+            print("------ dfsma -----")
+            print(dfsma)
         except KeyError:
             print("-----[Caution] Invalid Date found:[{}]"
                   .format(str(date_)))
             return slope
 
         lenmax = endtm.hour - strtm.hour - 1
+        lp = np.empty()
         if lenmax < len(dfsma):
             y = dfsma.values
+            print("------ 1 --------")
+            print(y)
             x = list(range(len(dfsma)))
             linear = np.polyfit(x, y, 1)
             slope = linear[0]
+            func = np.poly1d(linear)
+            y2p = func([x[0], x[-1]])
+            x2p = [dfsma.index[0].to_pydatetime(), dfsma.index[-1].to_pydatetime()]
 
-        return slope
+            lp = np.array([x2p, y2p])
+            print(lp)
+
+        return slope, lp
 
     def __search_goto_day(self, str_, end_):
 

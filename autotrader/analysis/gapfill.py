@@ -219,6 +219,14 @@ class CandleStickChart(CandleStickChartBase):
         self.__srcline_op.data = {self.__X: [xscal.start, xscal.end],
                                   self.__Y: [opnpri, opnpri]}
 
+    def clear(self):
+        super().clear()
+
+        self.__srcline_cl.data = {self.__X: [],
+                                  self.__Y: []}
+
+        self.__srcline_op.data = {self.__X: [],
+                                  self.__Y: []}
 
 class GapFill(AnalysisAbs):
     """ GapFill
