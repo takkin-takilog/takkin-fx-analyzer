@@ -64,8 +64,8 @@ class CorrPlot(object):
                      background_fill_color=BG_COLOR)
         fig.grid.grid_line_color = "white"
         fig.grid.grid_line_alpha = 0.3
-        fig.xaxis.axis_label = "diff price (n-1)"
-        fig.yaxis.axis_label = "diff price (n)"
+        fig.xaxis.axis_label = "diff price (t-1)"
+        fig.yaxis.axis_label = "diff price (t)"
 
         # ----- Vertical and Horizontal line -----
         vl = Span(location=0.0, dimension="height",
@@ -93,9 +93,9 @@ class CorrPlot(object):
         # ---------- hover ----------
         hover = HoverTool()
         hover.formatters = {CorrPlot.D: "datetime"}
-        hover.tooltips = [(CorrPlot.D, "@" + CorrPlot.D + "{%F}"),
-                          (CorrPlot.X, "@" + CorrPlot.X + "{0.0000}"),
-                          (CorrPlot.Y, "@" + CorrPlot.Y + "{0.0000}"),
+        hover.tooltips = [("date", "@" + CorrPlot.D + "{%F}"),
+                          ("x", "@" + CorrPlot.X + "{0.0000}"),
+                          ("y", "@" + CorrPlot.Y + "{0.0000}"),
                           ]
         hover.renderers = [ren_cir]
         fig.add_tools(hover)
@@ -125,7 +125,6 @@ class CorrPlot(object):
         # set legend
         self.__legends.items = []
         for year, idx in yearsidx:
-            print("{}:{}" .format(idx, year))
             item = LegendItem(label=str(year),
                               renderers=[self.__ren_cir],
                               index=idx)
@@ -254,13 +253,13 @@ class DiffChart(ChartAbs):
     """
 
     X_TIME = "x_time"
-    Y_PRI_HI_AVE = "y_pri_hi_ave"
-    Y_PRI_LO_AVE = "y_pri_lo_ave"
-    Y_PRI_CL_AVE = "y_pri_cl_ave"
-    Y_PRI_HI_STD = "y_pri_hi_std"
-    Y_PRI_LO_STD = "y_pri_lo_std"
-    Y_PRI_CL_STD_HI = "y_pri_cl_std_hi"
-    Y_PRI_CL_STD_LO = "y_pri_cl_std_lo"
+    Y_HI_AVE = "y_hi_ave"
+    Y_LO_AVE = "y_lo_ave"
+    Y_CL_AVE = "y_cl_ave"
+    Y_HI_STD = "y_hi_std"
+    Y_LO_STD = "y_lo_std"
+    Y_CL_STD_HI = "y_cl_std_hi"
+    Y_CL_STD_LO = "y_cl_std_lo"
 
     LBL_AVE_HI = "ave_high"
     LBL_AVE_LO = "ave_low"
@@ -284,109 +283,86 @@ class DiffChart(ChartAbs):
         fig.xaxis.major_label_orientation = pi / 2
 
         dict_ = {DiffChart.X_TIME: [],
-                 DiffChart.Y_PRI_HI_AVE: [],
-                 DiffChart.Y_PRI_LO_AVE: [],
-                 DiffChart.Y_PRI_CL_AVE: [],
-                 DiffChart.Y_PRI_HI_STD: [],
-                 DiffChart.Y_PRI_LO_STD: [],
-                 DiffChart.Y_PRI_CL_STD_HI: [],
-                 DiffChart.Y_PRI_CL_STD_LO: [],
+                 DiffChart.Y_HI_AVE: [],
+                 DiffChart.Y_LO_AVE: [],
+                 DiffChart.Y_CL_AVE: [],
+                 DiffChart.Y_HI_STD: [],
+                 DiffChart.Y_LO_STD: [],
+                 DiffChart.Y_CL_STD_HI: [],
+                 DiffChart.Y_CL_STD_LO: [],
                  }
         src = ColumnDataSource(dict_)
 
         # ----- Diff high price ave -----
         vbarhiave = VBar(x=DiffChart.X_TIME,
-                         top=DiffChart.Y_PRI_HI_AVE,
+                         top=DiffChart.Y_HI_AVE,
                          width=0.9,
                          fill_color="green", line_color="white",
                          line_alpha=0.5, fill_alpha=0.5)
-        renhiave = fig.add_glyph(src, vbarhiave)
+        fig.add_glyph(src, vbarhiave)
 
         # ----- Diff low price ave -----
         vbarloave = VBar(x=DiffChart.X_TIME,
-                         top=DiffChart.Y_PRI_LO_AVE,
+                         top=DiffChart.Y_LO_AVE,
                          width=0.9,
                          fill_color="red", line_color="white",
                          line_alpha=0.5, fill_alpha=0.5)
-        renloave = fig.add_glyph(src, vbarloave)
+        fig.add_glyph(src, vbarloave)
 
         # ----- Diff close price ave -----
         vbarclave = Line(x=DiffChart.X_TIME,
-                         y=DiffChart.Y_PRI_CL_AVE,
+                         y=DiffChart.Y_CL_AVE,
                          line_color="cyan", line_width=2,
                          line_alpha=1.0)
         renclave = fig.add_glyph(src, vbarclave)
 
         # ----- Diff high price std -----
         vbarhistd = Line(x=DiffChart.X_TIME,
-                         y=DiffChart.Y_PRI_HI_STD,
+                         y=DiffChart.Y_HI_STD,
                          line_color="lawngreen", line_dash="solid",
                          line_width=1, line_alpha=1.0)
-        renhistd = fig.add_glyph(src, vbarhistd)
+        fig.add_glyph(src, vbarhistd)
 
         # ----- Diff low price std -----
         vbarlostd = Line(x=DiffChart.X_TIME,
-                         y=DiffChart.Y_PRI_LO_STD,
+                         y=DiffChart.Y_LO_STD,
                          line_color="pink", line_dash="solid", line_width=1,
                          line_alpha=1.0)
-        renlostd = fig.add_glyph(src, vbarlostd)
+        fig.add_glyph(src, vbarlostd)
 
         # ----- Diff close price std high -----
         vbarclstdhi = Line(x=DiffChart.X_TIME,
-                           y=DiffChart.Y_PRI_CL_STD_HI,
+                           y=DiffChart.Y_CL_STD_HI,
                            line_color="cyan", line_dash="dotted", line_width=1,
                            line_alpha=1.0)
-        renclstdhi = fig.add_glyph(src, vbarclstdhi)
+        fig.add_glyph(src, vbarclstdhi)
 
         # ----- Diff close price std low -----
         vbarclstdlo = Line(x=DiffChart.X_TIME,
-                           y=DiffChart.Y_PRI_CL_STD_LO,
+                           y=DiffChart.Y_CL_STD_LO,
                            line_color="cyan", line_dash="dotted", line_width=1,
                            line_alpha=1.0)
-        renclstdlo = fig.add_glyph(src, vbarclstdlo)
+        fig.add_glyph(src, vbarclstdlo)
+
+        # ---------- hover ----------
+        hover = HoverTool()
+        hover.formatters = {DiffChart.X_TIME: "printf"}
+        hover.tooltips = [
+            ("Time", "@" + DiffChart.X_TIME),
+            ("High(STD)", "@" + DiffChart.Y_HI_STD + "{0.0000}"),
+            ("High(AVE)", "@" + DiffChart.Y_HI_AVE + "{0.0000}"),
+            ("Close(STD)[HI]", "@" + DiffChart.Y_CL_STD_HI + "{0.0000}"),
+            ("Close(AVE)", "@" + DiffChart.Y_CL_AVE + "{0.0000}"),
+            ("Close(STD)[LO]", "@" + DiffChart.Y_CL_STD_LO + "{0.0000}"),
+            ("Low(AVE)", "@" + DiffChart.Y_LO_AVE + "{0.0000}"),
+            ("Low(STD)", "@" + DiffChart.Y_LO_STD + "{0.0000}")
+        ]
+        hover.renderers = [renclave]
+        hover.mode = "vline"
+        fig.add_tools(hover)
 
         self.__fig = fig
         self.__src = src
-        self.__renhiave = renhiave
-        self.__renloave = renloave
-        self.__renclave = renclave
-        self.__renhistd = renhistd
-        self.__renlostd = renlostd
-        self.__renclstdhi = renclstdhi
-        self.__renclstdlo = renclstdlo
-
-    @property
-    def render_hiave(self):
-        """"フィギュアのGlyphRendererオブジェクトを取得する
-            [get GlyphRenderer Object of Figure]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            GlyphRenderer Object
-        """
-        return self.__renhiave
-
-    @property
-    def render_loave(self):
-        """"フィギュアのGlyphRendererオブジェクトを取得する
-            [get GlyphRenderer Object of Figure]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            GlyphRenderer Object
-        """
-        return self.__renloave
-
-    @property
-    def render_clave(self):
-        """"フィギュアのGlyphRendererオブジェクトを取得する
-            [get GlyphRenderer Object of Figure]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            GlyphRenderer Object
-        """
-        return self.__renclave
 
     def update(self, inst_id, df, y_str, y_end):
 
@@ -396,13 +372,13 @@ class DiffChart(ChartAbs):
 
         dict_ = {
             DiffChart.X_TIME: timelist,
-            DiffChart.Y_PRI_HI_AVE: df[DiffChart.LBL_AVE_HI].tolist(),
-            DiffChart.Y_PRI_LO_AVE: df[DiffChart.LBL_AVE_LO].tolist(),
-            DiffChart.Y_PRI_CL_AVE: df[DiffChart.LBL_AVE_CL].tolist(),
-            DiffChart.Y_PRI_HI_STD: df[DiffChart.LBL_STD_HI_OVE].tolist(),
-            DiffChart.Y_PRI_LO_STD: df[DiffChart.LBL_STD_LO_UND].tolist(),
-            DiffChart.Y_PRI_CL_STD_HI: df[DiffChart.LBL_STD_CL_OVE].tolist(),
-            DiffChart.Y_PRI_CL_STD_LO: df[DiffChart.LBL_STD_CL_UND].tolist()
+            DiffChart.Y_HI_AVE: df[DiffChart.LBL_AVE_HI].tolist(),
+            DiffChart.Y_LO_AVE: df[DiffChart.LBL_AVE_LO].tolist(),
+            DiffChart.Y_CL_AVE: df[DiffChart.LBL_AVE_CL].tolist(),
+            DiffChart.Y_HI_STD: df[DiffChart.LBL_STD_HI_OVE].tolist(),
+            DiffChart.Y_LO_STD: df[DiffChart.LBL_STD_LO_UND].tolist(),
+            DiffChart.Y_CL_STD_HI: df[DiffChart.LBL_STD_CL_OVE].tolist(),
+            DiffChart.Y_CL_STD_LO: df[DiffChart.LBL_STD_CL_UND].tolist()
         }
         self.__src.data = dict_
 
@@ -421,12 +397,12 @@ class DiffChart(ChartAbs):
             なし[None]
         """
         dict_ = {DiffChart.X_TIME: [],
-                 DiffChart.Y_PRI_HI_AVE: [],
-                 DiffChart.Y_PRI_LO_AVE: [],
-                 DiffChart.Y_PRI_CL_AVE: [],
-                 DiffChart.Y_PRI_HI_STD: [],
-                 DiffChart.Y_PRI_LO_STD: [],
-                 DiffChart.Y_PRI_CL_STD_HI: []
+                 DiffChart.Y_HI_AVE: [],
+                 DiffChart.Y_LO_AVE: [],
+                 DiffChart.Y_CL_AVE: [],
+                 DiffChart.Y_HI_STD: [],
+                 DiffChart.Y_LO_STD: [],
+                 DiffChart.Y_CL_STD_HI: []
                  }
         self.__src.data = dict_
 
@@ -471,20 +447,19 @@ class SumChart(ChartAbs):
                        line_width=2, line_alpha=1.0)
         rensum = fig.add_glyph(src, vbarsum)
 
+        # ---------- hover ----------
+        hover = HoverTool()
+        hover.formatters = {SumChart.X_TIME: "printf"}
+        hover.tooltips = [
+            ("Time", "@" + SumChart.X_TIME),
+            ("Price", "@" + SumChart.Y_PRI_SUM + "{0.0000}"),
+        ]
+        hover.renderers = [rensum]
+        hover.mode = "vline"
+        fig.add_tools(hover)
+
         self.__fig = fig
         self.__src = src
-        self.__rensum = rensum
-
-    @property
-    def render_sum(self):
-        """"フィギュアのGlyphRendererオブジェクトを取得する
-            [get GlyphRenderer Object of Figure]
-        引数[Args]:
-            なし[None]
-        戻り値[Returns]:
-            GlyphRenderer Object
-        """
-        return self.__rensum
 
     def update(self, inst_id, df, y_str, y_end):
 
@@ -537,6 +512,7 @@ class CandleStickChartAbs(CandleStickChartBase):
         super().__init__()
 
         # プロット設定
+        self._fig.width = 600
         self._fig.toolbar_location = "right"
         self._fig.add_tools(CrosshairTool(line_color="pink",
                                           line_alpha=0.5))
@@ -783,7 +759,8 @@ class TTMGoto(AnalysisAbs):
         self.__tbl = DataTable(source=self.__src,
                                columns=cols,
                                fit_columns=True,
-                               height=200)
+                               height=200,
+                               width=1200)
         self.__src.selected.on_change("indices", self.__cb_dttbl)
 
         # ローソク足チャート初期化
@@ -798,7 +775,6 @@ class TTMGoto(AnalysisAbs):
         diffsumlist = []
         corrpltlist = []
         sampcntlist = []
-        sumdifflist = []
 
         week_keys = TTMGoto._WEEK_DICT.keys()
         goto_keys = TTMGoto._GOTO_DICT.keys()
@@ -826,10 +802,6 @@ class TTMGoto(AnalysisAbs):
                                   width=100, sizing_mode="fixed")
             sampcntlist.append(txtin_cnt)
 
-            txtin_sumdiff = TextInput(
-                value="", title="累積和(9:55):", width=100, sizing_mode="fixed")
-            sumdifflist.append(txtin_sumdiff)
-
             diffchr.fig.on_event(events.MouseMove, self.__cb_chart_mousemove)
             sumchr.fig.on_event(events.MouseMove, self.__cb_chart_mousemove)
 
@@ -840,7 +812,6 @@ class TTMGoto(AnalysisAbs):
         self.__diffsumlist = diffsumlist
         self.__corrpltlist = corrpltlist
         self.__sampcntlist = sampcntlist
-        self.__sumdifflist = sumdifflist
         self.__timelist = []
 
     @property
@@ -863,19 +834,15 @@ class TTMGoto(AnalysisAbs):
         cscfig5m = self.__csc5m.fig
         cscfig1h = self.__csc1h.fig
 
-        cscfigs = row(children=[cscfig5m, cscfig1h],
-                      sizing_mode="stretch_width")
+        cscfigs = row(children=[cscfig5m, cscfig1h])
 
-        tblfig = column(children=[tbl, cscfigs],
-                        sizing_mode="stretch_width")
+        tblfig = column(children=[tbl, cscfigs])
 
         tabs = self.__create_result_tabs()
 
-        wdgbx2 = column(children=[btnrun, tblfig, tabs],
-                        sizing_mode="stretch_width")
+        wdgbx2 = column(children=[btnrun, tblfig, tabs])
 
-        layout_ = row(children=[wdgbx1, wdgbx2],
-                      sizing_mode="stretch_width")
+        layout_ = row(children=[wdgbx1, wdgbx2])
 
         return(layout_)
 
@@ -890,10 +857,9 @@ class TTMGoto(AnalysisAbs):
         for i, j in itertools.product(week_keys, goto_keys):
             pos = i * len(TTMGoto._GOTO_DICT) + j
             sampcnt = self.__sampcntlist[pos]
-            sumdiff = self.__sumdifflist[pos]
             diffplot = self.__diffchrlist[pos]
             sumplot = self.__diffsumlist[pos]
-            txtin = column(children=[sampcnt, sumdiff],
+            txtin = column(children=[sampcnt],
                            sizing_mode="fixed")
             plotfig = column(children=[diffplot.fig, sumplot.fig],
                              sizing_mode="fixed")
@@ -917,8 +883,6 @@ class TTMGoto(AnalysisAbs):
         戻り値[Returns]:
             なし[None]
         """
-        print("Called cb_btn_run")
-
         for corrplt in self.__corrpltlist:
             corrplt.clear()
 
@@ -1023,9 +987,6 @@ class TTMGoto(AnalysisAbs):
                 cnt += 1
                 print("{} / {}" .format(cnt, len(dfgoto)))
 
-            print("＜DF＞")
-            print(df)
-
             idx = [TTMGoto.LBL_OHLC, TTMGoto.LBL_DATE,
                    TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
             level_ = [TTMGoto.LBL_OHLC, TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO]
@@ -1037,10 +998,6 @@ class TTMGoto(AnalysisAbs):
             dfave = df.mean(level=level_)
             # ---------- calculate standard deviation ----------
             dfstd = df.std(ddof=0, level=level_)
-            print("＜平均＞")
-            print(dfave)
-            print("＜標準偏差＞")
-            print(dfstd)
 
             self.__timelist = dfave.columns.tolist()
 
@@ -1061,10 +1018,6 @@ class TTMGoto(AnalysisAbs):
             y_diff_min = dfave.min().min() * margin
             y_sum_max = clavesum.max().max() * margin
             y_sum_min = clavesum.min().min() * margin
-
-            dfcorr = dfsmm.set_index([TTMGoto.LBL_WEEK, TTMGoto.LBL_GOTO])
-            print("------")
-            print(dfcorr)
 
             week_keys = TTMGoto._WEEK_DICT.keys()
             goto_keys = TTMGoto._GOTO_DICT.keys()
@@ -1097,9 +1050,6 @@ class TTMGoto(AnalysisAbs):
 
                 sampcnt = self.__sampcntlist[pos]
                 sampcnt.value = str(cnt) + " / " + str(dfparam)
-
-                sumdiff = self.__sumdifflist[pos]
-                sumdiff.value = str(dfsum.at[_TM0955, SumChart.LBL_SUM])
 
                 self.__dfall = df
 
@@ -1366,8 +1316,6 @@ class TTMGoto(AnalysisAbs):
         戻り値[Returns]:
             なし[None]
         """
-        print("CAlled cb_chart_tap")
-        print(event.x)
         if event.x is not None:
 
             LBL_YEAR = "year"
@@ -1390,16 +1338,10 @@ class TTMGoto(AnalysisAbs):
             col_tm = self.__timelist[idx]
             col_tmpre = self.__timelist[idx_pre]
 
-            print("--------------")
-            print(self.__dfall)
             dfcl = self.__dfall.loc[cs.LBL_CLOSE, :]
             df = dfcl[[col_tmpre, col_tm]]
-            print(df)
             df = df.reset_index(TTMGoto.LBL_DATE)
-            print(df)
-            print(df[TTMGoto.LBL_DATE])
             idxnew = [s.year for s in df[TTMGoto.LBL_DATE]]
-            print(idxnew)
             df[LBL_YEAR] = idxnew
 
             # Year重複削除
@@ -1411,19 +1353,13 @@ class TTMGoto(AnalysisAbs):
             d = dict(zip(years, colvals))
             collist = [d[s] for s in idxnew]
             df[LBL_COLOR] = collist
-            print(df)
-            print("====================================")
             dftmp = df[[col_tmpre, col_tm]]
 
             max_ = dftmp.max().max()
             min_ = dftmp.min().min()
-            print("max: {}" .format(max_))
-            print("min: {}" .format(min_))
-
             maxval = max([math.fabs(max_), math.fabs(min_)]) * MARGINE
-            print("max2: {}" .format(maxval))
 
-            print("====================================")
+            df = df.sort_index()
             week_keys = TTMGoto._WEEK_DICT.keys()
             goto_keys = TTMGoto._GOTO_DICT.keys()
             for i, j in itertools.product(week_keys, goto_keys):
@@ -1445,6 +1381,3 @@ class TTMGoto(AnalysisAbs):
 
                 yearsidx = [(y, yearlist.index(y)) for y in set(yearlist)]
                 corrplt.update(xlist, ylist, clist, dlist, maxval, yearsidx)
-
-                print(df1)
-                print("---------- pos:{} ----------" .format(pos))
