@@ -751,9 +751,9 @@ class TTMGoto(AnalysisAbs):
             TableColumn(field=self.TBLLBL_DIF0955L,
                         title="Diff Price (9:55 - 10:30)"),
             TableColumn(field=self.TBLLBL_CS0950OC,
-                        title="Diff CS (9:50 - 9:55)"),
+                        title="Diff Price (9:50 - 9:55)"),
             TableColumn(field=self.TBLLBL_CS0955OC,
-                        title="Diff CS (9:55 - 10:00)"),
+                        title="Diff Price (9:55 - 10:00)"),
         ]
 
         self.__tbl = DataTable(source=self.__src,
