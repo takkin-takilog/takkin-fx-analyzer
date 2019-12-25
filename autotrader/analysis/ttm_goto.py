@@ -16,7 +16,7 @@ from bokeh.models.widgets import Button, TextInput
 from bokeh.models.widgets import TableColumn, DataTable
 from bokeh.models.widgets import DateFormatter
 from bokeh.models.glyphs import VBar, Line
-from bokeh.palettes import Pastel1_9
+from bokeh.palettes import Pastel1_9  # @UnresolvedImport
 from bokeh.plotting import figure
 from bokeh.layouts import row, gridplot, column
 from oandapyV20.exceptions import V20Error
