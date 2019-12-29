@@ -54,8 +54,9 @@ class SimpleMovingAverage(object):
                        line_alpha=1.0)
         plt.add_glyph(self.__srcl, glvline)
 
-    def update_shr(self, df, window_):
-        """"短期データを更新する[update short range data]
+    def calc_sma_shr(self, df, window_):
+        """"短期SMAを算出しデータフレーム列に追加する
+            [calculate short-term SMA and add to DataFrame column]
         引数[Args]:
             df (pandas data frame) : ローソク足データ[pandas data frame]
             window_ (int) : 短期パラメータ[short range parameter]
@@ -64,36 +65,62 @@ class SimpleMovingAverage(object):
         """
         from autotrader.candlestick import LBL_CLOSE
         df[self.LBL_SMA_S] = df[LBL_CLOSE].rolling(window=window_).mean()
+
+    def draw_shr(self, df):
+        """"短期データを描写する[draw short-term data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+        戻り値[Returns]:
+            なし[None]
+        """
         self.__srcs.data = {
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_SMA_S].tolist(),
         }
 
-    def update_mdl(self, df, window_):
-        """"中期データを更新する[update middle range data]
+    def calc_sma_mdl(self, df, window_):
+        """"中期SMAを算出しデータフレーム列に追加する
+            [calculate middle-term SMA and add to DataFrame column]
         引数[Args]:
             df (pandas data frame) : ローソク足データ[pandas data frame]
-            window_ (int) : 中期パラメータ[middle range parameter]
+            window_ (int) : 中期パラメータ[middle-term parameter]
         戻り値[Returns]:
             なし[None]
         """
         from autotrader.candlestick import LBL_CLOSE
         df[self.LBL_SMA_M] = df[LBL_CLOSE].rolling(window=window_).mean()
+
+    def draw_mdl(self, df):
+        """"中期データを描写する[draw middle-term data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+        戻り値[Returns]:
+            なし[None]
+        """
         self.__srcm.data = {
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_SMA_M].tolist(),
         }
 
-    def update_lng(self, df, window_):
-        """"長期データを更新する[update long range data]
+    def calc_sma_lng(self, df, window_):
+        """"長期SMAを算出しデータフレーム列に追加する
+            [calculate long-term SMA and add to DataFrame column]
         引数[Args]:
             df (pandas data frame) : ローソク足データ[pandas data frame]
-            window_ (int) : 長期パラメータ[long range parameter]
+            window_ (int) : 長期パラメータ[long-term parameter]
         戻り値[Returns]:
             なし[None]
         """
         from autotrader.candlestick import LBL_CLOSE
         df[self.LBL_SMA_L] = df[LBL_CLOSE].rolling(window=window_).mean()
+
+    def draw_lng(self, df):
+        """"長期データを描写する[draw long-term data]
+        引数[Args]:
+            df (pandas data frame) : ローソク足データ[pandas data frame]
+        戻り値[Returns]:
+            なし[None]
+        """
         self.__srcl.data = {
             self.__XDT: df.index.tolist(),
             self.__YPR: df[self.LBL_SMA_L].tolist(),

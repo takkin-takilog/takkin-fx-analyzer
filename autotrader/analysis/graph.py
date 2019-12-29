@@ -3,9 +3,11 @@ import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource, Range1d
 from bokeh.models import LinearColorMapper, ColorBar, HoverTool
+from bokeh.models import NumeralTickFormatter
 from bokeh.models.glyphs import Quad, Line, Rect
 from bokeh.plotting import figure
 from bokeh.transform import transform
+from autotrader.oanda_common import OandaIns
 
 
 class HeatMap(object):
@@ -27,17 +29,15 @@ class HeatMap(object):
         mapper = LinearColorMapper(palette="Plasma256", low=0, high=1)
 
         fig = figure(title=title,
-                     plot_width=self.__FIG_WIDTH,
-                     plot_height=self.__FIG_WIDTH,
+                     frame_height=self.__FIG_WIDTH,
+                     frame_width=self.__FIG_WIDTH,
+                     x_range=Range1d(),
+                     y_range=Range1d(),
                      tools="",
                      toolbar_location=None,
-                     background_fill_color="black",
-                     )
+                     background_fill_color="black")
         fig.xgrid.visible = False
         fig.ygrid.visible = False
-
-        fig.x_range = Range1d()
-        fig.y_range = Range1d()
 
         src = ColumnDataSource({HeatMap._X: [],
                                 HeatMap._Y: [],
@@ -91,7 +91,7 @@ class HeatMap(object):
                              label_standoff=12,
                              border_line_color=None,
                              location=(0, 0))
-        fig.add_layout(color_bar, 'right')
+        fig.add_layout(color_bar, "right")
 
         self._fig = fig
         self.__src = src
@@ -111,7 +111,9 @@ class HeatMap(object):
     def yaxis_label(self, ylabel):
         self._fig.yaxis.axis_label = ylabel
 
-    def update(self, map3d, xlist, ylist, xstep, ystep):
+    def update(self, map3d, xlist, ylist, xstep, ystep, inst_id):
+
+        MARGIN_COE = 0.9  # マージン係数
 
         ofsx = xstep / 2
         ofsy = ystep / 2
@@ -119,8 +121,8 @@ class HeatMap(object):
         x = map3d[:, 0] + ofsx
         y = map3d[:, 1] + ofsy
         d = map3d[:, 2]
-        w = [xstep * 0.9] * len(map3d)
-        h = [ystep * 0.9] * len(map3d)
+        w = [xstep * MARGIN_COE] * len(map3d)
+        h = [ystep * MARGIN_COE] * len(map3d)
 
         self.__src.data = {HeatMap._X: x,
                            HeatMap._Y: y,
@@ -140,6 +142,10 @@ class HeatMap(object):
         self.__cm.low = d.min()
         self.__cm.high = d.max()
 
+        fmt = OandaIns.format(inst_id)
+        self._fig.xaxis.formatter = NumeralTickFormatter(format=fmt)
+        self._fig.yaxis.formatter = NumeralTickFormatter(format=fmt)
+
         strx = min(x) - ofsx
         endx = max(x) + ofsx
         self._fig.x_range.update(start=strx, end=endx, bounds=(strx, endx))
@@ -148,8 +154,8 @@ class HeatMap(object):
         endy = max(y) + ofsy
         self._fig.y_range.update(start=stry, end=endy, bounds=(stry, endy))
 
-        self._fig.width = int(len(xlist)) * 10 + 150
-        self._fig.height = int(len(ylist)) * 10
+        self._fig.frame_width = len(xlist) * 10
+        self._fig.frame_height = len(ylist) * 10
 
         self._df_y = pd.Series(ylist + ofsy)
         self._xrng = [strx, endx]
@@ -194,11 +200,10 @@ class LineGraphAbs(metaclass=ABCMeta):
         fig = figure(title=title,
                      plot_height=400,
                      plot_width=400,
-                     tools='',
+                     x_range=Range1d(),
+                     y_range=Range1d(),
+                     tools="",
                      background_fill_color=self.__BG_COLOR)
-
-        fig.x_range = Range1d()
-        fig.y_range = Range1d()
 
         self._src = ColumnDataSource({LineGraphAbs.X: [],
                                       LineGraphAbs.Y: []})
@@ -276,7 +281,7 @@ class HistogramAbs(metaclass=ABCMeta):
         fig = figure(title=title,
                      plot_height=400,
                      plot_width=400,
-                     tools='',
+                     tools="",
                      background_fill_color=self.__BG_COLOR)
 
         self._src = ColumnDataSource({HistogramAbs.LEFT: [],
@@ -363,7 +368,7 @@ class HistogramTwoAbs(metaclass=ABCMeta):
         fig = figure(title=title,
                      plot_height=400,
                      plot_width=400,
-                     tools='',
+                     tools="",
                      background_fill_color=self.__BG_COLOR)
 
         self._src1 = ColumnDataSource({HistogramAbs.LEFT: [],
@@ -654,7 +659,7 @@ class HorLine(LineAbs):
     def __init__(self, plt, color, line_width=1):
         super().__init__(plt, color, line_width)
 
-    def update(self, x_rng, y):
+    def update(self, x_str, x_end, y):
         """"データを更新する[update glyph data]
         引数[Args]:
             dict_ (dict) : 更新データ[update data]
@@ -662,7 +667,7 @@ class HorLine(LineAbs):
             なし[None]
         """
         self._src.data = {
-            VerLine.X: x_rng,
+            VerLine.X: [x_str, x_end],
             VerLine.Y: [y, y]
         }
 

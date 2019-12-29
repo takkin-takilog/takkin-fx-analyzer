@@ -97,6 +97,19 @@ class CandleGlyph(GlyphVbarAbs):
 
         self.__glvbar.width = self.get_width(gran)
 
+    def clear(self):
+        """"データをクリアする[clear glyph date]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self.__src.data = {CandleGlyph.XDT: [],
+                           CandleGlyph.YHI: [],
+                           CandleGlyph.YLO: [],
+                           CandleGlyph.YOP: [],
+                           CandleGlyph.YCL: []}
+
 
 class CandleStickChartBase(object):
     """ CandleStickChartBase
@@ -122,8 +135,7 @@ class CandleStickChartBase(object):
                            x_axis_type=AxisTyp.X_DATETIME,
                            tools=tools_,
                            background_fill_color=self.__BG_COLOR,
-                           sizing_mode="stretch_width",
-                           title="Gap-Fill Candlestick Chart ( 1 hour )")
+                           sizing_mode="stretch_width")
         self._fig.xaxis.axis_label = "Date Time"
         self._fig.grid.grid_line_alpha = 0.3
         self._fig.x_range = Range1d()
@@ -192,6 +204,17 @@ class CandleStickChartBase(object):
             self._fig (object) : model object
         """
         return self._fig
+
+    def clear(self):
+        """"データをクリアする[clear glyph date]
+        引数[Args]:
+            なし[None]
+        戻り値[Returns]:
+            なし[None]
+        """
+        self._glyinc.clear()
+        self._glydec.clear()
+        self._glyequ.clear()
 
 
 class CandleStickData(object):

@@ -253,6 +253,13 @@ class OandaIns(object):
         return round(value, minunit)
 
     @classmethod
+    def format(cls, inst_id):
+        minunit = cls.list[inst_id].min_unit
+        base = "0."
+        fmt = base.ljust(minunit + 2, "0")
+        return fmt
+
+    @classmethod
     def min_unit_max(cls):
 
         minunitlist = []

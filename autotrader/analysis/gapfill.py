@@ -1,16 +1,17 @@
+from math import pi
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+import datetime as dt
 from bokeh import events
 from bokeh.models import ColumnDataSource
 from bokeh.models import CrosshairTool, HoverTool
 from bokeh.models import Panel, Tabs
+from bokeh.models import NumeralTickFormatter
 from bokeh.models.widgets import Button, TextInput, DataTable, TableColumn
 from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.models.glyphs import Line
-from bokeh.layouts import layout, widgetbox, row, column, gridplot
+from bokeh.layouts import widgetbox, row, column, gridplot
 from oandapyV20.exceptions import V20Error
-import autotrader.analyzer as ana
 import autotrader.utils as utl
 import autotrader.analysis.candlestick as cs
 from autotrader.utils import DateTimeManager
@@ -21,6 +22,7 @@ from autotrader.analysis.candlestick import CandleStickData
 from autotrader.analysis.graph import HorizontalHistogram
 from autotrader.analysis.graph import HorizontalHistogramTwo
 from autotrader.analysis.graph import LineGraphAbs, HeatMap
+from autotrader.analysis.base import AnalysisAbs, DateWidget
 
 
 class HeatMapSim(HeatMap):
@@ -35,6 +37,7 @@ class HeatMapSim(HeatMap):
         self.__lgs.yaxis_label("Sum of Price")
 
         self._fig.on_event(events.MouseMove, self.__cb_mousemove)
+        self._fig.xaxis.major_label_orientation = pi / 4
 
         self.__x_min = 0
         self.__y_min = 0
@@ -43,8 +46,8 @@ class HeatMapSim(HeatMap):
     def linegraph_fig(self):
         return self.__lgs.fig
 
-    def update(self, map3d, xlist, ylist, htmap, xstep, ystep):
-        super().update(map3d, xlist, ylist, xstep, ystep)
+    def update(self, map3d, xlist, ylist, htmap, xstep, ystep, inst_id):
+        super().update(map3d, xlist, ylist, xstep, ystep, inst_id)
 
         MARGIN = 0.1
 
@@ -84,7 +87,7 @@ class HeatMapSim(HeatMap):
 
             idxmin = np.abs(df_y - event.y).idxmin()
             y = df_y[idxmin]
-            self._hline.update(xrng, y)
+            self._hline.update(xrng.start, xrng.end, y)
             self.__lgs.update(xlist, htmap[idxmin])
 
             str_ = round(ylist[idxmin], OandaIns.min_unit_max())
@@ -121,6 +124,11 @@ class LineGraphSim(LineGraphAbs):
         hover.renderers = [self._ren]
         hover.mode = "vline"
         self._fig.add_tools(hover)
+
+        self._fig.xaxis.formatter = NumeralTickFormatter(format="0[.]00000")
+        self._fig.yaxis.formatter = NumeralTickFormatter(format="0[.]00000")
+
+        self._fig.xaxis.major_label_orientation = pi / 4
 
     def update(self, xlist, zlist):
         self._src.data = {
@@ -159,6 +167,7 @@ class CandleStickChart(CandleStickChartBase):
         self.__OPEN_COLOR = "#54FFEE"
 
         super().__init__()
+        self._fig.title.text = "Gap-Fill Candlestick Chart ( 1 hour )"
 
         # プロット設定
         self._fig.toolbar_location = "right"
@@ -210,13 +219,20 @@ class CandleStickChart(CandleStickChartBase):
         self.__srcline_op.data = {self.__X: [xscal.start, xscal.end],
                                   self.__Y: [opnpri, opnpri]}
 
+    def clear(self):
+        super().clear()
 
-class GapFill(object):
+        self.__srcline_cl.data = {self.__X: [],
+                                  self.__Y: []}
+
+        self.__srcline_op.data = {self.__X: [],
+                                  self.__Y: []}
+
+class GapFill(AnalysisAbs):
     """ GapFill
             - 窓埋めクラス[Gap-Fill class]
     """
 
-    LBL_DATA = "Data"
     LBL_RESULT = "Result"
     LBL_DIR = "Direction"
     LBL_CLOSEPRI = "Close Price"
@@ -235,13 +251,19 @@ class GapFill(object):
         引数[Args]:
             なし[None]
         """
+        super().__init__()
+
         self.__BG_COLOR = "#2E2E2E"  # Background color
         self.__HIST_DIV = 50
+
+        diffdate = dt.date.today() - dt.timedelta(days=30)
+        self.__dtwdg_str = DateWidget("開始", diffdate)
+        self.__dtwdg_end = DateWidget("終了",)
 
         # Widget Button:解析実行[Run analysis]
         self.__btn_run = Button(label="解析実行",
                                 button_type="success",
-                                sizing_mode='fixed',
+                                sizing_mode="fixed",
                                 default_size=200)
         self.__btn_run.on_click(self.__cb_btn_run)
 
@@ -289,13 +311,12 @@ class GapFill(object):
                                columns=cols,
                                fit_columns=True,
                                height=200)
-        self.__src.selected.on_change('indices', self.__cb_dttbl)
+        self.__src.selected.on_change("indices", self.__cb_dttbl)
 
-        self.__csc = CandleStickChart()
-        self.__csdlist = []
+        self.__csc1 = CandleStickChart()
+        self.__csdlist1 = []
 
-        cols = [GapFill.LBL_DATA,
-                GapFill.LBL_RESULT,
+        cols = [GapFill.LBL_RESULT,
                 GapFill.LBL_DIR,
                 GapFill.LBL_CLOSEPRI,
                 GapFill.LBL_OPENPRI,
@@ -326,7 +347,7 @@ class GapFill(object):
         # ---------- Income simulation ----------
         self.__btn_simrun = Button(label="シミュレーション実行",
                                    button_type="success",
-                                   sizing_mode='fixed',
+                                   sizing_mode="fixed",
                                    default_size=200)
         self.__btn_simrun.on_click(self.__cb_btn_simrun)
 
@@ -341,23 +362,35 @@ class GapFill(object):
         self.__hm.xaxis_label("Loss Cut Price Offset")
         self.__hm.yaxis_label("Gap Price Thresh")
 
-    def get_layout(self):
+    @property
+    def layout(self):
         """レイアウトを取得する[get layout]
         引数[Args]:
             None
         戻り値[Returns]:
             layout (layout) : レイアウト[layout]
         """
+        dtwdg_str = self.__dtwdg_str.widget
+        dtwdg_end = self.__dtwdg_end.widget
+        dtwdg = row(children=[dtwdg_str, dtwdg_end])
+        wslin = self._slc_inst
+
+        wdgbx1 = column(children=[wslin, dtwdg], sizing_mode="fixed")
+
         btnrun = self.__btn_run
         tbl = self.__tbl
-        fig = self.__csc.fig
+        fig = self.__csc1.fig
 
-        tblfig = widgetbox(children=[tbl, fig], sizing_mode='stretch_width')
+        tblfig = column(children=[tbl, fig], sizing_mode="stretch_width")
 
         tabs = self.__create_result_tabs()
 
-        layout_ = layout(children=[[btnrun], [tblfig], [tabs]],
-                         sizing_mode='stretch_width')
+        wdgbx2 = column(children=[btnrun, tblfig, tabs],
+                        sizing_mode="stretch_width")
+
+        layout_ = row(children=[wdgbx1, wdgbx2],
+                      sizing_mode="stretch_width")
+
         return(layout_)
 
     def __generate_gapprice_hist(self, title_):
@@ -576,10 +609,10 @@ class GapFill(object):
 
     def ___check_candlestickdata(self, df, monday):
         # 終値
-        pre_df = df[df.index < (monday - timedelta(days=1))]
+        pre_df = df[df.index < (monday - dt.timedelta(days=1))]
 
         # 始値
-        aft_df = df[df.index > (monday - timedelta(days=1))]
+        aft_df = df[df.index > (monday - dt.timedelta(days=1))]
 
         if pre_df.empty or aft_df.empty:
             flg = False
@@ -599,11 +632,11 @@ class GapFill(object):
                             false: 窓埋め失敗[Filling Gap fail]
         """
         # 終値
-        pre_df = df[df.index < (monday - timedelta(days=1))]
+        pre_df = df[df.index < (monday - dt.timedelta(days=1))]
         close_pri = pre_df.at[pre_df.index[-1], cs.LBL_CLOSE]
 
         # 始値
-        aft_df = df[df.index > (monday - timedelta(days=1))]
+        aft_df = df[df.index > (monday - dt.timedelta(days=1))]
         open_pri = aft_df.at[aft_df.index[0], cs.LBL_OPEN]
 
         # スプレッド
@@ -630,7 +663,7 @@ class GapFill(object):
         if ext_df.empty:
             jdg_flg = False
             rst = GapFill.RSL_FAIL
-            filltime = datetime(year=1985, month=12, day=31)
+            filltime = dt.datetime(year=1985, month=12, day=31)
         else:
             jdg_flg = True
             rst = GapFill.RSL_SUCCESS
@@ -651,8 +684,7 @@ class GapFill(object):
         vldflg = (spread / 2) < gap_pri
 
         # 出力
-        record = pd.Series([monday,
-                            rst,
+        record = pd.Series([rst,
                             dir_,
                             close_pri,
                             open_pri,
@@ -661,7 +693,8 @@ class GapFill(object):
                             filltime,
                             maxopngap,
                             vldflg],
-                           index=self.__dfsmm.columns)
+                           index=self.__dfsmm.columns,
+                           name=monday)
 
         return jdg_flg, record
 
@@ -680,34 +713,35 @@ class GapFill(object):
 
         # 月曜のみを抽出する
         # Extract only Monday
-        now = datetime.now() - timedelta(hours=9)
-        str_ = ana.get_datetime_str()
-        str_ = utl.limit_upper(str_, now)
-        end_ = ana.get_datetime_end()
-        end_ = utl.limit_upper(end_, now) + timedelta(days=1)
+        yesterday = dt.date.today() - dt.timedelta(days=1)
+        str_ = self.__dtwdg_str.date
+        str_ = utl.limit_upper(str_, yesterday)
+        end_ = self.__dtwdg_end.date
+        end_ = utl.limit_upper(end_, yesterday)
 
         mondaylist = []
         for n in range((end_ - str_).days):
-            day = str_ + timedelta(n)
+            day = str_ + dt.timedelta(n)
             if day.weekday() == 0:
-                mondaylist.append(day)
+                dtmo = dt.datetime.combine(day, dt.time())
+                mondaylist.append(dtmo)
 
         if not mondaylist:
             print("リストは空です")
         else:
             dfsmm = self.__dfsmm
-            self.__csdlist = []
+            self.__csdlist1 = []
             validmondaylist = []
             rsllist = []
-            dfsmm = dfsmm.drop(range(len(dfsmm)))
+            dfsmm.drop(index=dfsmm.index, inplace=True)
             cnt = 0
             for monday in mondaylist:
-                str_ = monday + timedelta(days=-3, hours=20)
-                end_ = monday + timedelta(days=1)
+                str_ = monday + dt.timedelta(days=-3, hours=20)
+                end_ = monday + dt.timedelta(days=1)
                 dtmstr = DateTimeManager(str_)
                 dtmend = DateTimeManager(end_)
 
-                inst_id = ana.get_instrument_id()
+                inst_id = self.instrument_id
                 inst = OandaIns.list[inst_id].oanda_name
                 gran = OandaGrn.H1
 
@@ -736,8 +770,8 @@ class GapFill(object):
                         rsllist.append("失敗")
 
                     validmondaylist.append(monday)
-                    self.__csdlist.append(csd)
-                    dfsmm = dfsmm.append(record,  ignore_index=True)
+                    self.__csdlist1.append(csd)
+                    dfsmm = dfsmm.append(record)
 
                 cnt = cnt + 1
                 print("Fill-Gap Analyzing...  ( {} / {} )"
@@ -773,7 +807,7 @@ class GapFill(object):
             なし[None]
         """
         idx = new[0]
-        self.__csc.set_dataframe(self.__csdlist[idx], self.__dfsmm.iloc[idx])
+        self.__csc1.set_dataframe(self.__csdlist1[idx], self.__dfsmm.iloc[idx])
 
     def __cb_btn_simrun(self):
         """Widget Button(シミュレーション実行)コールバックメソッド
@@ -784,11 +818,13 @@ class GapFill(object):
             なし[None]
         """
         THIN_COE = 10   # 間引き係数
+        MARGIN_COE = 1.3  # マージン係数
+        MIN_DISP_AMP = 10  # 最低表示倍率係数
 
         if self.__dfsmm.empty:
             print("空です")
         else:
-            inst_id = ana.get_instrument_id()
+            inst_id = self.instrument_id
             minunit = OandaIns.list[inst_id].min_unit
 
             dfmst = self.__dfsmm[[GapFill.LBL_RESULT,
@@ -810,9 +846,9 @@ class GapFill(object):
                 mingp = df[GapFill.LBL_GAPPRI].min()
                 ystep = minstep * THIN_COE
                 if maxgp < ystep:
-                    end = ystep * 10
+                    end = ystep * MIN_DISP_AMP
                 else:
-                    end = maxgp * 1.2
+                    end = maxgp * MARGIN_COE
                 ylist = np.arange(0, end, ystep)
                 ylist = np.array([i for i in ylist if mingp < i])
 
@@ -821,16 +857,17 @@ class GapFill(object):
                 maxop = df[df_flg1][GapFill.LBL_MAXOPNRNG].max()
                 xstep = minstep * THIN_COE
                 if maxop < xstep:
-                    end = xstep * 10
+                    end = xstep * MIN_DISP_AMP
                 else:
-                    end = maxop * 1.3
+                    end = maxop * MARGIN_COE
 
                 xstep = ystep
                 xlist = np.arange(0, end, xstep)
 
                 htmap, map3d = self.__make_map(df, xlist, ylist)
 
-                self.__hm.update(map3d, xlist, ylist, htmap, xstep, ystep)
+                self.__hm.update(map3d, xlist, ylist, htmap,
+                                 xstep, ystep, inst_id)
 
                 x_max = self.__hm.max_coordinate[0]
                 y_max = self.__hm.max_coordinate[1]
@@ -852,8 +889,11 @@ class GapFill(object):
                 y = map3d[:, 1]
                 d = map3d[:, 2]
                 maxidx = np.argmax(d)
-                self.__txtin_losscut.value = str(x[maxidx])
-                self.__txtin_gapprith.value = str(y[maxidx])
+
+                losscut = OandaIns.normalize(inst_id, x[maxidx])
+                gapprith = OandaIns.normalize(inst_id, y[maxidx])
+                self.__txtin_losscut.value = str(losscut)
+                self.__txtin_gapprith.value = str(gapprith)
 
     def __make_map(self, df_, xlist, ylist):
 
