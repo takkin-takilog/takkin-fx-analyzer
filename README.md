@@ -1,2 +1,2 @@
-# takkin-fx-autotrader
-takkin-fx-autotrader
+# takkin-fx-analyzer
+takkin-fx-analyzer
