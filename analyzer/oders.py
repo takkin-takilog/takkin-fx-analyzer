@@ -6,9 +6,9 @@ from bokeh.models.glyphs import HBar, Line
 from bokeh.plotting import figure
 import oandapyV20.endpoints.instruments as it
 from oandapyV20 import API
-import autotrader.oanda_account as oa
-from autotrader.oanda_common import OandaEnv
-from autotrader.bokeh_common import ToolType
+import analyzer.oanda_account as oa
+from analyzer.oanda_common import OandaEnv
+from analyzer.bokeh_common import ToolType
 
 
 class OpenBooksAbs(metaclass=ABCMeta):

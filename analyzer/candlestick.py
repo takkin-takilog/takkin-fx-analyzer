@@ -5,14 +5,14 @@ from bokeh.models.glyphs import Segment, VBar, Line
 from oandapyV20 import API
 from retrying import retry
 from datetime import datetime, timedelta
-from autotrader.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
-from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
-from autotrader.utils import DateTimeManager
-from autotrader.technical import SimpleMovingAverage, MACD, BollingerBands
+from analyzer.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
+from analyzer.oanda_common import OandaEnv, OandaRsp, OandaGrn
+from analyzer.utils import DateTimeManager
+from analyzer.technical import SimpleMovingAverage, MACD, BollingerBands
 import oandapyV20.endpoints.instruments as it
 import pandas as pd
 import numpy as np
-import autotrader.config as cfg
+import analyzer.config as cfg
 
 
 # Pandas data label
@@ -154,7 +154,7 @@ class CandleStick(object):
         引数[Args]:
             なし[None]
         """
-        from autotrader.oanda_account import ACCESS_TOKEN
+        from analyzer.oanda_account import ACCESS_TOKEN
         self.__CND_INC_COLOR = "#E73B3A"
         self.__CND_DEC_COLOR = "#03C103"
         self.__CND_EQU_COLOR = "#FFFF00"

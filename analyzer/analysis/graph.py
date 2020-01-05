@@ -7,7 +7,7 @@ from bokeh.models import NumeralTickFormatter
 from bokeh.models.glyphs import Quad, Line, Rect
 from bokeh.plotting import figure
 from bokeh.transform import transform
-from autotrader.oanda_common import OandaIns
+from analyzer.oanda_common import OandaIns
 
 
 class HeatMap(object):

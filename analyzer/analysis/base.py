@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import timedelta, date
 from bokeh.models.widgets import Select
 from bokeh.layouts import column
-from autotrader.oanda_common import OandaIns
+from analyzer.oanda_common import OandaIns
 
 
 class DateWidget(object):

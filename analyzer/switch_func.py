@@ -1,8 +1,8 @@
 from bokeh.models.widgets import Button, Select
 from bokeh.layouts import layout, row
-import autotrader.viewer as _viewer
-from autotrader.analysis.gapfill import GapFill
-from autotrader.analysis.ttm_goto import TTMGoto
+import analyzer.viewer as _viewer
+from analyzer.analysis.gapfill import GapFill
+from analyzer.analysis.ttm_goto import TTMGoto
 
 
 def _cb_btn_view(self):

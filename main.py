@@ -1,4 +1,4 @@
-import autotrader.switch_func as sf
+import analyzer.switch_func as sf
 from bokeh.io import curdoc
 from bokeh.io import show
 

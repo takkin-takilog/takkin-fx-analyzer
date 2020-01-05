@@ -8,11 +8,11 @@ from bokeh.plotting import figure
 import oandapyV20.endpoints.instruments as it
 from oandapyV20 import API
 from oandapyV20.exceptions import V20Error
-from autotrader.utils import DateTimeManager
-from autotrader.oanda_common import OandaIns
-from autotrader.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
-from autotrader.oanda_common import OandaEnv, OandaRsp, OandaGrn
-from autotrader.oanda_account import ACCESS_TOKEN
+from analyzer.utils import DateTimeManager
+from analyzer.oanda_common import OandaIns
+from analyzer.bokeh_common import GlyphVbarAbs, ToolType, AxisTyp
+from analyzer.oanda_common import OandaEnv, OandaRsp, OandaGrn
+from analyzer.oanda_account import ACCESS_TOKEN
 
 # Pandas data label
 LBL_TIME = "datetime"

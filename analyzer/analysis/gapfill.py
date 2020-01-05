@@ -12,17 +12,17 @@ from bokeh.models.widgets import DateFormatter, NumberFormatter
 from bokeh.models.glyphs import Line
 from bokeh.layouts import widgetbox, row, column, gridplot
 from oandapyV20.exceptions import V20Error
-import autotrader.utils as utl
-import autotrader.analysis.candlestick as cs
-from autotrader.utils import DateTimeManager
-from autotrader.oanda_common import OandaGrn, OandaIns
-from autotrader.analysis.candlestick import CandleGlyph
-from autotrader.analysis.candlestick import CandleStickChartBase
-from autotrader.analysis.candlestick import CandleStickData
-from autotrader.analysis.graph import HorizontalHistogram
-from autotrader.analysis.graph import HorizontalHistogramTwo
-from autotrader.analysis.graph import LineGraphAbs, HeatMap
-from autotrader.analysis.base import AnalysisAbs, DateWidget
+import analyzer.utils as utl
+import analyzer.analysis.candlestick as cs
+from analyzer.utils import DateTimeManager
+from analyzer.oanda_common import OandaGrn, OandaIns
+from analyzer.analysis.candlestick import CandleGlyph
+from analyzer.analysis.candlestick import CandleStickChartBase
+from analyzer.analysis.candlestick import CandleStickData
+from analyzer.analysis.graph import HorizontalHistogram
+from analyzer.analysis.graph import HorizontalHistogramTwo
+from analyzer.analysis.graph import LineGraphAbs, HeatMap
+from analyzer.analysis.base import AnalysisAbs, DateWidget
 
 
 class HeatMapSim(HeatMap):

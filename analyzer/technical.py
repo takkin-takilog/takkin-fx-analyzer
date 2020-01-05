@@ -3,8 +3,8 @@ import pandas as pd
 from bokeh.models.glyphs import Line
 from bokeh.models import ColumnDataSource, Range1d
 from bokeh.plotting import figure
-import autotrader.config as cfg
-from autotrader.bokeh_common import AxisTyp
+import analyzer.config as cfg
+from analyzer.bokeh_common import AxisTyp
 
 
 class SimpleMovingAverage(object):
@@ -63,7 +63,7 @@ class SimpleMovingAverage(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.candlestick import LBL_CLOSE
+        from analyzer.candlestick import LBL_CLOSE
         df[self.LBL_SMA_S] = df[LBL_CLOSE].rolling(window=window_).mean()
 
     def draw_shr(self, df):
@@ -87,7 +87,7 @@ class SimpleMovingAverage(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.candlestick import LBL_CLOSE
+        from analyzer.candlestick import LBL_CLOSE
         df[self.LBL_SMA_M] = df[LBL_CLOSE].rolling(window=window_).mean()
 
     def draw_mdl(self, df):
@@ -111,7 +111,7 @@ class SimpleMovingAverage(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.candlestick import LBL_CLOSE
+        from analyzer.candlestick import LBL_CLOSE
         df[self.LBL_SMA_L] = df[LBL_CLOSE].rolling(window=window_).mean()
 
     def draw_lng(self, df):
@@ -209,7 +209,7 @@ class MACD(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.config import ITEM_MACD_LNG, ITEM_MACD_SGN
+        from analyzer.config import ITEM_MACD_LNG, ITEM_MACD_SGN
         lng = cfg.get_conf(ITEM_MACD_LNG)
         sgn = cfg.get_conf(ITEM_MACD_SGN)
         self.__calcMACD(df, window_, lng, sgn)
@@ -231,7 +231,7 @@ class MACD(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.config import ITEM_MACD_SHR, ITEM_MACD_SGN
+        from analyzer.config import ITEM_MACD_SHR, ITEM_MACD_SGN
         shr = cfg.get_conf(ITEM_MACD_SHR)
         sgn = cfg.get_conf(ITEM_MACD_SGN)
         self.__calcMACD(df, shr, window_, sgn)
@@ -253,7 +253,7 @@ class MACD(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.config import ITEM_MACD_SHR, ITEM_MACD_LNG
+        from analyzer.config import ITEM_MACD_SHR, ITEM_MACD_LNG
         shr = cfg.get_conf(ITEM_MACD_SHR)
         lng = cfg.get_conf(ITEM_MACD_LNG)
         self.__calcMACD(df, shr, lng, window_)
@@ -277,7 +277,7 @@ class MACD(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.candlestick import LBL_CLOSE
+        from analyzer.candlestick import LBL_CLOSE
         ema_s = df[LBL_CLOSE].ewm(span=shr).mean()
         ema_l = df[LBL_CLOSE].ewm(span=lng).mean()
         df[self.LBL_MACD] = (ema_s - ema_l)
@@ -378,7 +378,7 @@ class BollingerBands(object):
         戻り値[Returns]:
             なし[None]
         """
-        from autotrader.candlestick import LBL_CLOSE
+        from analyzer.candlestick import LBL_CLOSE
         df[self.LBL_BB_BASE] = df[LBL_CLOSE].rolling(window=window_).mean()
         self.__srcbs.data = {
             self.__XDT: df.index.tolist(),
@@ -439,7 +439,7 @@ class BollingerBands(object):
 
 
 if __name__ == "__main__":
-    from autotrader.candlestick import LBL_CLOSE
+    from analyzer.candlestick import LBL_CLOSE
     dic_arr = {LBL_CLOSE: [110, 111, 112, 113,
                            114, 115, 116, 117, 118, 119, 120]}
 

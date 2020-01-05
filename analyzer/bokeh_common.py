@@ -4,7 +4,7 @@
 # author       たっきん
 # ==============================================================================
 from abc import ABCMeta
-from autotrader.oanda_common import OandaGrn
+from analyzer.oanda_common import OandaGrn
 
 
 class AxisTyp(object):
